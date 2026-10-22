@@ -605,9 +605,10 @@ export function ListaNotas() {
                 <TabsTrigger value="soltas">Soltas <Badge variant="secondary" className="ml-1 h-4 px-1.5">{totalSoltas}</Badge></TabsTrigger>
               </TabsList>
             </Tabs>
-            <div className="relative ml-auto">
+            {/* No celular a busca ocupa a linha toda (antes sobrava um vão à esquerda) */}
+            <div className="relative min-w-0 max-sm:flex-[1_1_12rem] sm:ml-auto">
               <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input value={busca} onChange={(evento) => setBusca(evento.target.value)} placeholder={aba === "livros" ? "Buscar livros…" : "Buscar notas…"} aria-label="Buscar" className="w-56 pl-8" />
+              <Input value={busca} onChange={(evento) => setBusca(evento.target.value)} placeholder={aba === "livros" ? "Buscar livros…" : "Buscar notas…"} aria-label="Buscar" className="w-full pl-8 sm:w-56" />
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger render={<Button variant="outline" size="sm" />}>

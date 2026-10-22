@@ -42,11 +42,13 @@ export function CabecalhoPagina({
 }) {
   return (
     <header className="flex flex-wrap items-end justify-between gap-4">
-      <div className="min-w-0 flex-1 space-y-1">
+      {/* Rafael Marques - 22/10/2026: base de 18rem para os botões irem para a
+          linha de baixo no celular, em vez de espremer o título. */}
+      <div className="min-w-0 flex-[1_1_18rem] space-y-1">
         <p className="flex items-center gap-1.5 text-xs font-medium tracking-wider text-muted-foreground uppercase">
           <IconeSecao className="size-3.5" /> {secao}
         </p>
-        {typeof titulo === "string" ? <h1 className="text-3xl font-bold tracking-tight">{titulo}</h1> : titulo}
+        {typeof titulo === "string" ? <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{titulo}</h1> : titulo}
         {descricao && <p className="text-sm text-muted-foreground">{descricao}</p>}
         {resumo}
       </div>
@@ -57,7 +59,7 @@ export function CabecalhoPagina({
 
 // Classe do título quando ele é um campo editável (mesmo visual do <h1>).
 export const classeTituloEditavel =
-  "w-full min-w-0 bg-transparent text-3xl font-bold tracking-tight outline-none placeholder:text-muted-foreground/50"
+  "w-full min-w-0 bg-transparent text-2xl font-bold tracking-tight outline-none placeholder:text-muted-foreground/50 sm:text-3xl"
 
 // Resumo em uma linha (sem cartões): cada item é uma etiqueta leve com o
 // número em destaque. "alerta" pinta de vermelho (ex.: tarefas atrasadas).

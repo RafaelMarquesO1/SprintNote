@@ -141,6 +141,69 @@ function LinhaHabito({ habito, dias, hoje }: { habito: Habito; dias: string[]; h
   )
 }
 
+// Rafael Marques - 22/10/2026
+// Versão para celular: na tabela só cabia 1 dia por vez. Aqui o nome fica em cima
+// e os 7 dias embaixo, todos visíveis.
+function CartaoHabito({ habito, dias, hoje }: { habito: Habito; dias: string[]; hoje: string }) {
+  const alternarFeito = useHabitos((estado) => estado.alternarFeito)
+  const excluirHabito = useHabitos((estado) => estado.excluirHabito)
+  const sequencia = calcularSequencia(habito, hoje)
+  const programados = ultimosDias(hoje, 30).filter((dia) => valeNoDia(habito, dia))
+  const feitos = programados.filter((dia) => habito.feitos.includes(dia)).length
+  const percentual = programados.length ? Math.round((feitos / programados.length) * 100) : 0
+
+  return (
+    <li className="space-y-3 p-3">
+      <div className="flex items-center gap-2">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted"><Icone nome={habito.icone} /></span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium">{habito.nome}</p>
+          <p className="text-xs text-muted-foreground">{descreverDias(habito.dias)} · {percentual}% em 30 dias</p>
+        </div>
+        <span
+          className={cn("inline-flex shrink-0 items-center gap-0.5 text-sm font-medium", sequencia > 0 ? "text-orange-500" : "text-muted-foreground")}
+          title="Sequência atual"
+        >
+          <FlameIcon className="size-4" />
+          {sequencia}
+        </span>
+        <Button variant="ghost" size="icon-xs" aria-label={`Excluir hábito ${habito.nome}`} onClick={() => excluirHabito(habito.id)}>
+          <Trash2Icon />
+        </Button>
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {dias.map((dia) => {
+          const vale = valeNoDia(habito, dia)
+          const feito = habito.feitos.includes(dia)
+          return (
+            <div key={dia} className={cn("flex flex-col items-center gap-1 rounded-md py-1 text-[0.7rem] text-muted-foreground", dia === hoje && "bg-primary/5 text-foreground")}>
+              <span>{nomesDias[diaDaSemana(dia)]}</span>
+              {vale ? (
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={feito}
+                  aria-label={`${habito.nome} em ${lerChave(dia).toLocaleDateString("pt-BR")}`}
+                  onClick={() => alternarFeito(habito.id, dia)}
+                  className={cn(
+                    "flex size-8 items-center justify-center rounded-md border transition-colors",
+                    feito ? "border-primary bg-primary text-primary-foreground" : "hover:border-primary hover:bg-muted"
+                  )}
+                >
+                  {feito && <CheckIcon className="size-4" strokeWidth={3} />}
+                </button>
+              ) : (
+                <span className="flex size-8 items-center justify-center text-muted-foreground/50" aria-label="Não programado">–</span>
+              )}
+              <span>{lerChave(dia).getDate()}</span>
+            </div>
+          )
+        })}
+      </div>
+    </li>
+  )
+}
+
 // Rafael Marques - 20/10/2026
 // Rastreador de hábitos: marca os últimos 7 dias e mostra a sequência atual.
 export function PainelHabitos() {
@@ -190,7 +253,13 @@ export function PainelHabitos() {
           Crie seu primeiro hábito acima.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-xl border bg-card">
+        <>
+        <ul className="divide-y rounded-xl border bg-card sm:hidden">
+          {habitos.map((habito) => (
+            <CartaoHabito key={habito.id} habito={habito} dias={dias} hoje={hoje} />
+          ))}
+        </ul>
+        <div className="overflow-x-auto rounded-xl border bg-card max-sm:hidden">
           <table className="w-full min-w-[560px]">
             <thead>
               <tr className="text-xs text-muted-foreground">
@@ -212,6 +281,7 @@ export function PainelHabitos() {
             </tbody>
           </table>
         </div>
+        </>
       )}
     </Pagina>
   )

@@ -175,7 +175,8 @@ export function PaginaLivro({ id }: { id: string }) {
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
+      {/* minmax(0,1fr): sem isso a coluna cresce até o tamanho do texto mais longo e a página vaza no celular */}
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
         <section className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold">Notas ({notasDoLivro.length})</h2>
@@ -208,7 +209,7 @@ export function PaginaLivro({ id }: { id: string }) {
           <div>
             <h3 className="mb-1 text-xs font-medium text-muted-foreground">Citado por notas de outros livros</h3>
             {referencias.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs break-words text-muted-foreground">
                 Nenhuma ainda. Em qualquer nota, escreva <code>[[{livro.titulo}]]</code> ou <code>[[{livro.titulo}/Nota]]</code>.
               </p>
             ) : (

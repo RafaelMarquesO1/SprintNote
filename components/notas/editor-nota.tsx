@@ -325,8 +325,9 @@ function TelaNota({ nota, notas }: { nota: Nota; notas: Nota[] }) {
       <div className="flex h-11 items-center gap-2 px-4 text-sm md:px-6">
         <nav aria-label="Caminho" className="flex min-w-0 flex-1 items-center gap-1 text-muted-foreground">
           {livro ? (
-            <Link href={`/livros/${livro.id}`} className="flex shrink-0 items-center gap-1 rounded px-1 hover:bg-muted hover:text-foreground">
-              <Icone nome={livro.icone} className="size-3.5" /> {livro.titulo}
+            // Rafael Marques - 22/10/2026: nome do livro encurta com "…" (antes passava por cima dos botões no celular)
+            <Link href={`/livros/${livro.id}`} className="flex max-w-[60%] min-w-0 items-center gap-1 rounded px-1 hover:bg-muted hover:text-foreground">
+              <Icone nome={livro.icone} className="size-3.5 shrink-0" /> <span className="truncate">{livro.titulo}</span>
             </Link>
           ) : (
             <Link href="/notas" className="shrink-0 rounded px-1 hover:bg-muted hover:text-foreground">Notas soltas</Link>

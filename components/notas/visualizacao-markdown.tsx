@@ -106,6 +106,12 @@ const componentes: Components = {
       </a>
     )
   },
+  // Rafael Marques - 22/10/2026: caixa que rola de lado quando a tabela não cabe (celular).
+  table: ({ children }) => (
+    <div className="tabela-rolavel">
+      <table>{children}</table>
+    </div>
+  ),
 }
 
 // Para trechos curtos dentro de um bloco: sem <p> em volta.

@@ -123,14 +123,15 @@ function NovaTarefa({ listas, prazoPadrao }: { listas: string[]; prazoPadrao: st
         aria-label="Título da nova tarefa"
         className="sm:flex-1"
       />
-      <div className="flex gap-2">
-        <Input type="date" value={prazo} onChange={(evento) => setPrazo(evento.target.value)} aria-label="Prazo" className="w-36" />
+      {/* Rafael Marques - 22/10/2026: quebra em duas linhas no celular (a data ficava cortada) */}
+      <div className="flex flex-wrap gap-2 sm:flex-nowrap">
+        <Input type="date" value={prazo} onChange={(evento) => setPrazo(evento.target.value)} aria-label="Prazo" className="min-w-0 flex-[1_1_10rem] sm:w-40 sm:flex-none" />
         <select value={prioridade} onChange={(evento) => setPrioridade(evento.target.value as Prioridade)} aria-label="Prioridade" className={cn(classeSelect, "w-24")}>
           {prioridades.map((item) => (
             <option key={item.id} value={item.id}>{item.titulo}</option>
           ))}
         </select>
-        <Input value={lista} onChange={(evento) => setLista(evento.target.value)} list="listas-tarefas" placeholder="Lista" aria-label="Lista" className="w-28" />
+        <Input value={lista} onChange={(evento) => setLista(evento.target.value)} list="listas-tarefas" placeholder="Lista" aria-label="Lista" className="min-w-0 flex-[1_1_6rem] sm:w-28 sm:flex-none" />
         <datalist id="listas-tarefas">
           {listas.map((item) => <option key={item} value={item} />)}
         </datalist>

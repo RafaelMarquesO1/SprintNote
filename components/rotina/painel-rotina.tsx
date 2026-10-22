@@ -183,13 +183,15 @@ function LinhaDoTempo({ itens, exibicao, ehHoje, feitos, idAgora, aoAlternar, ao
                 )}
                 style={item.cor ? { background: item.cor } : undefined}
               />
-              <span className="w-24 shrink-0 font-mono text-xs text-muted-foreground tabular-nums">{horarios(item)}</span>
+              {/* Rafael Marques - 22/10/2026: no celular o horário vai para cima do título (a coluna espremia o texto) */}
+              <span className="w-24 shrink-0 font-mono text-xs text-muted-foreground tabular-nums max-sm:hidden">{horarios(item)}</span>
               {ehHoje && (
                 <MarcadorConcluida concluida={feito} aoAlternar={() => aoAlternar(item.id)} rotulo={`Marcar “${item.titulo}” como feito`} />
               )}
               <IconeAtividade item={item} />
               <button type="button" onClick={() => aoAbrir(item)} className="min-w-0 flex-1 text-left">
-                <p className={cn("text-sm", feito && "text-muted-foreground line-through", agora && "font-semibold")}>
+                <p className="font-mono text-xs text-muted-foreground tabular-nums sm:hidden">{horarios(item)}</p>
+                <p className={cn("text-sm break-words", feito && "text-muted-foreground line-through", agora && "font-semibold")}>
                   {item.titulo}
                   {agora && <SeloAgora />}
                 </p>
@@ -199,7 +201,7 @@ function LinhaDoTempo({ itens, exibicao, ehHoje, feitos, idAgora, aoAlternar, ao
                 variant="ghost"
                 size="icon-xs"
                 aria-label={`Editar ${item.titulo}`}
-                className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+                className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 max-sm:hidden"
                 onClick={() => aoAbrir(item)}
               >
                 <PencilIcon />

@@ -191,6 +191,14 @@
   .markdown table {
     @apply w-full border-collapse text-left;
   }
+  /* Rafael Marques - 22/10/2026: tabela larga rola de lado dentro da nota
+     (antes empurrava a página inteira no celular). */
+  .markdown .tabela-rolavel {
+    @apply max-w-full overflow-x-auto;
+  }
+  .markdown .tabela-rolavel :is(th, td) {
+    min-width: 6rem;
+  }
   .markdown th,
   .markdown td {
     @apply border px-3 py-1.5;
