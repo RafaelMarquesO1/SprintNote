@@ -58,7 +58,7 @@ import { Interruptor, MiniaturasOpcoes, OpcoesLadoALado, PainelPersonalizar, Sec
 import { useHidratado } from "@/hooks/use-hidratado"
 import { useHoje } from "@/hooks/use-hoje"
 import { AvisosPrazo } from "@/components/avisos-prazo"
-import { fundosQuadro } from "@/lib/cores"
+import { estiloFundoQuadro, fundosQuadro, idFundoQuadro } from "@/lib/cores"
 import { colunasDoQuadro, exibicaoDoQuadro, exibicaoPadrao, useKanban } from "@/lib/estado/kanban"
 import type { ColunaKanban } from "@/lib/tipos"
 
@@ -223,7 +223,7 @@ export function QuadroKanban() {
   ).length
 
   return (
-    <div className="-mx-4 -mt-4 flex min-h-[calc(100svh-3rem)] flex-col md:-mx-6 md:-mt-6" style={quadro.fundo ? { background: quadro.fundo } : undefined}>
+    <div className="-mx-4 -mt-4 flex min-h-[calc(100svh-3rem)] flex-col md:-mx-6 md:-mt-6" style={estiloFundoQuadro(quadro.fundo)}>
       {/* Cabeçalho no padrão das outras telas + números do quadro */}
       <div className="space-y-5 px-4 pt-4 md:px-6 md:pt-6">
         <CabecalhoPagina
@@ -287,14 +287,14 @@ export function QuadroKanban() {
                   <MiniaturasOpcoes
                     rotulo="Fundo do quadro"
                     colunas={4}
-                    valor={quadro.fundo ?? "nenhum"}
+                    valor={idFundoQuadro(quadro.fundo) ?? "nenhum"}
                     aoMudar={(valor) => atualizarQuadro(quadro.id, { fundo: valor === "nenhum" ? null : valor })}
                     opcoes={[
                       { valor: "nenhum", rotulo: "Nenhum", previa: <span className="size-full bg-background" /> },
                       ...fundosQuadro.map((fundo) => ({
-                        valor: fundo.valor,
+                        valor: fundo.id,
                         rotulo: fundo.nome,
-                        previa: <span className="size-full" style={{ background: fundo.valor }} />,
+                        previa: <span className="size-full bg-background"><span className="block size-full" style={{ background: fundo.valor }} /></span>,
                       })),
                     ]}
                   />

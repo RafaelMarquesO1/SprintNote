@@ -4,7 +4,7 @@ import { Suspense } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
-  BookOpenIcon,
+  InfoIcon,
   CalendarClockIcon,
   ChevronRightIcon,
   HouseIcon,
@@ -170,10 +170,10 @@ export function AppSidebar() {
       </SidebarContent>
 
       {/* Rafael Marques - 20/10/2026
-          Footer da Sidebar: guia, tema e a versão do projeto */}
+          Footer da Sidebar: créditos, tema e a versão do projeto */}
       <SidebarFooter>
         <Suspense fallback={<EsqueletoNavegacao quantidade={1} />}>
-          <LinksNavegacao itens={[{ title: "Guia e créditos", href: "/guia", icon: BookOpenIcon }]} />
+          <LinksNavegacao itens={[{ title: "Créditos", href: "/creditos", icon: InfoIcon }]} />
         </Suspense>
         <div className="flex items-center justify-between px-2">
           <p className="text-xs text-muted-foreground">v1.0 - SprintNote</p>

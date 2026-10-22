@@ -4,7 +4,7 @@ import { useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { create } from "zustand"
 import {
-  BookOpenIcon,
+  InfoIcon,
   BookPlusIcon,
   CircleUserRoundIcon,
   HashIcon,
@@ -294,9 +294,9 @@ export function DialogoBusca() {
               <KanbanIcon />
               Abrir o Kanban
             </CommandItem>
-            <CommandItem value="acao-guia" keywords={["guia", "ajuda", "créditos"]} onSelect={() => executar(() => router.push("/guia"))}>
-              <BookOpenIcon />
-              Abrir o guia
+            <CommandItem value="acao-creditos" keywords={["créditos", "creditos", "sobre", "tecnologias"]} onSelect={() => executar(() => router.push("/creditos"))}>
+              <InfoIcon />
+              Abrir os créditos
             </CommandItem>
             <CommandItem value="acao-tema" keywords={["tema", "escuro", "claro"]} onSelect={() => executar(alternarTema)}>
               <SunMoonIcon />

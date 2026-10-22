@@ -92,7 +92,7 @@ export type QuadroKanban = {
   id: string
   titulo: string
   icone: string
-  // Fundo do quadro: gradiente/cor em CSS (ou null = sem fundo).
+  // Fundo do quadro: id de `fundosQuadro` (quadros antigos podem ter o degradê em CSS; null = sem fundo).
   fundo: string | null
   etiquetas: EtiquetaKanban[]
   criadoEm: number

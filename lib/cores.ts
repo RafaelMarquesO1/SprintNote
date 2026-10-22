@@ -14,8 +14,40 @@ export const paletaCores = [
   { id: "cinza", nome: "Cinza", valor: "oklch(0.6 0.01 260)" },
 ]
 
-// Fundos para os quadros do Kanban (suaves, para o texto continuar legível).
+// Rafael Marques - 22/10/2026
+// Fundos dos quadros do Kanban: só tons de cinza (seguem o visual preto e branco)
+// e feitos com a cor do texto em baixa opacidade, então funcionam no claro e no escuro.
+const tracoFundo = "color-mix(in oklch, var(--foreground) 9%, transparent)"
 export const fundosQuadro = [
+  { id: "pontos", nome: "Pontos", valor: `radial-gradient(color-mix(in oklch, var(--foreground) 20%, transparent) 1px, transparent 1.3px) 0 0 / 20px 20px` },
+  { id: "quadriculado", nome: "Quadriculado", valor: `linear-gradient(${tracoFundo} 1px, transparent 1px) 0 0 / 28px 28px, linear-gradient(90deg, ${tracoFundo} 1px, transparent 1px) 0 0 / 28px 28px` },
+  { id: "diagonal", nome: "Diagonal", valor: `repeating-linear-gradient(135deg, ${tracoFundo} 0 1px, transparent 1px 14px)` },
+  { id: "nevoa", nome: "Névoa", valor: "linear-gradient(to bottom, color-mix(in oklch, var(--foreground) 7%, transparent), transparent 70%)" },
+  { id: "cinza", nome: "Cinza", valor: "color-mix(in oklch, var(--foreground) 5%, transparent)" },
+  { id: "grafite", nome: "Grafite", valor: "color-mix(in oklch, var(--foreground) 10%, transparent)" },
+]
+
+// Quadros antigos guardavam o degradê colorido inteiro; agora viram o fundo neutro mais próximo.
+const fundosAntigos: Record<string, string> = {
+  ceu: "nevoa", menta: "nevoa", "por-do-sol": "nevoa", lavanda: "nevoa", areia: "cinza", grafite: "grafite",
+}
+
+// Recebe o que está salvo no quadro (id novo ou degradê antigo) e devolve o id do fundo.
+export function idFundoQuadro(fundo: string | null | undefined) {
+  if (!fundo) return null
+  if (fundosQuadro.some((item) => item.id === fundo)) return fundo
+  const antigo = gradientesCapa.find((item) => item.valor === fundo)
+  return antigo ? fundosAntigos[antigo.id] : null
+}
+
+export function estiloFundoQuadro(fundo: string | null | undefined): CSSProperties | undefined {
+  const id = idFundoQuadro(fundo)
+  const item = fundosQuadro.find((opcao) => opcao.id === id)
+  return item ? { background: item.valor } : undefined
+}
+
+// Degradês das capas dos livros (eram os fundos antigos do Kanban).
+export const gradientesCapa = [
   { id: "ceu", nome: "Céu", valor: "linear-gradient(135deg, oklch(0.75 0.08 240 / 35%), oklch(0.8 0.06 200 / 25%))" },
   { id: "menta", nome: "Menta", valor: "linear-gradient(135deg, oklch(0.78 0.08 165 / 35%), oklch(0.82 0.06 130 / 25%))" },
   { id: "por-do-sol", nome: "Pôr do sol", valor: "linear-gradient(135deg, oklch(0.78 0.1 50 / 35%), oklch(0.75 0.1 350 / 25%))" },
@@ -38,7 +70,7 @@ export function corDoLivro(livros: { id: string; cor?: string | null }[], id: st
 }
 
 // Estilos de capa do cartão do livro. Os de "padrão" usam a cor do livro;
-// os gradientes reaproveitam os fundos do Kanban.
+// os gradientes ficam em `gradientesCapa`.
 export const capasLivro = [
   { id: "pontos", nome: "Pontos" },
   { id: "listras", nome: "Listras" },
@@ -46,7 +78,7 @@ export const capasLivro = [
   { id: "ondas", nome: "Brilho" },
   { id: "degrade", nome: "Degradê" },
   { id: "solida", nome: "Cor sólida" },
-  ...fundosQuadro.map((fundo) => ({ id: fundo.id, nome: fundo.nome })),
+  ...gradientesCapa.map((fundo) => ({ id: fundo.id, nome: fundo.nome })),
   { id: "nenhuma", nome: "Sem capa" },
 ]
 
@@ -72,7 +104,7 @@ export function estiloCapaLivro(capa: string | null | undefined, cor: string): {
     case "pontos":
       return { backgroundImage: `radial-gradient(${clarear} 1px, transparent 1.4px), ${base}`, backgroundSize: "14px 14px, 100% 100%" }
     default: {
-      const fundo = fundosQuadro.find((item) => item.id === capa)
+      const fundo = gradientesCapa.find((item) => item.id === capa)
       return fundo ? { backgroundImage: fundo.valor } : { backgroundImage: base }
     }
   }

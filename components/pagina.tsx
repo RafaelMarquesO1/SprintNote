@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils"
 type Largura = "leitura" | "padrao" | "ampla" | "total"
 
 const larguras: Record<Largura, string> = {
-  // Textos longos (guia).
+  // Textos longos (créditos).
   leitura: "max-w-3xl",
   // Telas de conteúdo (início, biblioteca, tarefas, hábitos, rotina, tags, dados).
   padrao: "max-w-5xl",
