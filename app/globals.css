@@ -1,26 +1,374 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-serifada: var(--font-literata), Georgia, serif;
+  --font-manuscrita: var(--font-caveat), "Comic Sans MS", cursive;
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  /* Rafael Marques - 20/10/2026: cores dos livros no grafo */
+  --grafo-1: oklch(0.6 0.13 255);
+  --grafo-2: oklch(0.62 0.11 165);
+  --grafo-3: oklch(0.66 0.13 55);
+  --grafo-4: oklch(0.6 0.13 305);
+  --grafo-5: oklch(0.64 0.12 15);
+  --grafo-6: oklch(0.68 0.11 100);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --grafo-1: oklch(0.72 0.12 255);
+  --grafo-2: oklch(0.74 0.1 165);
+  --grafo-3: oklch(0.76 0.12 55);
+  --grafo-4: oklch(0.72 0.12 305);
+  --grafo-5: oklch(0.74 0.11 15);
+  --grafo-6: oklch(0.78 0.1 100);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+/* Rafael Marques - 20/10/2026
+   Estilos da visualização das notas em Markdown */
+@layer components {
+  .markdown {
+    @apply text-sm leading-7 text-foreground;
+  }
+  .markdown > * + * {
+    @apply mt-3;
+  }
+  .markdown h1 {
+    @apply mt-6 text-2xl font-bold tracking-tight first:mt-0;
+  }
+  .markdown h2 {
+    @apply mt-6 border-b pb-1 text-xl font-semibold tracking-tight first:mt-0;
+  }
+  .markdown h3 {
+    @apply mt-5 text-lg font-semibold first:mt-0;
+  }
+  .markdown ul {
+    @apply list-disc pl-6;
+  }
+  .markdown ol {
+    @apply list-decimal pl-6;
+  }
+  .markdown li + li {
+    @apply mt-1;
+  }
+  .markdown li.task-list-item {
+    @apply -ml-5 list-none;
+  }
+  .markdown li.task-list-item input {
+    @apply mr-2 translate-y-0.5 accent-primary;
+  }
+  .markdown blockquote {
+    @apply border-l-4 pl-4 text-muted-foreground italic;
+  }
+  .markdown code {
+    @apply rounded bg-muted px-1.5 py-0.5 font-mono text-[0.85em];
+  }
+  .markdown pre {
+    @apply overflow-x-auto rounded-lg bg-muted p-4;
+  }
+  .markdown pre code {
+    @apply bg-transparent p-0;
+  }
+  .markdown table {
+    @apply w-full border-collapse text-left;
+  }
+  .markdown th,
+  .markdown td {
+    @apply border px-3 py-1.5;
+  }
+  .markdown th {
+    @apply bg-muted font-medium;
+  }
+  .markdown hr {
+    @apply my-6;
+  }
+  .markdown a,
+  .markdown-inline a {
+    @apply text-primary underline underline-offset-4;
+  }
+  .markdown .link-wiki,
+  .markdown-inline .link-wiki {
+    @apply cursor-pointer rounded bg-primary/10 px-1 font-medium text-primary no-underline hover:bg-primary/20;
+  }
+  .markdown .link-wiki-livro,
+  .markdown-inline .link-wiki-livro {
+    @apply bg-chart-2/15 text-foreground hover:bg-chart-2/25;
+  }
+  .markdown .link-wiki-inexistente,
+  .markdown-inline .link-wiki-inexistente {
+    @apply bg-transparent text-muted-foreground underline decoration-dashed underline-offset-4 hover:text-foreground;
+  }
+  /* Texto formatado dentro de um bloco do editor */
+  .markdown-inline code {
+    @apply rounded bg-muted px-1.5 py-0.5 font-mono text-[0.85em];
+  }
+  .markdown-inline strong {
+    @apply font-semibold;
+  }
+  .markdown-inline del {
+    @apply text-muted-foreground;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Rafael Marques - 21/10/2026
+   Etiquetas de #tag e @prazo dentro do texto das notas */
+@layer components {
+  .markdown .etiqueta-tag,
+  .markdown-inline .etiqueta-tag {
+    @apply rounded-md bg-muted px-1.5 py-0.5 text-[0.85em] font-medium text-muted-foreground no-underline hover:text-foreground;
+  }
+  .etiqueta-prazo {
+    @apply rounded-md border px-1.5 py-0.5 text-[0.85em] whitespace-nowrap text-muted-foreground;
+  }
+  .etiqueta-prazo-atrasada {
+    @apply border-destructive/40 text-destructive;
+  }
+}
+
+/* Rafael Marques - 21/10/2026
+   Tema claro/escuro também para campos nativos (data, select, barra de rolagem) */
+:root {
+  color-scheme: light;
+  --papel: oklch(0.985 0.012 85);
+  --codigo-palavra: oklch(0.5 0.19 300);
+  --codigo-texto: oklch(0.5 0.14 145);
+  --codigo-numero: oklch(0.55 0.16 45);
+  --codigo-funcao: oklch(0.5 0.16 255);
+  --codigo-tipo: oklch(0.52 0.12 195);
+  --codigo-atributo: oklch(0.55 0.15 25);
+  --codigo-comentario: oklch(0.6 0 0);
+  --destaque-info: oklch(0.6 0.13 245);
+  --destaque-dica: oklch(0.6 0.13 155);
+  --destaque-aviso: oklch(0.7 0.14 75);
+  --destaque-perigo: oklch(0.6 0.19 25);
+  --destaque-nota: oklch(0.55 0.02 260);
+  --marca-texto: oklch(0.93 0.12 100);
+  /* Rafael Marques - 22/10/2026: fundo dos blocos internos dos widgets
+     (no claro, muted/40 sobre branco quase sumia). Só tons de cinza. */
+  --bloco-widget: oklch(0.96 0 0);
+  --bloco-widget-hover: oklch(0.93 0 0);
+}
+.dark {
+  color-scheme: dark;
+  --papel: oklch(0.2 0.008 70);
+  --codigo-palavra: oklch(0.78 0.13 300);
+  --codigo-texto: oklch(0.8 0.13 145);
+  --codigo-numero: oklch(0.8 0.12 60);
+  --codigo-funcao: oklch(0.78 0.12 250);
+  --codigo-tipo: oklch(0.8 0.1 195);
+  --codigo-atributo: oklch(0.78 0.12 30);
+  --codigo-comentario: oklch(0.6 0 0);
+  --destaque-info: oklch(0.72 0.12 245);
+  --destaque-dica: oklch(0.74 0.13 155);
+  --destaque-aviso: oklch(0.8 0.13 80);
+  --destaque-perigo: oklch(0.7 0.16 25);
+  --destaque-nota: oklch(0.7 0.02 260);
+  --marca-texto: oklch(0.45 0.09 95);
+  --bloco-widget: color-mix(in oklch, var(--muted) 45%, transparent);
+  --bloco-widget-hover: var(--muted);
+}
+
+@layer components {
+  /* Documento da nota: cor de destaque escolhida em "Personalizar" */
+  .documento {
+    --destaque: var(--primary);
+    --destaque-texto: var(--primary-foreground);
+    --destaque-suave: var(--muted-foreground);
+    --destaque-borda: color-mix(in oklch, var(--foreground) 70%, transparent);
+  }
+  .documento[data-destaque] {
+    --destaque-texto: oklch(0.99 0 0);
+    --destaque-suave: var(--destaque);
+    --destaque-borda: var(--destaque);
+  }
+  .documento[data-destaque] .link-wiki {
+    color: var(--destaque);
+    background: color-mix(in oklch, var(--destaque) 14%, transparent);
+  }
+
+  /* Espaçamento entre linhas */
+  .documento[data-espacamento="compacto"] [data-bloco] { --linha: 1.5; }
+  .documento[data-espacamento="amplo"] [data-bloco] { --linha: 2; }
+  .documento[data-espacamento="compacto"] .space-y-0\.5 > * + * { margin-top: 0; }
+  .documento[data-espacamento="amplo"] .space-y-0\.5 > * + * { margin-top: 0.35rem; }
+
+  /* Fundos da página */
+  .fundo-papel { background-color: var(--papel); }
+  .fundo-pontilhado {
+    background-image: radial-gradient(color-mix(in oklch, var(--foreground) 18%, transparent) 1px, transparent 1.2px);
+    background-size: 22px 22px;
+  }
+  .fundo-quadriculado {
+    background-image:
+      linear-gradient(color-mix(in oklch, var(--foreground) 8%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in oklch, var(--foreground) 8%, transparent) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  .fundo-pautado {
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent calc(1.75em - 1px),
+      color-mix(in oklch, var(--foreground) 10%, transparent) calc(1.75em - 1px),
+      color-mix(in oklch, var(--foreground) 10%, transparent) 1.75em
+    );
+  }
+
+  /* Blocos de destaque (callouts) */
+  .destaque { background: color-mix(in oklch, var(--cor-destaque) 12%, transparent); border: 1px solid color-mix(in oklch, var(--cor-destaque) 28%, transparent); }
+  .destaque .destaque-icone { color: var(--cor-destaque); }
+  .destaque-info { --cor-destaque: var(--destaque-info); }
+  .destaque-dica { --cor-destaque: var(--destaque-dica); }
+  .destaque-aviso { --cor-destaque: var(--destaque-aviso); }
+  .destaque-perigo { --cor-destaque: var(--destaque-perigo); }
+  .destaque-nota { --cor-destaque: var(--destaque-nota); }
+
+  /* Marca-texto ==assim== */
+  .marca-texto { background: var(--marca-texto); color: inherit; border-radius: 0.2em; padding: 0 0.15em; }
+
+  /* Realce de sintaxe (highlight.js) */
+  .codigo-realce .hljs-keyword, .codigo-realce .hljs-built_in, .codigo-realce .hljs-literal, .codigo-realce .hljs-selector-tag { color: var(--codigo-palavra); }
+  .codigo-realce .hljs-string, .codigo-realce .hljs-regexp, .codigo-realce .hljs-addition, .codigo-realce .hljs-template-variable { color: var(--codigo-texto); }
+  .codigo-realce .hljs-number, .codigo-realce .hljs-symbol, .codigo-realce .hljs-bullet, .codigo-realce .hljs-variable.constant_ { color: var(--codigo-numero); }
+  .codigo-realce .hljs-title, .codigo-realce .hljs-title.function_, .codigo-realce .hljs-section { color: var(--codigo-funcao); }
+  .codigo-realce .hljs-type, .codigo-realce .hljs-title.class_, .codigo-realce .hljs-name, .codigo-realce .hljs-selector-class, .codigo-realce .hljs-selector-id { color: var(--codigo-tipo); }
+  .codigo-realce .hljs-attr, .codigo-realce .hljs-attribute, .codigo-realce .hljs-property, .codigo-realce .hljs-meta, .codigo-realce .hljs-params { color: var(--codigo-atributo); }
+  .codigo-realce .hljs-comment, .codigo-realce .hljs-quote, .codigo-realce .hljs-deletion { color: var(--codigo-comentario); font-style: italic; }
+  .codigo-realce .hljs-emphasis { font-style: italic; }
+  .codigo-realce .hljs-strong { font-weight: 600; }
+}
+
+/* Rafael Marques - 21/10/2026
+   Listas nativas (<select>) legíveis nos dois temas e barra de rolagem discreta */
+select option,
+select optgroup {
+  background-color: var(--popover);
+  color: var(--popover-foreground);
+}
+select optgroup {
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+.rolagem-fina {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--foreground) 22%, transparent) transparent;
 }
