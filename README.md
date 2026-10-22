@@ -26,30 +26,30 @@ Ele junta em um só app aquilo que eu usava espalhado em várias ferramentas: um
 
 ### Como ele me atendeu
 
-- ✅ **Substituiu o Trello no dia a dia** — o Kanban com arrastar e soltar cobre o fluxo de demandas que eu tinha antes.
-- ✅ **Tudo num lugar só** — notas, tarefas, hábitos e rotina conversam entre si, sem trocar de aba.
-- ✅ **Nada se perde** — os dados ficam salvos na conta e sincronizados entre dispositivos.
-- ✅ **Avisos de prazo** — o app lembra do que está para vencer.
-- ✅ **Funciona no celular** — layout responsivo para consultar as demandas de qualquer lugar.
+- **Substituiu o Trello no dia a dia** — o Kanban com arrastar e soltar cobre o fluxo de demandas que eu tinha antes.
+- **Tudo num lugar só** — notas, tarefas, hábitos e rotina conversam entre si, sem trocar de aba.
+- **Nada se perde** — os dados ficam salvos na conta e sincronizados entre dispositivos.
+- **Avisos de prazo** — o app lembra do que está para vencer.
+- **Funciona no celular** — layout responsivo para consultar as demandas de qualquer lugar.
 
 ### Funcionalidades
 
 | Área | O que faz |
 |---|---|
-| 🏠 **Início** | Painel com widgets personalizáveis do seu dia |
-| 📋 **Kanban** | Quadros, colunas e cartões com arrastar e soltar |
-| 📝 **Notas** | Editor em blocos com Markdown, links entre notas (`[[nota]]`), capas e tags |
-| 📚 **Livros** | Agrupa notas em cadernos |
-| ✔️ **Tarefas** | Lista de tarefas com prazos, unificada com as tarefas das notas |
-| 🔁 **Hábitos e Rotina** | Acompanhamento de hábitos e rotina semanal |
-| 🕸️ **Grafo** | Mapa visual das conexões entre as notas |
-| 🔎 **Busca** | Busca rápida por tudo (atalho de teclado) |
-| 👤 **Conta** | Login, exportação dos dados e exclusão da conta, de acordo com a LGPD |
-| 🌗 **Tema** | Modo claro e escuro |
+| **Início** | Painel com widgets personalizáveis do seu dia |
+| **Kanban** | Quadros, colunas e cartões com arrastar e soltar |
+| **Notas** | Editor em blocos com Markdown, links entre notas (`[[nota]]`), capas e tags |
+| **Livros** | Agrupa notas em cadernos |
+| **Tarefas** | Lista de tarefas com prazos, unificada com as tarefas das notas |
+| **Hábitos e Rotina** | Acompanhamento de hábitos e rotina semanal |
+| **Grafo** | Mapa visual das conexões entre as notas |
+| **Busca** | Busca rápida por tudo (atalho de teclado) |
+| **Conta** | Login, exportação dos dados e exclusão da conta, de acordo com a LGPD |
+| **Tema** | Modo claro e escuro |
 
 ---
 
-## 🗂️ Estrutura do projeto
+## Estrutura do projeto
 
 ```
 sprintnote/
@@ -90,7 +90,7 @@ sprintnote/
 
 ---
 
-## 🛠️ Tecnologias utilizadas
+## Tecnologias utilizadas
 
 | Categoria | Tecnologia |
 |---|---|
@@ -107,36 +107,11 @@ sprintnote/
 
 ---
 
-## 🚀 Deploy
+## Deploy
 
 O SprintNote está no ar na Vercel:
 
-### 👉 [sprintnote.vercel.app](https://sprintnote.vercel.app)
+### [sprintnote.vercel.app](https://sprintnote.vercel.app)
 
-### Rodando localmente
-
-1. Clone o repositório e instale as dependências:
-
-   ```bash
-   git clone https://github.com/RafaelMarquesO1/SprintNote.git
-   cd SprintNote
-   npm install
-   ```
-
-2. Copie o `.env.example` para `.env.local` e preencha a `DATABASE_URL` com a conexão do seu banco no [Neon](https://console.neon.tech).
-
-3. Inicie o servidor de desenvolvimento:
-
-   ```bash
-   npm run dev
-   ```
-
-4. Abra [http://localhost:3000](http://localhost:3000).
-
----
-
-<div align="center">
-
-Feito por **Rafael Marques**
 
 </div>
