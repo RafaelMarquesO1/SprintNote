@@ -7,6 +7,7 @@
 
 import { VERSAO_DOCUMENTOS, RETENCAO } from "@/lib/conta/documentos"
 import { banco } from "@/lib/servidor/banco"
+import { prepararExclusaoDaConta } from "@/lib/servidor/equipes"
 import { conferirSenha, gerarHashSenha, HASH_FALSO } from "@/lib/servidor/senha"
 import { apagarCookieSessao, criarSessao, encerrarOutrasSessoes, encerrarSessao, usuarioAtual } from "@/lib/servidor/sessao"
 import type { EstadoFormularioConta } from "@/lib/tipos-conta"
@@ -152,6 +153,8 @@ export async function excluirConta(_anterior: EstadoAcaoConta, formulario: FormD
   const [linha] = await banco()`SELECT senha_hash FROM usuarios WHERE id = ${usuario.id}`
   if (!linha || !(await conferirSenha(senha, String(linha.senha_hash)))) return { erros: { senha: "Senha incorreta." } }
   const sql = banco()
+  // Rafael Marques - 23/10/2026: antes de apagar, passa a propriedade das equipes e anonimiza comentários.
+  await prepararExclusaoDaConta(usuario.id)
   await sql`DELETE FROM tentativas_login WHERE email = ${usuario.email}`
   await sql`DELETE FROM usuarios WHERE id = ${usuario.id}`
   await apagarCookieSessao()

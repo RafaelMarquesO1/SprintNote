@@ -86,6 +86,8 @@ export type ExibicaoCartao = {
   faixaCor: boolean
   // Caixinha para concluir o cartão sem abrir (move para a coluna de concluídos).
   concluir: boolean
+  prioridade: boolean
+  comentarios: boolean
 }
 
 export type QuadroKanban = {
@@ -97,6 +99,8 @@ export type QuadroKanban = {
   etiquetas: EtiquetaKanban[]
   criadoEm: number
   exibicao?: Partial<ExibicaoCartao>
+  // Rafael Marques - 23/10/2026: quadro de equipe (guardado no servidor, não no navegador).
+  equipeId?: string
 }
 
 export type ColunaKanban = {
@@ -117,6 +121,22 @@ export type ItemChecklist = {
   feito: boolean
 }
 
+// Rafael Marques - 23/10/2026: comentários, histórico, prioridade e arquivo do cartão.
+export type ComentarioCartao = {
+  id: string
+  texto: string
+  criadoEm: number
+  autorId: string
+  autorNome: string
+}
+
+// Histórico automático do cartão ("Movido de A fazer para Concluído").
+export type AtividadeCartao = {
+  id: string
+  texto: string
+  criadoEm: number
+}
+
 export type CartaoKanban = {
   id: string
   titulo: string
@@ -129,6 +149,13 @@ export type CartaoKanban = {
   prazo: string | null
   cor: string | null
   checklist: ItemChecklist[]
+  prioridade: Prioridade | null
+  // Arquivado: sai do quadro e dos números, mas pode ser restaurado.
+  arquivado: boolean
+  comentarios: ComentarioCartao[]
+  atividade: AtividadeCartao[]
+  // Rafael Marques - 23/10/2026: pessoa da equipe responsável (só em quadros de equipe).
+  responsavelId: string | null
 }
 
 export type Prioridade = "baixa" | "media" | "alta"

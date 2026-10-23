@@ -3,7 +3,8 @@
 // Ao mudar o texto dos Termos ou da Política, troque a VERSAO_DOCUMENTOS:
 // o aceite gravado no cadastro guarda qual versão a pessoa aceitou.
 
-export const VERSAO_DOCUMENTOS = "2026-10-22"
+// Rafael Marques - 23/10/2026: versão nova (foto de perfil e comentários na Política).
+export const VERSAO_DOCUMENTOS = "2026-10-23"
 
 export const CONTROLADOR = {
   nome: "SprintNote (Rafael Marques)",

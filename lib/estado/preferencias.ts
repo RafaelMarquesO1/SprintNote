@@ -1,4 +1,4 @@
-// Rafael Marques - 21/10/2026
+// Rafael Marques - 21/10/2026 (foto de perfil em 23/10/2026)
 // Preferências do app guardadas no navegador.
 
 import { create } from "zustand"
@@ -35,12 +35,22 @@ export const preferenciasBibliotecaPadrao: PreferenciasBiblioteca = {
 type EstadoPreferencias = {
   biblioteca: PreferenciasBiblioteca
   definirBiblioteca: (mudancas: Partial<PreferenciasBiblioteca>) => void
+  // Foto de perfil (JPEG 256×256 em data URL). Fica só na conta da pessoa.
+  fotoPerfil: string | null
+  definirFotoPerfil: (foto: string | null) => void
+  // Rafael Marques - 23/10/2026: id da última novidade que a pessoa viu (null = ainda não viu nenhuma).
+  novidadesVistas: string | null
+  marcarNovidadesVistas: (id: string) => void
 }
 
 export const usePreferencias = create<EstadoPreferencias>()(
   persist(
     (set, get) => ({
       biblioteca: preferenciasBibliotecaPadrao,
+      fotoPerfil: null,
+      definirFotoPerfil: (foto) => set({ fotoPerfil: foto }),
+      novidadesVistas: null,
+      marcarNovidadesVistas: (id) => set({ novidadesVistas: id }),
       definirBiblioteca: (mudancas) =>
         set({ biblioteca: { ...preferenciasBibliotecaPadrao, ...get().biblioteca, ...mudancas } }),
     }),

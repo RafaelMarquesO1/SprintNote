@@ -4,7 +4,7 @@
 
 import { chaveData } from "@/lib/datas"
 import { useHabitos } from "@/lib/estado/habitos"
-import { normalizarKanban, useKanban, type DadosKanban } from "@/lib/estado/kanban"
+import { dadosPessoais, normalizarKanban, useKanban, type DadosKanban } from "@/lib/estado/kanban"
 import { useNotas } from "@/lib/estado/notas"
 import { useRotina } from "@/lib/estado/rotina"
 import { useTarefas } from "@/lib/estado/tarefas"
@@ -104,10 +104,9 @@ export function gerarBackup() {
       tarefas: useTarefas.getState().tarefas,
       habitos: useHabitos.getState().habitos,
       rotina: { itens: rotina.itens, feitosPorDia: rotina.feitosPorDia },
+      // Rafael Marques - 23/10/2026: o backup leva só os quadros pessoais (os de equipe ficam no servidor).
       kanban: {
-        quadros: useKanban.getState().quadros,
-        colunas: useKanban.getState().colunas,
-        cartoes: useKanban.getState().cartoes,
+        ...dadosPessoais(useKanban.getState()),
         quadroAtivoId: useKanban.getState().quadroAtivoId,
       } as DadosKanban,
     },
@@ -165,5 +164,14 @@ export function restaurarBackup(backup: Backup) {
   useHabitos.setState({ habitos: d.habitos })
   useRotina.setState({ itens: d.rotina.itens, feitosPorDia: d.rotina.feitosPorDia ?? {} })
   // Backups antigos só tinham cartões: o quadro padrão é recriado.
-  useKanban.setState(normalizarKanban(d.kanban))
+  // Rafael Marques - 23/10/2026: importar um backup troca só os quadros pessoais; os de equipe continuam.
+  const atual = useKanban.getState()
+  const pessoais = dadosPessoais(atual)
+  const novo = normalizarKanban(d.kanban)
+  useKanban.setState({
+    ...novo,
+    quadros: [...novo.quadros, ...atual.quadros.filter((quadro) => !pessoais.quadros.includes(quadro))],
+    colunas: [...novo.colunas, ...atual.colunas.filter((coluna) => !pessoais.colunas.includes(coluna))],
+    cartoes: [...novo.cartoes, ...atual.cartoes.filter((cartao) => !pessoais.cartoes.includes(cartao))],
+  })
 }

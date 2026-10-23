@@ -2,11 +2,14 @@
 
 import { useDraggable, useDroppable } from "@dnd-kit/core"
 import {
+  ArchiveIcon,
   CalendarIcon,
   CheckIcon,
   CopyIcon,
   FileTextIcon,
+  FlagIcon,
   ListChecksIcon,
+  MessageSquareIcon,
   MoreHorizontalIcon,
   Trash2Icon,
 } from "lucide-react"
@@ -19,12 +22,24 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { AvatarPessoa } from "@/components/equipes/avatar-pessoa"
 import { useHoje } from "@/hooks/use-hoje"
+import { useConta } from "@/components/conta/portao-conta"
+import { membroPorId, useEquipes } from "@/lib/estado/equipes"
+import { alternarFiltroPorResponsavel, useFiltroAtribuidos } from "@/lib/estado/filtro-atribuidos"
 import { exibicaoPadrao, useKanban } from "@/lib/estado/kanban"
 import { useNotas } from "@/lib/estado/notas"
 import { rotuloPrazo } from "@/lib/tarefas-notas"
-import type { CartaoKanban, EtiquetaKanban, ExibicaoCartao } from "@/lib/tipos"
+import type { CartaoKanban, EtiquetaKanban, ExibicaoCartao, Prioridade } from "@/lib/tipos"
 
+// Sem cor: a urgência aparece no peso do texto e no preenchimento da bandeira.
+export const estilosPrioridade: Record<Prioridade, { titulo: string; classe: string; preenchida: boolean }> = {
+  alta: { titulo: "Alta", classe: "font-semibold text-foreground", preenchida: true },
+  media: { titulo: "Média", classe: "font-medium text-foreground/80", preenchida: false },
+  baixa: { titulo: "Baixa", classe: "text-muted-foreground", preenchida: false },
+}
+
+// Rafael Marques - 23/10/2026: prioridade, contagem de comentários e "Arquivar" no cartão.
 export const PREFIXO_CARTAO = "cartao:"
 
 // Cliques nas caixinhas do cartão não abrem o cartão nem começam um arraste.
@@ -77,6 +92,10 @@ export function ConteudoCartao({
   const atualizarCartao = useKanban((estado) => estado.atualizarCartao)
   const concluirCartao = useKanban((estado) => estado.concluirCartao)
   const nota = useNotas((estado) => estado.notas.find((item) => item.id === cartao.notaId))
+  // Rafael Marques - 23/10/2026: pessoa responsável (quadros de equipe)
+  const responsavel = useEquipes((estado) => membroPorId(estado.equipes, cartao.responsavelId))
+  const meuId = useConta()?.usuario.id
+  const filtrandoPorEle = useFiltroAtribuidos((estado) => cartao.responsavelId !== null && estado.responsavelId === cartao.responsavelId)
   const doCartao = exibicao.etiquetas ? etiquetas.filter((etiqueta) => cartao.etiquetas.includes(etiqueta.id)) : []
   const feitos = cartao.checklist.filter((item) => item.feito).length
   const atrasado = Boolean(hoje && cartao.prazo && cartao.prazo < hoje && !concluido)
@@ -84,7 +103,9 @@ export function ConteudoCartao({
   const mostrarPrazo = exibicao.prazo && cartao.prazo && hoje
   const mostrarProgresso = exibicao.checklist === "progresso" && cartao.checklist.length > 0
   const mostrarNota = exibicao.nota && nota
-  const temRodape = mostrarPrazo || mostrarProgresso || mostrarNota
+  const mostrarPrioridade = exibicao.prioridade && cartao.prioridade
+  const mostrarComentarios = exibicao.comentarios && cartao.comentarios.length > 0
+  const temRodape = mostrarPrazo || mostrarProgresso || mostrarNota || mostrarPrioridade || mostrarComentarios || Boolean(responsavel)
 
   return (
     <div
@@ -151,6 +172,12 @@ export function ConteudoCartao({
 
         {temRodape && (
           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
+            {mostrarPrioridade && (
+              <span className={cn("flex items-center gap-1", estilosPrioridade[cartao.prioridade!].classe)}>
+                <FlagIcon className={cn("size-3", estilosPrioridade[cartao.prioridade!].preenchida && "fill-current")} />
+                {estilosPrioridade[cartao.prioridade!].titulo}
+              </span>
+            )}
             {mostrarPrazo && (
               <span className={cn("flex items-center gap-1", atrasado && "font-medium text-destructive")}>
                 <CalendarIcon className="size-3" /> {rotuloPrazo(cartao.prazo!, hoje)}
@@ -160,6 +187,31 @@ export function ConteudoCartao({
               <span className={cn("flex items-center gap-1", feitos === cartao.checklist.length && "text-[color:var(--destaque-dica)]")}>
                 <ListChecksIcon className="size-3" /> {feitos}/{cartao.checklist.length}
               </span>
+            )}
+            {mostrarComentarios && (
+              <span className="flex items-center gap-1" title={`${cartao.comentarios.length} comentário(s)`}>
+                <MessageSquareIcon className="size-3" /> {cartao.comentarios.length}
+              </span>
+            )}
+            {responsavel && (
+              // Rafael Marques - 23/10/2026: clicar na inicial (ou foto) filtra o quadro por essa pessoa e avisa.
+              <button
+                type="button"
+                {...naoPropagar}
+                aria-pressed={filtrandoPorEle}
+                aria-label={filtrandoPorEle ? `Remover filtro de ${responsavel.nome}` : `Filtrar cartões de ${responsavel.nome}`}
+                title={filtrandoPorEle ? "Remover o filtro" : `Responsável: ${responsavel.nome}. Clique para filtrar os cartões dessa pessoa.`}
+                onClick={(evento) => {
+                  evento.stopPropagation()
+                  if (interativo) alternarFiltroPorResponsavel(responsavel.id, responsavel.id === meuId ? "você" : responsavel.nome)
+                }}
+                className={cn(
+                  "ml-auto rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50 hover:opacity-80",
+                  filtrandoPorEle && "ring-2 ring-foreground"
+                )}
+              >
+                <AvatarPessoa nome={responsavel.nome} foto={responsavel.foto} tamanho="sm" />
+              </button>
             )}
             {mostrarNota && (
               <span className="flex min-w-0 items-center gap-1">
@@ -189,6 +241,7 @@ export function Cartao({
 }) {
   const duplicarCartao = useKanban((estado) => estado.duplicarCartao)
   const excluirCartao = useKanban((estado) => estado.excluirCartao)
+  const arquivarCartao = useKanban((estado) => estado.arquivarCartao)
   const {
     setNodeRef: definirArrastavel,
     listeners,
@@ -236,6 +289,7 @@ export function Cartao({
         <DropdownMenuContent align="end" className="w-40">
           <DropdownMenuItem onClick={aoAbrir}>Abrir</DropdownMenuItem>
           <DropdownMenuItem onClick={() => duplicarCartao(cartao.id)}><CopyIcon /> Duplicar</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => arquivarCartao(cartao.id, true)}><ArchiveIcon /> Arquivar</DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem variant="destructive" onClick={() => excluirCartao(cartao.id)}><Trash2Icon /> Excluir</DropdownMenuItem>
         </DropdownMenuContent>

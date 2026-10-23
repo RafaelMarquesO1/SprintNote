@@ -1,4 +1,4 @@
-// Rafael Marques - 21/10/2026
+// Rafael Marques - 21/10/2026 (não reenvia texto igual em 23/10/2026)
 // Liga os dados do app (Zustand + localStorage) à conta no banco:
 //  - ao entrar, baixa as áreas da conta e recarrega os estados;
 //  - depois, cada mudança é enviada ao banco alguns instantes depois.
@@ -32,6 +32,10 @@ export const useSincronizacao = create<{ estado: EstadoSincronizacao; salvoEm: n
   salvoEm: null,
 }))
 
+// Rafael Marques - 23/10/2026: o que já está no banco, para não reenviar o mesmo texto
+// (a atualização dos quadros de equipe mexe no estado, mas não muda o que é pessoal).
+const ultimoTexto = new Map<string, string>()
+
 const agendados = new Map<string, ReturnType<typeof setTimeout>>()
 let enviando = 0
 let ativa = false
@@ -46,6 +50,7 @@ function atualizarEstado(erro = false) {
 async function enviar(nome: string, aoSairDaPagina = false) {
   const texto = localStorage.getItem(nome)
   if (texto === null) return
+  if (ultimoTexto.get(nome) === texto) return atualizarEstado()
   enviando++
   atualizarEstado()
   try {
@@ -57,6 +62,7 @@ async function enviar(nome: string, aoSairDaPagina = false) {
       keepalive: aoSairDaPagina && texto.length < 60_000,
     })
     if (!resposta.ok) throw new Error(`HTTP ${resposta.status}`)
+    ultimoTexto.set(nome, texto)
     enviando--
     atualizarEstado()
   } catch {
@@ -105,6 +111,11 @@ export async function carregarDadosDaConta() {
   }
   await Promise.all(lojas.map((loja) => loja.persist.rehydrate()))
   for (const loja of semDados) (loja as unknown as StoreApi<object>).setState(loja.getInitialState(), true)
+  ultimoTexto.clear()
+  for (const loja of lojas) {
+    const texto = localStorage.getItem(nomeDa(loja))
+    if (texto !== null) ultimoTexto.set(nomeDa(loja), texto)
+  }
 }
 
 // Começa a enviar as mudanças. Retorna a função que para.
@@ -127,5 +138,6 @@ export function iniciarSincronizacao() {
 
 // Ao sair da conta: tira os dados deste navegador.
 export function limparDadosLocais() {
+  ultimoTexto.clear()
   for (const loja of lojas) localStorage.removeItem(nomeDa(loja))
 }

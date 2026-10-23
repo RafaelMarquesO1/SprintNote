@@ -36,7 +36,9 @@ function PoliticaPrivacidade() {
         <ul className="list-disc space-y-1 pl-5">
           <li><strong>Cadastro:</strong> nome e e-mail.</li>
           <li><strong>Senha:</strong> guardada só como hash (scrypt) — nem nós conseguimos ver a senha.</li>
-          <li><strong>Conteúdo que você cria:</strong> notas, livros, tarefas, hábitos, rotina, quadros do Kanban e preferências da tela.</li>
+          <li><strong>Conteúdo que você cria:</strong> notas, livros, tarefas, hábitos, rotina, quadros do Kanban (inclusive comentários nos cartões, com seu nome e a hora) e preferências da tela.</li>
+          {/* Rafael Marques - 23/10/2026: foto de perfil */}
+          <li><strong>Foto de perfil (opcional):</strong> a imagem que você escolher, reduzida no seu navegador. Você troca ou remove em Minha conta, e ela some junto com a conta.</li>
           <li><strong>Segurança:</strong> data do aceite destes documentos, sessões ativas e tentativas de login que falharam (só o e-mail e o horário).</li>
         </ul>
         <p>Não coletamos dados sensíveis, localização, contatos nem fazemos rastreamento para publicidade.</p>
@@ -45,6 +47,11 @@ function PoliticaPrivacidade() {
         <ul className="list-disc space-y-1 pl-5">
           <li>Criar e manter sua conta e guardar seu conteúdo para você acessar de qualquer navegador — <em>execução de contrato</em> (Art. 7º, V).</li>
           <li>Proteger a conta contra acesso indevido (limite de tentativas, sessões) — <em>legítimo interesse</em> (Art. 7º, IX), limitado ao necessário.</li>
+          {/* Rafael Marques - 23/10/2026: equipes */}
+          <li>
+            <strong>Equipes (opcional):</strong> se você criar ou entrar numa equipe, os quadros compartilhados são guardados para todos os membros —{" "}
+            <em>execução de contrato</em> (Art. 7º, V), a pedido de quem convida e de quem aceita.
+          </li>
         </ul>
         <p>Não vendemos, não usamos para anúncios e não tomamos decisões automatizadas sobre você.</p>
       </Secao>
@@ -52,6 +59,12 @@ function PoliticaPrivacidade() {
         <p>
           Os dados ficam num banco Postgres operado pela <strong>Neon</strong> (operadora, Art. 39), em servidores na região de{" "}
           <strong>São Paulo (Brasil)</strong>. Não há compartilhamento com outras empresas, salvo obrigação legal ou ordem judicial.
+        </p>
+        {/* Rafael Marques - 23/10/2026: o que os colegas de equipe veem */}
+        <p>
+          <strong>Dentro de uma equipe</strong>, os outros membros veem seu <strong>nome, e-mail e foto de perfil</strong>, os cartões que você atribuir ou
+          receber, e os comentários e o histórico que você deixar nos quadros compartilhados. Seu conteúdo pessoal (notas, tarefas, hábitos, rotina e quadros
+          pessoais) <strong>não</strong> é visto por ninguém. O convite é por link de uso único, válido por 7 dias.
         </p>
       </Secao>
       <Secao titulo="5. Cookies">
@@ -64,6 +77,13 @@ function PoliticaPrivacidade() {
       <Secao titulo="6. Por quanto tempo guardamos">
         <ul className="list-disc space-y-1 pl-5">
           <li>Conta e conteúdo: enquanto a conta existir. Ao excluir a conta, tudo é apagado na hora.</li>
+          {/* Rafael Marques - 23/10/2026: o que acontece com o que está em equipes */}
+          <li>
+            Equipes: ao sair de uma equipe (ou ser removido), os cartões atribuídos a você ficam sem responsável e você pode pedir que seu nome nos comentários
+            vire “Ex-membro”. Ao excluir a conta, seus comentários passam a mostrar “Ex-membro”; se você era o único dono de uma equipe, a propriedade passa
+            para outro membro (ou a equipe é apagada, se não houver mais ninguém).
+          </li>
+          <li>Convites não usados: até 7 dias.</li>
           <li>Sessões: até {RETENCAO.sessaoDias} dias ou até você sair.</li>
           <li>Tentativas de login com falha: até {RETENCAO.tentativasLoginHoras} horas.</li>
         </ul>
@@ -71,8 +91,8 @@ function PoliticaPrivacidade() {
       <Secao titulo="7. Seus direitos (Art. 18)">
         <p>Em <strong>Minha conta</strong> você pode, a qualquer momento e sem custo:</p>
         <ul className="list-disc space-y-1 pl-5">
-          <li>ver e <strong>baixar todos os seus dados</strong> num arquivo JSON (acesso e portabilidade);</li>
-          <li><strong>corrigir</strong> seu nome e trocar a senha;</li>
+          <li>ver e <strong>baixar todos os seus dados</strong> num arquivo JSON, incluindo foto, equipes, comentários e cartões atribuídos a você (acesso e portabilidade);</li>
+          <li><strong>corrigir</strong> seu nome, trocar ou remover sua foto e trocar a senha;</li>
           <li><strong>encerrar as sessões</strong> em todos os aparelhos;</li>
           <li><strong>excluir a conta</strong> e todos os dados (eliminação).</li>
         </ul>
@@ -99,7 +119,7 @@ function TermosUso() {
   return (
     <>
       <Secao titulo="1. O serviço">
-        <p>O SprintNote é um app de organização pessoal: notas, tarefas, hábitos, rotina e Kanban, com os dados salvos na sua conta.</p>
+        <p>O SprintNote é um app de organização pessoal: notas, tarefas, hábitos, rotina e Kanban, com os dados salvos na sua conta. Você também pode criar equipes e compartilhar quadros do Kanban com outras pessoas.</p>
       </Secao>
       <Secao titulo="2. Sua conta">
         <ul className="list-disc space-y-1 pl-5">
@@ -111,7 +131,8 @@ function TermosUso() {
       <Secao titulo="3. Seu conteúdo">
         <p>
           O que você escreve é seu. Guardamos e exibimos o conteúdo só para prestar o serviço a você. Não publique conteúdo ilegal ou dados de outras
-          pessoas sem base legal para isso.
+          pessoas sem base legal para isso. Em quadros de equipe, o conteúdo fica visível aos membros: combine com eles o que faz sentido compartilhar e
+          respeite os dados pessoais de terceiros.
         </p>
       </Secao>
       <Secao titulo="4. Disponibilidade">

@@ -64,7 +64,7 @@ export function useTotalConexoes(nota: Nota) {
   )
 }
 
-// Rafael Marques - 21/10/2026
+// Rafael Marques - 21/10/2026 (cartões arquivados fora da lista em 23/10/2026)
 // Painel lateral com tudo que liga a nota ao resto da biblioteca:
 // referências, links, sugestões, tags, mapa, subnotas e Kanban.
 export function PainelConexoes({ nota, aoFechar }: { nota: Nota; aoFechar: () => void }) {
@@ -90,7 +90,7 @@ export function PainelConexoes({ nota, aoFechar }: { nota: Nota; aoFechar: () =>
   const links = extrairLinksWiki(nota.conteudo).map((alvo) => ({ alvo, destino: resolverLink(alvo, biblioteca, nota.livroId) }))
   const subnotas = biblioteca.notas.filter((item) => item.paiId === nota.id)
   const tags = tagsDaNota(nota)
-  const cartoesVinculados = cartoes.filter((cartao) => cartao.notaId === nota.id)
+  const cartoesVinculados = cartoes.filter((cartao) => cartao.notaId === nota.id && !cartao.arquivado)
 
   function abrirNo(no: NoGrafo) {
     aoFechar()

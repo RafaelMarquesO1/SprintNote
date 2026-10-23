@@ -14,6 +14,8 @@ import {
   FilePlusIcon,
   HouseIcon,
   KanbanIcon,
+  SquareCheckBigIcon,
+  UsersIcon,
   ListTodoIcon,
   NetworkIcon,
   RepeatIcon,
@@ -22,6 +24,7 @@ import {
   SunMoonIcon,
 } from "lucide-react"
 
+import { useConta } from "@/components/conta/portao-conta"
 import { Icone } from "@/components/icone"
 import {
   Command,
@@ -38,6 +41,8 @@ import { Button } from "@/components/ui/button"
 import { Kbd } from "@/components/ui/kbd"
 import { useHabitos } from "@/lib/estado/habitos"
 import { localDoCartao, useKanban } from "@/lib/estado/kanban"
+import { aplicarFiltroAtribuidosAMim } from "@/lib/estado/filtro-atribuidos"
+import { abrirPainelKanban } from "@/lib/estado/paineis-kanban"
 import { useTarefas } from "@/lib/estado/tarefas"
 import { contarTags } from "@/lib/tags"
 import { useNotas } from "@/lib/estado/notas"
@@ -86,6 +91,8 @@ export function DialogoBusca() {
   const criarLivro = useNotas((estado) => estado.criarLivro)
   const tags = useMemo(() => (aberta ? contarTags(notas) : []), [aberta, notas])
   const cartoes = useKanban((estado) => estado.cartoes)
+  // Rafael Marques - 23/10/2026: o atalho "atribuídos a mim" precisa saber quem sou eu.
+  const meuId = useConta()?.usuario.id ?? null
   const colunasKanban = useKanban((estado) => estado.colunas)
   const quadros = useKanban((estado) => estado.quadros)
   const definirQuadroAtivo = useKanban((estado) => estado.definirQuadroAtivo)
@@ -225,7 +232,8 @@ export function DialogoBusca() {
 
           {cartoes.length > 0 && (
             <CommandGroup heading="Cartões do Kanban">
-              {cartoes.map((cartao) => (
+              {/* Rafael Marques - 23/10/2026: sem cartões arquivados */}
+              {cartoes.filter((cartao) => !cartao.arquivado).map((cartao) => (
                 <CommandItem
                   key={cartao.id}
                   value={`cartao-${cartao.id}`}
@@ -293,6 +301,15 @@ export function DialogoBusca() {
             <CommandItem value="acao-kanban" keywords={["kanban", "quadro"]} onSelect={() => executar(() => router.push("/kanban"))}>
               <KanbanIcon />
               Abrir o Kanban
+            </CommandItem>
+            {/* Rafael Marques - 23/10/2026: equipes */}
+            <CommandItem value="acao-meus-cartoes" keywords={["meus cartões", "atribuídos a mim", "responsável", "equipe", "filtro"]} onSelect={() => executar(() => { aplicarFiltroAtribuidosAMim(meuId); router.push("/kanban") })}>
+              <SquareCheckBigIcon />
+              Kanban: cartões atribuídos a mim
+            </CommandItem>
+            <CommandItem value="acao-equipes" keywords={["equipes", "times", "convite", "membros"]} onSelect={() => executar(() => { abrirPainelKanban("equipes"); router.push("/kanban") })}>
+              <UsersIcon />
+              Kanban: equipes
             </CommandItem>
             <CommandItem value="acao-creditos" keywords={["créditos", "creditos", "sobre", "tecnologias"]} onSelect={() => executar(() => router.push("/creditos"))}>
               <InfoIcon />

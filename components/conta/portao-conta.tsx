@@ -5,6 +5,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import { TelaAbertura } from "@/components/conta/tela-abertura"
 import { TelaApresentacao } from "@/components/conta/tela-apresentacao"
 import { TelaEntrada, type Modo } from "@/components/conta/tela-entrada"
+import { iniciarSincronizacaoEquipes } from "@/lib/estado/sincronizacao-equipes"
 import { carregarDadosDaConta, enviarPendentes, iniciarSincronizacao, limparDadosLocais } from "@/lib/estado/sincronizacao"
 import { sair as acaoSair } from "@/lib/servidor/acoes-conta"
 import type { Usuario } from "@/lib/tipos-conta"
@@ -33,7 +34,7 @@ export function useConta() {
 
 const esperar = (ms: number) => new Promise((resolver) => setTimeout(resolver, ms))
 
-// Rafael Marques - 21/10/2026
+// Rafael Marques - 21/10/2026 (equipes em 23/10/2026)
 // Porta de entrada do app: abertura → (login/cadastro) → carrega os dados
 // da conta → mostra o app e mantém tudo salvo no banco.
 export function PortaoConta({ children, depoisDeEntrar }: { children: React.ReactNode; depoisDeEntrar?: React.ReactNode }) {
@@ -71,6 +72,12 @@ export function PortaoConta({ children, depoisDeEntrar }: { children: React.Reac
   useEffect(() => {
     if (fase !== "pronto") return
     return iniciarSincronizacao()
+  }, [fase])
+
+  // Rafael Marques - 23/10/2026: equipes e quadros compartilhados (vêm do servidor).
+  useEffect(() => {
+    if (fase !== "pronto") return
+    return iniciarSincronizacaoEquipes()
   }, [fase])
 
   const aoEntrar = useCallback(async (novo: Usuario) => {

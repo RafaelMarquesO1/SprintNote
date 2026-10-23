@@ -3,19 +3,134 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { AlignLeftIcon, CopyIcon, FilePlusIcon, ListChecksIcon, PlusIcon, Trash2Icon, XIcon } from "lucide-react"
+import { AlignLeftIcon, ArchiveIcon, ArchiveRestoreIcon, CopyIcon, FilePlusIcon, HistoryIcon, ListChecksIcon, MessageSquareIcon, PlusIcon, SendIcon, Trash2Icon, XIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
+import { useConta } from "@/components/conta/portao-conta"
+import { AvatarPessoa } from "@/components/equipes/avatar-pessoa"
+import { useEquipes } from "@/lib/estado/equipes"
+import { estilosPrioridade } from "@/components/kanban/cartao-kanban"
 import { SeletorCor } from "@/components/kanban/dialogos-quadro"
 import { classeSelect } from "@/components/tarefas/dialogo-tarefa"
 import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { useAgora, tempoRelativo } from "@/hooks/use-hoje"
 import { paletaCores } from "@/lib/cores"
 import { gerarId } from "@/lib/gerar-id"
 import { colunasDoQuadro, useKanban } from "@/lib/estado/kanban"
 import { useNotas } from "@/lib/estado/notas"
-import type { CartaoKanban } from "@/lib/tipos"
+import { usePreferencias } from "@/lib/estado/preferencias"
+import type { CartaoKanban, Prioridade } from "@/lib/tipos"
+
+const iniciaisDe = (nome: string) =>
+  nome.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((parte) => parte[0].toUpperCase()).join("")
+
+// Rafael Marques - 23/10/2026
+// Comentários do cartão (com autor e hora) e o histórico automático.
+function Comentarios({ cartao }: { cartao: CartaoKanban }) {
+  const conta = useConta()
+  const foto = usePreferencias((estado) => estado.fotoPerfil)
+  const comentarCartao = useKanban((estado) => estado.comentarCartao)
+  const excluirComentario = useKanban((estado) => estado.excluirComentario)
+  const agora = useAgora()
+  const [texto, setTexto] = useState("")
+  const [verHistorico, setVerHistorico] = useState(false)
+  const autor = { id: conta?.usuario.id ?? "local", nome: conta?.usuario.nome || conta?.usuario.email || "Você" }
+
+  function enviar() {
+    if (!texto.trim()) return
+    comentarCartao(cartao.id, texto, autor)
+    setTexto("")
+  }
+
+  return (
+    <>
+      <Secao titulo="Comentários" icone={MessageSquareIcon} extra={cartao.comentarios.length > 0 && cartao.comentarios.length}>
+        <form
+          className="flex items-start gap-2.5"
+          onSubmit={(evento) => {
+            evento.preventDefault()
+            enviar()
+          }}
+        >
+          <Avatar size="sm" className="mt-1.5">
+            {foto && <AvatarImage src={foto} alt="" />}
+            <AvatarFallback>{iniciaisDe(autor.nome)}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <textarea
+              value={texto}
+              onChange={(evento) => setTexto(evento.target.value)}
+              onKeyDown={(evento) => {
+                if (evento.key === "Enter" && (evento.ctrlKey || evento.metaKey)) {
+                  evento.preventDefault()
+                  enviar()
+                }
+              }}
+              placeholder="Escreva um comentário…"
+              aria-label="Novo comentário"
+              rows={2}
+              className={cn(classeCampoTexto, "field-sizing-content min-h-16 resize-none")}
+            />
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs text-muted-foreground">Ctrl + Enter envia</span>
+              <Button type="submit" size="sm" disabled={!texto.trim()}><SendIcon /> Comentar</Button>
+            </div>
+          </div>
+        </form>
+
+        <ul className="space-y-3">
+          {[...cartao.comentarios].reverse().map((comentario) => {
+            const meu = comentario.autorId === autor.id
+            return (
+              <li key={comentario.id} className="group flex gap-2.5">
+                <Avatar size="sm" className="mt-0.5">
+                  {meu && foto && <AvatarImage src={foto} alt="" />}
+                  <AvatarFallback>{iniciaisDe(comentario.autorNome)}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="flex items-baseline gap-2 text-xs text-muted-foreground">
+                    <strong className="truncate text-sm font-medium text-foreground">{comentario.autorNome}</strong>
+                    <span title={new Date(comentario.criadoEm).toLocaleString("pt-BR")}>{tempoRelativo(comentario.criadoEm, agora)}</span>
+                    <button
+                      type="button"
+                      onClick={() => excluirComentario(cartao.id, comentario.id)}
+                      aria-label="Excluir comentário"
+                      className="ml-auto rounded p-0.5 opacity-0 group-hover:opacity-100 hover:text-foreground focus-visible:opacity-100"
+                    >
+                      <Trash2Icon className="size-3.5" />
+                    </button>
+                  </p>
+                  <p className="text-sm break-words whitespace-pre-wrap">{comentario.texto}</p>
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      </Secao>
+
+      {cartao.atividade.length > 0 && (
+        <Secao titulo="Atividade" icone={HistoryIcon}>
+          <ul className="space-y-1 text-xs text-muted-foreground">
+            {[...cartao.atividade].reverse().slice(0, verHistorico ? undefined : 4).map((item) => (
+              <li key={item.id} className="flex gap-2">
+                <span className="min-w-0 flex-1">{item.texto}</span>
+                <span className="shrink-0" title={new Date(item.criadoEm).toLocaleString("pt-BR")}>{tempoRelativo(item.criadoEm, agora)}</span>
+              </li>
+            ))}
+          </ul>
+          {cartao.atividade.length > 4 && (
+            <button type="button" onClick={() => setVerHistorico(!verHistorico)} className="text-xs text-primary hover:underline">
+              {verHistorico ? "Mostrar menos" : `Ver tudo (${cartao.atividade.length})`}
+            </button>
+          )}
+        </Secao>
+      )}
+    </>
+  )
+}
 
 // Bloco da lateral direita (propriedades do cartão).
 function Propriedade({ titulo, children }: { titulo: string; children: React.ReactNode }) {
@@ -52,6 +167,7 @@ function FormularioCartao({ cartao, aoFechar }: { cartao: CartaoKanban; aoFechar
   const moverCartao = useKanban((estado) => estado.moverCartao)
   const duplicarCartao = useKanban((estado) => estado.duplicarCartao)
   const excluirCartao = useKanban((estado) => estado.excluirCartao)
+  const arquivarCartao = useKanban((estado) => estado.arquivarCartao)
   const criarEtiqueta = useKanban((estado) => estado.criarEtiqueta)
   const notas = useNotas((estado) => estado.notas)
   const livros = useNotas((estado) => estado.livros)
@@ -63,8 +179,10 @@ function FormularioCartao({ cartao, aoFechar }: { cartao: CartaoKanban; aoFechar
 
   const coluna = colunas.find((item) => item.id === cartao.colunaId)
   const quadro = quadros.find((item) => item.id === coluna?.quadroId)
+  // Rafael Marques - 23/10/2026: quadros de equipe têm responsável e não vinculam notas pessoais.
+  const equipe = useEquipes((estado) => estado.equipes.find((item) => item.id === quadro?.equipeId))
   const notaVinculada = notas.find((nota) => nota.id === cartao.notaId)
-  const atualizar = (mudancas: Parameters<typeof atualizarCartao>[1]) => atualizarCartao(cartao.id, mudancas)
+  const atualizar = (mudancas: Parameters<typeof atualizarCartao>[1], atividade?: string) => atualizarCartao(cartao.id, mudancas, atividade)
   const feitos = cartao.checklist.filter((item) => item.feito).length
 
   function alternarEtiqueta(id: string) {
@@ -171,6 +289,8 @@ function FormularioCartao({ cartao, aoFechar }: { cartao: CartaoKanban; aoFechar
               <Button type="submit" size="icon" variant="outline" aria-label="Adicionar item"><PlusIcon /></Button>
             </form>
           </Secao>
+
+          <Comentarios cartao={cartao} />
         </div>
 
         {/* Lateral: propriedades */}
@@ -215,6 +335,45 @@ function FormularioCartao({ cartao, aoFechar }: { cartao: CartaoKanban; aoFechar
             </Propriedade>
           )}
 
+          {equipe && (
+            <Propriedade titulo="Responsável">
+              <div className="flex items-center gap-2">
+                {cartao.responsavelId && (() => {
+                  const responsavel = equipe.membros.find((membro) => membro.id === cartao.responsavelId)
+                  return responsavel ? <AvatarPessoa nome={responsavel.nome} foto={responsavel.foto} /> : null
+                })()}
+                <select
+                  value={cartao.responsavelId ?? ""}
+                  onChange={(evento) => {
+                    const escolhido = equipe.membros.find((membro) => membro.id === evento.target.value)
+                    atualizar({ responsavelId: escolhido?.id ?? null }, escolhido ? `Responsável: ${escolhido.nome}` : "Responsável removido")
+                  }}
+                  className={classeSelect}
+                  aria-label="Responsável"
+                >
+                  <option value="">Ninguém</option>
+                  {equipe.membros.map((membro) => (
+                    <option key={membro.id} value={membro.id}>{membro.nome}</option>
+                  ))}
+                </select>
+              </div>
+            </Propriedade>
+          )}
+
+          <Propriedade titulo="Prioridade">
+            <select
+              value={cartao.prioridade ?? ""}
+              onChange={(evento) => atualizar({ prioridade: (evento.target.value || null) as Prioridade | null })}
+              className={classeSelect}
+              aria-label="Prioridade"
+            >
+              <option value="">Nenhuma</option>
+              {(["alta", "media", "baixa"] as const).map((id) => (
+                <option key={id} value={id}>{estilosPrioridade[id].titulo}</option>
+              ))}
+            </select>
+          </Propriedade>
+
           <Propriedade titulo="Prazo">
             <div className="flex gap-1">
               <Input type="date" value={cartao.prazo ?? ""} onChange={(evento) => atualizar({ prazo: evento.target.value || null })} aria-label="Prazo" />
@@ -230,7 +389,7 @@ function FormularioCartao({ cartao, aoFechar }: { cartao: CartaoKanban; aoFechar
             <SeletorCor valor={cartao.cor} aoMudar={(cor) => atualizar({ cor })} permitirNenhuma />
           </Propriedade>
 
-          <Propriedade titulo="Nota vinculada">
+          {!equipe && <Propriedade titulo="Nota vinculada">
             <select value={cartao.notaId ?? ""} onChange={(evento) => atualizar({ notaId: evento.target.value || null })} className={classeSelect} aria-label="Nota vinculada">
               <option value="">Nenhuma</option>
               {notas.map((nota) => (
@@ -248,7 +407,7 @@ function FormularioCartao({ cartao, aoFechar }: { cartao: CartaoKanban; aoFechar
                 <FilePlusIcon className="size-3.5" /> Criar nota para o cartão
               </button>
             )}
-          </Propriedade>
+          </Propriedade>}
 
           <Propriedade titulo="Mover para">
             {quadros.length > 1 && (
@@ -277,6 +436,17 @@ function FormularioCartao({ cartao, aoFechar }: { cartao: CartaoKanban; aoFechar
                 <CopyIcon /> Duplicar
               </Button>
               <Button
+                variant="outline"
+                size="sm"
+                className="justify-start"
+                onClick={() => {
+                  arquivarCartao(cartao.id, !cartao.arquivado)
+                  if (!cartao.arquivado) aoFechar()
+                }}
+              >
+                {cartao.arquivado ? <ArchiveRestoreIcon /> : <ArchiveIcon />} {cartao.arquivado ? "Restaurar" : "Arquivar"}
+              </Button>
+              <Button
                 variant="destructive"
                 size="sm"
                 className="justify-start"
@@ -295,7 +465,7 @@ function FormularioCartao({ cartao, aoFechar }: { cartao: CartaoKanban; aoFechar
   )
 }
 
-// Rafael Marques - 20/10/2026 (redesenho em 21/10/2026)
+// Rafael Marques - 20/10/2026 (redesenho em 21/10/2026; comentários, atividade, prioridade e arquivar em 23/10/2026)
 // Diálogo do cartão: conteúdo à esquerda (descrição e checklist) e
 // propriedades à direita (etiquetas, prazo, cor, nota, mover e ações).
 export function DialogoCartao({ cartao, aoFechar }: { cartao: CartaoKanban | null; aoFechar: () => void }) {

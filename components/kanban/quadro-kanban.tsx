@@ -15,7 +15,12 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core"
 import {
+  ArchiveIcon,
   CheckIcon,
+  Share2Icon,
+  UserCheckIcon,
+  UsersIcon,
+  FlagIcon,
   KanbanIcon,
   ChevronDownIcon,
   MoreHorizontalIcon,
@@ -28,9 +33,16 @@ import {
 import { cn } from "@/lib/utils"
 
 import { Icone, iconesNota } from "@/components/icone"
-import { ConteudoCartao, PREFIXO_CARTAO } from "@/components/kanban/cartao-kanban"
+import { ConteudoCartao, estilosPrioridade, PREFIXO_CARTAO } from "@/components/kanban/cartao-kanban"
 import { Coluna, PREFIXO_ARRASTAR_COLUNA, PREFIXO_COLUNA } from "@/components/kanban/coluna-kanban"
 import { DialogoCartao } from "@/components/kanban/dialogo-cartao"
+// Rafael Marques - 23/10/2026: equipes (quadros compartilhados, responsável e aviso de leitor).
+import { useConta } from "@/components/conta/portao-conta"
+import { AvatarPessoa } from "@/components/equipes/avatar-pessoa"
+import { AvisoDesfazer } from "@/components/kanban/aviso-desfazer"
+import { DialogoCompartilhar } from "@/components/kanban/dialogo-compartilhar"
+import { BotaoEquipes, PaineisKanban } from "@/components/kanban/paineis-kanban"
+import { DialogoArquivados } from "@/components/kanban/dialogo-arquivados"
 import { DialogoEtiquetas, DialogoExcluirColuna } from "@/components/kanban/dialogos-quadro"
 import {
   AlertDialog,
@@ -59,8 +71,13 @@ import { useHidratado } from "@/hooks/use-hidratado"
 import { useHoje } from "@/hooks/use-hoje"
 import { AvisosPrazo } from "@/components/avisos-prazo"
 import { estiloFundoQuadro, fundosQuadro, idFundoQuadro } from "@/lib/cores"
+import { useEquipes } from "@/lib/estado/equipes"
+import { alternarFiltroPorResponsavel, filtrarPorResponsavel, useFiltroAtribuidos } from "@/lib/estado/filtro-atribuidos"
 import { colunasDoQuadro, exibicaoDoQuadro, exibicaoPadrao, useKanban } from "@/lib/estado/kanban"
-import type { ColunaKanban } from "@/lib/tipos"
+import { criarQuadroDeEquipe } from "@/lib/estado/sincronizacao-equipes"
+import { mensagemDoErro } from "@/lib/equipes/api"
+import { descricoesPapel, rotulosPapel } from "@/lib/tipos-equipe"
+import type { ColunaKanban, Prioridade } from "@/lib/tipos"
 
 // Arrastando um cartão: o cartão sob o cursor ganha da coluna.
 // Arrastando uma coluna: só outras colunas contam como alvo.
@@ -100,7 +117,7 @@ function TituloQuadro({ quadroId, titulo }: { quadroId: string; titulo: string }
   )
 }
 
-// Rafael Marques - 20/10/2026 (personalização em 21/10/2026)
+// Rafael Marques - 20/10/2026 (personalização em 21/10/2026; filtros, arquivados e desfazer em 23/10/2026)
 // Kanban: vários quadros, colunas e etiquetas personalizáveis.
 // Cartões e colunas se arrastam com mouse, toque ou teclado.
 export function QuadroKanban() {
@@ -128,6 +145,19 @@ export function QuadroKanban() {
   const [novaColuna, setNovaColuna] = useState<string | null>(null)
   const [busca, setBusca] = useState("")
   const [filtroEtiquetas, setFiltroEtiquetas] = useState<string[]>([])
+  const [filtroPrioridades, setFiltroPrioridades] = useState<Prioridade[]>([])
+  const [soAtrasados, setSoAtrasados] = useState(false)
+  const [verArquivados, setVerArquivados] = useState(false)
+  // Rafael Marques - 23/10/2026: equipes
+  const conta = useConta()
+  const equipes = useEquipes((estado) => estado.equipes)
+  const papelDoQuadro = useEquipes((estado) => estado.papelDoQuadro)
+  const avisoEquipe = useEquipes((estado) => estado.aviso)
+  // Rafael Marques - 23/10/2026: filtro por pessoa responsável (inicial no cartão, botão do cabeçalho ou busca).
+  const filtroResp = useFiltroAtribuidos((estado) => estado.responsavelId)
+  const [compartilhando, setCompartilhando] = useState(false)
+  const [erroEquipe, setErroEquipe] = useState<string | null>(null)
+  const meuId = conta?.usuario.id ?? null
 
   const sensores = useSensors(
     // Precisa arrastar 5px para começar: assim um clique simples abre o cartão.
@@ -150,6 +180,7 @@ export function QuadroKanban() {
       <div className="mx-auto max-w-md space-y-3 rounded-xl border border-dashed p-10 text-center">
         <p className="font-medium">Nenhum quadro ainda</p>
         <Button onClick={() => criarQuadro("Meu quadro")}><PlusIcon /> Criar quadro</Button>
+        <PaineisKanban />
       </div>
     )
   }
@@ -158,11 +189,23 @@ export function QuadroKanban() {
   const exibicao = exibicaoDoQuadro(quadro)
   const idsColunas = new Set(colunas.map((coluna) => coluna.id))
   const termo = busca.trim().toLowerCase()
-  const filtrando = Boolean(termo) || filtroEtiquetas.length > 0
+  const equipeDoQuadro = equipes.find((equipe) => equipe.id === quadro.equipeId)
+  // O filtro só vale se a pessoa for da equipe deste quadro (ao trocar de quadro ele se desliga sozinho).
+  const responsavelFiltrado = equipeDoQuadro?.membros.find((membro) => membro.id === filtroResp) ?? null
+  const filtroEMeu = responsavelFiltrado !== null && responsavelFiltrado.id === meuId
+  const meuPapel = quadro.equipeId ? papelDoQuadro[quadro.id] : undefined
+  const filtrando = Boolean(termo) || filtroEtiquetas.length > 0 || filtroPrioridades.length > 0 || soAtrasados || Boolean(responsavelFiltrado)
+  const concluidaId = (colunaId: string) => Boolean(colunas.find((coluna) => coluna.id === colunaId)?.concluida)
   const visivel = (cartao: (typeof cartoes)[number]) =>
+    !cartao.arquivado &&
     (!termo || `${cartao.titulo} ${cartao.descricao}`.toLowerCase().includes(termo)) &&
-    filtroEtiquetas.every((id) => cartao.etiquetas.includes(id))
-  const cartoesDoQuadro = cartoes.filter((cartao) => idsColunas.has(cartao.colunaId))
+    filtroEtiquetas.every((id) => cartao.etiquetas.includes(id)) &&
+    (!responsavelFiltrado || cartao.responsavelId === responsavelFiltrado.id) &&
+    (filtroPrioridades.length === 0 || (cartao.prioridade !== null && filtroPrioridades.includes(cartao.prioridade))) &&
+    (!soAtrasados || Boolean(hoje && cartao.prazo && cartao.prazo < hoje && !concluidaId(cartao.colunaId)))
+  const todosDoQuadro = cartoes.filter((cartao) => idsColunas.has(cartao.colunaId))
+  const arquivados = todosDoQuadro.filter((cartao) => cartao.arquivado)
+  const cartoesDoQuadro = todosDoQuadro.filter((cartao) => !cartao.arquivado)
 
   function aoSoltar({ active, over }: DragEndEvent) {
     setIdArrastado(null)
@@ -216,7 +259,9 @@ export function QuadroKanban() {
   const cartaoArrastado = cartoes.find((cartao) => cartao.id === idArrastado) ?? null
   const colunaArrastada = colunas.find((coluna) => coluna.id === colunaArrastadaId) ?? null
   const cartaoAberto = cartoes.find((cartao) => cartao.id === idAberto) ?? null
-  const concluidos = cartoesDoQuadro.filter((cartao) => colunas.find((coluna) => coluna.id === cartao.colunaId)?.concluida).length
+  // Rafael Marques - 23/10/2026: cartões de equipe atribuídos a mim neste quadro (em aberto), para o atalho do cabeçalho.
+  const atribuidosAMim = cartoesDoQuadro.filter((cartao) => meuId !== null && cartao.responsavelId === meuId && !concluidaId(cartao.colunaId)).length
+  const concluidos = cartoesDoQuadro.filter((cartao) => concluidaId(cartao.colunaId)).length
   const emAndamento = cartoesDoQuadro.length - concluidos
   const atrasados = cartoesDoQuadro.filter(
     (cartao) => hoje && cartao.prazo && cartao.prazo < hoje && !colunas.find((coluna) => coluna.id === cartao.colunaId)?.concluida
@@ -255,22 +300,64 @@ export function QuadroKanban() {
           descricao="Arraste cartões e colunas. Clique em um cartão para editar — tudo é salvo na hora."
           acoes={
             <>
+              {quadro.equipeId && (
+                <Button
+                  variant={filtroEMeu ? "default" : "outline"}
+                  size="sm"
+                  className={filtroEMeu ? undefined : "bg-background/70"}
+                  aria-pressed={filtroEMeu}
+                  title="Mostrar só os cartões atribuídos a mim"
+                  onClick={() => meuId && alternarFiltroPorResponsavel(meuId, "você")}
+                >
+                  <UserCheckIcon /> <span className="hidden sm:inline">Atribuídos a mim</span>
+                  {atribuidosAMim > 0 && (
+                    <span className={cn("rounded-full px-1.5 text-[10px] leading-4 font-semibold", filtroEMeu ? "bg-background text-foreground" : "bg-foreground text-background")}>
+                      {atribuidosAMim}
+                    </span>
+                  )}
+                </Button>
+              )}
+              <BotaoEquipes />
               <DropdownMenu>
                 <DropdownMenuTrigger render={<Button variant="outline" size="sm" className="bg-background/70" />}>
                   Quadros ({quadros.length}) <ChevronDownIcon />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuGroup>
-                    <DropdownMenuLabel>Trocar de quadro</DropdownMenuLabel>
-                    {quadros.map((item) => (
+                    <DropdownMenuLabel>Meus quadros</DropdownMenuLabel>
+                    {quadros.filter((item) => !item.equipeId).map((item) => (
                       <DropdownMenuItem key={item.id} onClick={() => definirQuadroAtivo(item.id)}>
                         <Icone nome={item.icone} /> {item.titulo}
                         {item.id === quadro.id && <CheckIcon className="ml-auto" />}
                       </DropdownMenuItem>
                     ))}
                   </DropdownMenuGroup>
+                  {equipes.map((equipe) => {
+                    const doTime = quadros.filter((item) => item.equipeId === equipe.id)
+                    if (doTime.length === 0) return null
+                    return (
+                      <DropdownMenuGroup key={equipe.id}>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuLabel className="flex items-center gap-1.5"><UsersIcon className="size-3" /> {equipe.nome}</DropdownMenuLabel>
+                        {doTime.map((item) => (
+                          <DropdownMenuItem key={item.id} onClick={() => definirQuadroAtivo(item.id)}>
+                            <Icone nome={item.icone} /> {item.titulo}
+                            {item.id === quadro.id && <CheckIcon className="ml-auto" />}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuGroup>
+                    )
+                  })}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => criarQuadro("Novo quadro")}><PlusIcon /> Novo quadro</DropdownMenuItem>
+                  {equipes.filter((equipe) => equipe.meuPapel !== "leitor").map((equipe) => (
+                    <DropdownMenuItem
+                      key={equipe.id}
+                      onClick={() => criarQuadroDeEquipe(equipe.id).catch((falha) => setErroEquipe(mensagemDoErro(falha)))}
+                    >
+                      <UsersIcon /> <span className="truncate">Novo quadro em {equipe.nome}</span>
+                    </DropdownMenuItem>
+                  ))}
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -307,6 +394,8 @@ export function QuadroKanban() {
                     aoMudar={(marcado) => definirExibicao(quadro.id, { concluir: marcado })}
                   />
                   <Interruptor rotulo="Etiquetas" marcado={exibicao.etiquetas} aoMudar={(marcado) => definirExibicao(quadro.id, { etiquetas: marcado })} />
+                  <Interruptor rotulo="Prioridade" marcado={exibicao.prioridade} aoMudar={(marcado) => definirExibicao(quadro.id, { prioridade: marcado })} />
+                  <Interruptor rotulo="Comentários" marcado={exibicao.comentarios} aoMudar={(marcado) => definirExibicao(quadro.id, { comentarios: marcado })} />
                   <Interruptor rotulo="Prazo" marcado={exibicao.prazo} aoMudar={(marcado) => definirExibicao(quadro.id, { prazo: marcado })} />
                   <Interruptor rotulo="Trecho da descrição" marcado={exibicao.descricao} aoMudar={(marcado) => definirExibicao(quadro.id, { descricao: marcado })} />
                   <Interruptor rotulo="Nota vinculada" marcado={exibicao.nota} aoMudar={(marcado) => definirExibicao(quadro.id, { nota: marcado })} />
@@ -334,8 +423,16 @@ export function QuadroKanban() {
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuItem onClick={() => setEditandoEtiquetas(true)}><TagIcon /> Etiquetas…</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setNovaColuna("")}><PlusIcon /> Nova coluna</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setVerArquivados(true)}>
+                    <ArchiveIcon /> Arquivados{arquivados.length > 0 && ` (${arquivados.length})`}
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem variant="destructive" onClick={() => setExcluindoQuadro(true)}><Trash2Icon /> Excluir quadro</DropdownMenuItem>
+                  {!quadro.equipeId && equipes.some((equipe) => equipe.meuPapel !== "leitor") && (
+                    <DropdownMenuItem onClick={() => setCompartilhando(true)}><Share2Icon /> Compartilhar com equipe…</DropdownMenuItem>
+                  )}
+                  {(!quadro.equipeId || meuPapel === "dono") && (
+                    <DropdownMenuItem variant="destructive" onClick={() => setExcluindoQuadro(true)}><Trash2Icon /> Excluir quadro</DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </>
@@ -353,6 +450,25 @@ export function QuadroKanban() {
         />
 
         <AvisosPrazo areas={["kanban"]} quadroId={quadro.id} comLinks={false} />
+
+        {equipeDoQuadro && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg bg-background/70 px-3 py-2 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5 font-medium text-foreground"><UsersIcon className="size-3.5" /> {equipeDoQuadro.nome}</span>
+            <span className="flex -space-x-1.5">
+              {equipeDoQuadro.membros.slice(0, 7).map((membro) => (
+                <AvatarPessoa key={membro.id} nome={membro.nome} foto={membro.foto} tamanho="sm" className="ring-2 ring-background" />
+              ))}
+            </span>
+            {equipeDoQuadro.membros.length > 7 && <span>+{equipeDoQuadro.membros.length - 7}</span>}
+            {meuPapel && <span title={descricoesPapel[meuPapel]}>Você é {rotulosPapel[meuPapel].toLowerCase()}</span>}
+            {meuPapel === "leitor" && <span className="font-medium text-foreground">Somente leitura</span>}
+          </div>
+        )}
+        {(avisoEquipe || erroEquipe) && quadro.equipeId && (
+          <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            {erroEquipe ?? avisoEquipe}
+          </p>
+        )}
 
         {/* Filtros e progresso */}
         <div className="flex flex-wrap items-center gap-2">
@@ -375,8 +491,39 @@ export function QuadroKanban() {
               </button>
             )
           })}
+          <button
+            type="button"
+            aria-pressed={soAtrasados}
+            onClick={() => setSoAtrasados(!soAtrasados)}
+            className={cn("rounded-md border px-2 py-0.5 text-xs font-medium transition-colors", soAtrasados ? "border-foreground bg-foreground text-background" : "bg-background/70 text-muted-foreground hover:text-foreground")}
+          >
+            Atrasados
+          </button>
+          {(["alta", "media", "baixa"] as const).map((prioridade) => {
+            const ativa = filtroPrioridades.includes(prioridade)
+            return (
+              <button
+                key={prioridade}
+                type="button"
+                aria-pressed={ativa}
+                aria-label={`Prioridade ${estilosPrioridade[prioridade].titulo}`}
+                onClick={() => setFiltroPrioridades(ativa ? filtroPrioridades.filter((item) => item !== prioridade) : [...filtroPrioridades, prioridade])}
+                className={cn("flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium transition-colors", ativa ? "border-foreground bg-foreground text-background" : "bg-background/70 text-muted-foreground hover:text-foreground")}
+              >
+                <FlagIcon className={cn("size-3", prioridade === "alta" && "fill-current")} /> {estilosPrioridade[prioridade].titulo}
+              </button>
+            )
+          })}
+          {responsavelFiltrado && (
+            <span className="flex items-center gap-1 rounded-md border border-foreground bg-foreground px-2 py-0.5 text-xs font-medium text-background">
+              Cartões de {responsavelFiltrado.id === meuId ? "você" : responsavelFiltrado.nome}
+              <button type="button" aria-label="Remover filtro de responsável" onClick={() => filtrarPorResponsavel(null)} className="rounded hover:opacity-70">
+                <XIcon className="size-3" />
+              </button>
+            </span>
+          )}
           {filtrando && (
-            <Button variant="ghost" size="xs" onClick={() => { setBusca(""); setFiltroEtiquetas([]) }}>
+            <Button variant="ghost" size="xs" onClick={() => { setBusca(""); setFiltroEtiquetas([]); setFiltroPrioridades([]); setSoAtrasados(false); filtrarPorResponsavel(null) }}>
               <XIcon /> Limpar filtros
             </Button>
           )}
@@ -472,7 +619,16 @@ export function QuadroKanban() {
         </DragOverlay>
       </DndContext>
 
-      <DialogoCartao cartao={cartaoAberto} aoFechar={() => setIdAberto(null)} />
+      <DialogoCartao
+        cartao={cartaoAberto}
+        aoFechar={() => {
+          setIdAberto(null)
+        }}
+      />
+      <DialogoArquivados cartoes={arquivados} aberto={verArquivados} aoMudarAberto={setVerArquivados} aoAbrirCartao={(cartao) => { setVerArquivados(false); setIdAberto(cartao.id) }} />
+      <AvisoDesfazer />
+      <PaineisKanban />
+      <DialogoCompartilhar quadro={quadro} aberto={compartilhando} aoMudarAberto={setCompartilhando} />
       <DialogoEtiquetas quadro={quadro} aberto={editandoEtiquetas} aoMudarAberto={setEditandoEtiquetas} />
       <DialogoExcluirColuna
         coluna={colunaParaExcluir}
@@ -485,7 +641,8 @@ export function QuadroKanban() {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir o quadro “{quadro.titulo}”?</AlertDialogTitle>
             <AlertDialogDescription>
-              As {colunas.length} coluna(s) e os {cartoesDoQuadro.length} cartão(ões) dele também serão excluídos. Essa ação não pode ser desfeita.
+              As {colunas.length} coluna(s) e os {cartoesDoQuadro.length} cartão(ões) dele também serão excluídos
+              {quadro.equipeId ? ", para todas as pessoas da equipe" : ""}. Essa ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

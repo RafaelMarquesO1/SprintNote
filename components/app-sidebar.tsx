@@ -43,7 +43,9 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { useHoje } from "@/hooks/use-hoje"
 import { itensDeHoje, useTarefasUnificadas } from "@/hooks/use-tarefas-unificadas"
 import { useHabitos, valeNoDia } from "@/lib/estado/habitos"
-import { cartaoConcluido, useKanban } from "@/lib/estado/kanban"
+import { useConta } from "@/components/conta/portao-conta"
+import { VERSAO_APP } from "@/lib/versao"
+import { cartaoConcluido, cartoesRelevantes, useKanban } from "@/lib/estado/kanban"
 
 type ItemNavegacao = { title: string; href: string; icon: LucideIcon }
 
@@ -55,13 +57,18 @@ function useContadores() {
   const habitos = useHabitos((estado) => estado.habitos)
   const cartoes = useKanban((estado) => estado.cartoes)
   const colunasKanban = useKanban((estado) => estado.colunas)
+  // Rafael Marques - 23/10/2026: equipes (cartões de equipe só contam se forem seus)
+  const quadrosKanban = useKanban((estado) => estado.quadros)
+  const meuId = useConta()?.usuario.id ?? null
 
   if (!hoje) return {}
   const tarefasHoje = itensDeHoje(tarefas, hoje).length
   const habitosHoje = habitos.filter((habito) => valeNoDia(habito, hoje))
   const habitosFeitos = habitosHoje.filter((habito) => habito.feitos.includes(hoje)).length
   // Cartões ainda não concluídos (fora das colunas marcadas como "concluídos").
-  const emAndamento = cartoes.filter((cartao) => !cartaoConcluido(cartao, colunasKanban)).length
+  // Rafael Marques - 23/10/2026: cartões arquivados não contam.
+  const relevantes = cartoesRelevantes(cartoes, colunasKanban, quadrosKanban, meuId)
+  const emAndamento = relevantes.filter((cartao) => !cartaoConcluido(cartao, colunasKanban)).length
 
   return {
     "/tarefas": tarefasHoje > 0 ? String(tarefasHoje) : null,
@@ -176,7 +183,8 @@ export function AppSidebar() {
           <LinksNavegacao itens={[{ title: "Créditos", href: "/creditos", icon: InfoIcon }]} />
         </Suspense>
         <div className="flex items-center justify-between px-2">
-          <p className="text-xs text-muted-foreground">v1.0 - SprintNote</p>
+          {/* Rafael Marques - 23/10/2026: a versão vem do package.json (lib/versao.ts) */}
+          <p className="text-xs text-muted-foreground">v{VERSAO_APP} - SprintNote</p>
           <ThemeToggle />
         </div>
         <SidebarSeparator className="mx-0" />

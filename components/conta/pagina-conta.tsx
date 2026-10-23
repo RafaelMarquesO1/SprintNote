@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useId, useState } from "react"
 import { useShallow } from "zustand/react/shallow"
 import {
+  CameraIcon,
   CircleUserRoundIcon,
   DatabaseBackupIcon,
   DownloadIcon,
@@ -29,6 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
@@ -42,7 +44,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { comprimirAvatar } from "@/lib/imagem"
 import { useNotas } from "@/lib/estado/notas"
+import { usePreferencias } from "@/lib/estado/preferencias"
 import { enviarPendentes } from "@/lib/estado/sincronizacao"
 import { baixarTudoEmMarkdown, exportarLivroZip, lerBackup, restaurarBackup, type ResumoBackup } from "@/lib/exportar"
 import { alterarSenha, atualizarNome, excluirConta, sairDeTodosOsAparelhos, type EstadoAcaoConta } from "@/lib/servidor/acoes-conta"
@@ -51,6 +55,72 @@ function Aviso({ estado }: { estado: EstadoAcaoConta }) {
   if (estado?.erro) return <p role="alert" className="text-sm text-destructive">{estado.erro}</p>
   if (estado?.ok) return <p role="status" className="text-sm text-emerald-600 dark:text-emerald-400">{estado.ok}</p>
   return null
+}
+
+// Rafael Marques - 23/10/2026: foto de perfil.
+const TAMANHO_MAXIMO_FOTO = 10 * 1024 * 1024
+const TIPOS_FOTO = ["image/jpeg", "image/png", "image/webp"]
+
+// Foto de perfil: escolhida aqui, recortada em quadrado e guardada só na conta.
+function FotoPerfil() {
+  const conta = useConta()
+  const foto = usePreferencias((dados) => dados.fotoPerfil)
+  const definirFoto = usePreferencias((dados) => dados.definirFotoPerfil)
+  const [erro, setErro] = useState<string | null>(null)
+  const [lendo, setLendo] = useState(false)
+  if (!conta) return null
+  const nome = conta.usuario.nome || conta.usuario.email
+  const iniciais = nome.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((parte) => parte[0].toUpperCase()).join("")
+
+  async function escolher(arquivo: File | undefined) {
+    if (!arquivo) return
+    if (!TIPOS_FOTO.includes(arquivo.type)) return setErro("Use uma imagem JPG, PNG ou WebP.")
+    if (arquivo.size > TAMANHO_MAXIMO_FOTO) return setErro("A imagem tem mais de 10 MB.")
+    setLendo(true)
+    setErro(null)
+    try {
+      definirFoto(await comprimirAvatar(arquivo))
+    } catch {
+      setErro("Não foi possível ler essa imagem.")
+    } finally {
+      setLendo(false)
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-4">
+      <Avatar className="size-16">
+        {foto && <AvatarImage src={foto} alt="Sua foto de perfil" />}
+        <AvatarFallback className="bg-muted text-lg font-medium">{iniciais}</AvatarFallback>
+      </Avatar>
+      <div className="min-w-0 space-y-1.5">
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" size="sm" nativeButton={false} render={<label />} className="cursor-pointer" disabled={lendo}>
+            {lendo ? <Spinner /> : <CameraIcon />} {foto ? "Trocar foto" : "Adicionar foto"}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="sr-only"
+              onChange={(evento) => {
+                void escolher(evento.target.files?.[0])
+                evento.target.value = ""
+              }}
+            />
+          </Button>
+          {foto && (
+            <Button type="button" variant="ghost" size="sm" onClick={() => definirFoto(null)}>
+              <Trash2Icon /> Remover
+            </Button>
+          )}
+        </div>
+        {erro ? (
+          <p role="alert" className="text-xs text-destructive">{erro}</p>
+        ) : (
+          <p className="text-xs text-muted-foreground">Opcional. Fica só na sua conta e entra no “Baixar meus dados”.</p>
+        )}
+      </div>
+    </div>
+  )
 }
 
 function CartaoPerfil() {
@@ -73,6 +143,7 @@ function CartaoPerfil() {
       <form action={acao} className="flex flex-1 flex-col gap-(--card-spacing)">
         <CardContent>
           <FieldGroup>
+            <FotoPerfil />
             <Field data-invalid={!!estado?.erros?.nome || undefined}>
               <FieldLabel htmlFor={`${id}-nome`}>Nome</FieldLabel>
               <Input id={`${id}-nome`} name="nome" defaultValue={conta.usuario.nome} maxLength={80} required aria-invalid={!!estado?.erros?.nome || undefined} />
@@ -287,7 +358,7 @@ function CartaoExcluir() {
     <Card className="ring-destructive/30">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-destructive"><Trash2Icon className="size-4" /> Excluir conta</CardTitle>
-        <CardDescription>Apaga a conta e todo o conteúdo (notas, tarefas, hábitos, rotina, Kanban) na hora, sem cópia guardada. Não dá para desfazer.</CardDescription>
+        <CardDescription>Apaga a conta e todo o conteúdo (notas, tarefas, hábitos, rotina, Kanban) na hora, sem cópia guardada. Nas equipes, a propriedade passa para outro membro e seus comentários viram “Ex-membro”. Não dá para desfazer.</CardDescription>
       </CardHeader>
       <CardFooter>
         <Button variant="destructive" onClick={() => setAberto(true)}><Trash2Icon /> Excluir minha conta</Button>

@@ -41,14 +41,15 @@ import { corDoLivro, estiloFaixa } from "@/lib/cores"
 import { diaDaSemana, formatarDataRelativa, lerChave, nomesDias, somarDias, ultimosDias } from "@/lib/datas"
 import { calcularSequencia, useHabitos, valeNoDia } from "@/lib/estado/habitos"
 import { useInicio, type Widget } from "@/lib/estado/inicio"
-import { cartaoConcluido, colunasDoQuadro, localDoCartao, useKanban } from "@/lib/estado/kanban"
+import { useConta } from "@/components/conta/portao-conta"
+import { cartaoConcluido, cartoesRelevantes, colunasDoQuadro, localDoCartao, useKanban } from "@/lib/estado/kanban"
 import { useNotas } from "@/lib/estado/notas"
 import { itensDoDia, useRotina } from "@/lib/estado/rotina"
 import { montarGrafo, type NoGrafo } from "@/lib/grafo"
 import { extrairLinksWiki } from "@/lib/links-wiki"
 import { contarTags } from "@/lib/tags"
 
-// Rafael Marques - 21/10/2026
+// Rafael Marques - 21/10/2026 (cartões arquivados fora dos números em 23/10/2026)
 // Widgets da tela de início. Cada um lê os dados direto do sistema.
 
 function Vazio({ children }: { children: React.ReactNode }) {
@@ -89,7 +90,12 @@ export function useMetricas(): Record<string, Metrica> | null {
   const habitos = useHabitos((estado) => estado.habitos)
   const itensRotina = useRotina((estado) => estado.itens)
   const feitosPorDia = useRotina((estado) => estado.feitosPorDia)
-  const { cartoes, colunas } = useKanban(useShallow((estado) => ({ cartoes: estado.cartoes, colunas: estado.colunas })))
+  const { cartoes: todosOsCartoes, colunas, quadros: todosQuadros } = useKanban(
+    useShallow((estado) => ({ cartoes: estado.cartoes, colunas: estado.colunas, quadros: estado.quadros }))
+  )
+  // Rafael Marques - 23/10/2026: só cartões seus (pessoais ou de equipe atribuídos a você), sem arquivados.
+  const meuId = useConta()?.usuario.id ?? null
+  const cartoes = useMemo(() => cartoesRelevantes(todosOsCartoes, colunas, todosQuadros, meuId), [todosOsCartoes, colunas, todosQuadros, meuId])
   const { notas, livros } = useNotas(useShallow((estado) => ({ notas: estado.notas, livros: estado.livros })))
 
   return useMemo(() => {
@@ -504,7 +510,9 @@ function useQuadro(widget: Widget) {
   )
   const quadro = quadros.find((item) => item.id === (widget.config.quadroId ?? quadroAtivoId)) ?? quadros[0]
   const doQuadro = colunasDoQuadro(colunas, quadro?.id ?? null)
-  return { quadro, quadros, colunas, todasColunas: colunas, doQuadro, cartoes: cartoes.filter((cartao) => doQuadro.some((coluna) => coluna.id === cartao.colunaId)), todosCartoes: cartoes }
+  const meuId = useConta()?.usuario.id ?? null
+  const ativos = cartoesRelevantes(cartoes, colunas, quadros, meuId)
+  return { quadro, quadros, colunas, todasColunas: colunas, doQuadro, cartoes: cartoes.filter((cartao) => !cartao.arquivado && doQuadro.some((coluna) => coluna.id === cartao.colunaId)), todosCartoes: ativos }
 }
 
 // Cabeçalho do cartão: o "Andamento do quadro" mostra o nome do próprio quadro

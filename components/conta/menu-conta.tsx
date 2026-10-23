@@ -2,10 +2,11 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { ChevronsUpDownIcon, CircleUserRoundIcon, CloudAlertIcon, CloudCheckIcon, CloudUploadIcon, LogOutIcon } from "lucide-react"
+import { ChevronsUpDownIcon, CircleUserRoundIcon, CloudAlertIcon, CloudCheckIcon, CloudUploadIcon, LogOutIcon, NotebookPenIcon } from "lucide-react"
 
 import { useConta } from "@/components/conta/portao-conta"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { abrirHistoricoDeNovidades } from "@/components/novidades/cartao-novidades"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +18,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar"
 import { Spinner } from "@/components/ui/spinner"
+import { usePreferencias } from "@/lib/estado/preferencias"
+import { VERSAO_APP } from "@/lib/versao"
 import { useSincronizacao } from "@/lib/estado/sincronizacao"
 import { cn } from "@/lib/utils"
 
@@ -34,11 +37,12 @@ function IconeEstado({ estado }: { estado: keyof typeof textosEstado }) {
   return <CloudCheckIcon className="size-3.5" />
 }
 
-// Rafael Marques - 21/10/2026
+// Rafael Marques - 21/10/2026 (foto de perfil no avatar em 23/10/2026)
 // Conta no rodapé da sidebar: e-mail, se os dados estão salvos e "Sair".
 export function MenuConta() {
   const conta = useConta()
   const estado = useSincronizacao((dados) => dados.estado)
+  const foto = usePreferencias((dados) => dados.fotoPerfil)
   const [saindo, setSaindo] = useState(false)
   if (!conta) return null
   const { usuario, sair } = conta
@@ -56,6 +60,7 @@ export function MenuConta() {
         <DropdownMenu>
           <DropdownMenuTrigger render={<SidebarMenuButton size="lg" className="data-popup-open:bg-sidebar-accent" />}>
             <Avatar className="size-8 rounded-lg">
+              {foto && <AvatarImage src={foto} alt="" className="rounded-lg" />}
               <AvatarFallback className="rounded-lg bg-primary/10 font-medium text-primary">{iniciais}</AvatarFallback>
             </Avatar>
             <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
@@ -76,6 +81,10 @@ export function MenuConta() {
             <DropdownMenuSeparator />
             <DropdownMenuItem render={<Link href="/conta" />}>
               <CircleUserRoundIcon /> Minha conta
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={abrirHistoricoDeNovidades}>
+              <NotebookPenIcon /> O que há de novo
+              <span className="ml-auto text-xs text-muted-foreground">v{VERSAO_APP}</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem

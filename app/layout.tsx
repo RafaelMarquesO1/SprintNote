@@ -5,6 +5,7 @@ import "./globals.css";
 import { AppSidebar } from "@/components/app-sidebar";
 import { BotaoBusca, DialogoBusca } from "@/components/busca";
 import { PortaoConta } from "@/components/conta/portao-conta";
+import { CartaoNovidades } from "@/components/novidades/cartao-novidades";
 import { InlineScript } from "@/components/inline-script";
 import { themeScript } from "@/lib/theme";
 import {
@@ -53,7 +54,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="min-h-full">
         {/* Rafael Marques - 21/10/2026 - abertura, login/cadastro e sincronização com o banco */}
-        <PortaoConta depoisDeEntrar={<DialogoBusca />}>
+        {/* Rafael Marques - 23/10/2026: cartão de novidades depois do login */}
+        <PortaoConta depoisDeEntrar={<><DialogoBusca /><CartaoNovidades /></>}>
         <SidebarProvider>
           <AppSidebar />
           <SidebarInset className="min-w-0">

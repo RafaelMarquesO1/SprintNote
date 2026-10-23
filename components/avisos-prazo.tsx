@@ -9,9 +9,10 @@ import { Button } from "@/components/ui/button"
 import { useHoje } from "@/hooks/use-hoje"
 import { useTarefasUnificadas } from "@/hooks/use-tarefas-unificadas"
 import { formatarDataRelativa } from "@/lib/datas"
-import { cartaoConcluido, useKanban } from "@/lib/estado/kanban"
+import { useConta } from "@/components/conta/portao-conta"
+import { cartaoConcluido, cartoesRelevantes, useKanban } from "@/lib/estado/kanban"
 
-// Rafael Marques - 22/10/2026
+// Rafael Marques - 22/10/2026 (cartões arquivados fora dos avisos em 23/10/2026)
 // Avisos de prazo (Alert do shadcn) no topo das páginas: o que está atrasado
 // e o que vence hoje, em tarefas e cartões do Kanban.
 
@@ -85,7 +86,8 @@ export function AvisosPrazo({
 }) {
   const hoje = useHoje()
   const { itens } = useTarefasUnificadas(hoje)
-  const { cartoes, colunas } = useKanban(useShallow((estado) => ({ cartoes: estado.cartoes, colunas: estado.colunas })))
+  const { cartoes, colunas, quadros } = useKanban(useShallow((estado) => ({ cartoes: estado.cartoes, colunas: estado.colunas, quadros: estado.quadros })))
+  const meuId = useConta()?.usuario.id ?? null
   if (!hoje) return null
 
   const avisos: Aviso[] = []
@@ -97,8 +99,10 @@ export function AvisosPrazo({
   }
   if (areas.includes("kanban")) {
     const idsColunas = quadroId ? new Set(colunas.filter((coluna) => coluna.quadroId === quadroId).map((coluna) => coluna.id)) : null
-    const pendentes = cartoes
-      .filter((cartao) => cartao.prazo && !cartaoConcluido(cartao, colunas) && (!idsColunas || idsColunas.has(cartao.colunaId)))
+    // Rafael Marques - 23/10/2026: fora de um quadro, só cartões seus (pessoais ou de equipe atribuídos a você).
+    const base = quadroId ? cartoes : cartoesRelevantes(cartoes, colunas, quadros, meuId)
+    const pendentes = base
+      .filter((cartao) => cartao.prazo && !cartao.arquivado && !cartaoConcluido(cartao, colunas) && (!idsColunas || idsColunas.has(cartao.colunaId)))
       .map((cartao) => ({ titulo: cartao.titulo, prazo: cartao.prazo! }))
     avisos.push(...montarAvisos("kanban", pendentes, hoje))
   }
