@@ -17,6 +17,7 @@ import {
 import {
   ArchiveIcon,
   CheckIcon,
+  FilterIcon,
   Share2Icon,
   UserCheckIcon,
   UsersIcon,
@@ -148,6 +149,8 @@ export function QuadroKanban() {
   const [filtroPrioridades, setFiltroPrioridades] = useState<Prioridade[]>([])
   const [soAtrasados, setSoAtrasados] = useState(false)
   const [verArquivados, setVerArquivados] = useState(false)
+  // Rafael Marques - 23/10/2026: no celular os chips de filtro ficam recolhidos atrás do botão "Filtros".
+  const [mostrarFiltros, setMostrarFiltros] = useState(false)
   // Rafael Marques - 23/10/2026: equipes
   const conta = useConta()
   const equipes = useEquipes((estado) => estado.equipes)
@@ -270,8 +273,9 @@ export function QuadroKanban() {
   return (
     <div className="-mx-4 -mt-4 flex min-h-[calc(100svh-3rem)] flex-col md:-mx-6 md:-mt-6" style={estiloFundoQuadro(quadro.fundo)}>
       {/* Cabeçalho no padrão das outras telas + números do quadro */}
-      <div className="space-y-5 px-4 pt-4 md:px-6 md:pt-6">
+      <div className="space-y-3 px-4 pt-4 md:space-y-5 md:px-6 md:pt-6">
         <CabecalhoPagina
+          compactoNoCelular
           secao="Organização · Kanban"
           icone={KanbanIcon}
           titulo={
@@ -320,7 +324,7 @@ export function QuadroKanban() {
               <BotaoEquipes />
               <DropdownMenu>
                 <DropdownMenuTrigger render={<Button variant="outline" size="sm" className="bg-background/70" />}>
-                  Quadros ({quadros.length}) <ChevronDownIcon />
+                  <KanbanIcon className="sm:hidden" /> <span className="max-sm:hidden">Quadros </span>({quadros.length}) <ChevronDownIcon />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuGroup>
@@ -452,15 +456,16 @@ export function QuadroKanban() {
         <AvisosPrazo areas={["kanban"]} quadroId={quadro.id} comLinks={false} />
 
         {equipeDoQuadro && (
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg bg-background/70 px-3 py-2 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg bg-background/70 px-3 py-1.5 text-xs text-muted-foreground md:py-2">
             <span className="flex items-center gap-1.5 font-medium text-foreground"><UsersIcon className="size-3.5" /> {equipeDoQuadro.nome}</span>
             <span className="flex -space-x-1.5">
-              {equipeDoQuadro.membros.slice(0, 7).map((membro) => (
-                <AvatarPessoa key={membro.id} nome={membro.nome} foto={membro.foto} tamanho="sm" className="ring-2 ring-background" />
+              {equipeDoQuadro.membros.slice(0, 7).map((membro, indice) => (
+                <AvatarPessoa key={membro.id} nome={membro.nome} foto={membro.foto} tamanho="sm" className={cn("ring-2 ring-background", indice >= 4 && "max-sm:hidden")} />
               ))}
             </span>
-            {equipeDoQuadro.membros.length > 7 && <span>+{equipeDoQuadro.membros.length - 7}</span>}
-            {meuPapel && <span title={descricoesPapel[meuPapel]}>Você é {rotulosPapel[meuPapel].toLowerCase()}</span>}
+            {equipeDoQuadro.membros.length > 4 && <span className="sm:hidden">+{equipeDoQuadro.membros.length - 4}</span>}
+            {equipeDoQuadro.membros.length > 7 && <span className="max-sm:hidden">+{equipeDoQuadro.membros.length - 7}</span>}
+            {meuPapel && <span className="max-sm:hidden" title={descricoesPapel[meuPapel]}>Você é {rotulosPapel[meuPapel].toLowerCase()}</span>}
             {meuPapel === "leitor" && <span className="font-medium text-foreground">Somente leitura</span>}
           </div>
         )}
@@ -472,10 +477,25 @@ export function QuadroKanban() {
 
         {/* Filtros e progresso */}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
+          <div className="relative max-md:min-w-0 max-md:flex-1">
             <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={busca} onChange={(evento) => setBusca(evento.target.value)} placeholder="Filtrar cartões…" aria-label="Filtrar cartões" className="h-8 w-52 bg-background/70 pl-8" />
+            <Input value={busca} onChange={(evento) => setBusca(evento.target.value)} placeholder="Filtrar cartões…" aria-label="Filtrar cartões" className="h-8 w-full bg-background/70 pl-8 md:w-52" />
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="bg-background/70 md:hidden"
+            aria-expanded={mostrarFiltros}
+            onClick={() => setMostrarFiltros(!mostrarFiltros)}
+          >
+            <FilterIcon /> Filtros
+            {filtroEtiquetas.length + filtroPrioridades.length + (soAtrasados ? 1 : 0) > 0 && (
+              <span className="rounded-full bg-foreground px-1.5 text-[10px] leading-4 font-semibold text-background">
+                {filtroEtiquetas.length + filtroPrioridades.length + (soAtrasados ? 1 : 0)}
+              </span>
+            )}
+          </Button>
+          <div className={cn("contents", !mostrarFiltros && "max-md:hidden")}>
           {quadro.etiquetas.map((etiqueta) => {
             const ativa = filtroEtiquetas.includes(etiqueta.id)
             return (
@@ -514,6 +534,7 @@ export function QuadroKanban() {
               </button>
             )
           })}
+          </div>
           {responsavelFiltrado && (
             <span className="flex items-center gap-1 rounded-md border border-foreground bg-foreground px-2 py-0.5 text-xs font-medium text-background">
               Cartões de {responsavelFiltrado.id === meuId ? "você" : responsavelFiltrado.nome}
@@ -550,7 +571,7 @@ export function QuadroKanban() {
           },
         }}
       >
-        <div className="flex flex-1 items-start gap-3 overflow-x-auto px-4 pt-4 pb-6 md:px-6">
+        <div className="flex flex-1 items-start gap-3 overflow-x-auto px-4 pt-2 pb-6 md:px-6 md:pt-4">
           {colunas.map((coluna, indice) => (
             <Coluna
               key={coluna.id}
@@ -571,13 +592,13 @@ export function QuadroKanban() {
             <button
               type="button"
               onClick={() => setNovaColuna("")}
-              className="flex h-12 w-72 shrink-0 items-center gap-2 rounded-xl border border-dashed bg-background/40 px-3 text-sm text-muted-foreground hover:bg-background/70 hover:text-foreground"
+              className="flex h-12 w-[80vw] max-w-72 shrink-0 items-center gap-2 rounded-xl border border-dashed sm:w-72 bg-background/40 px-3 text-sm text-muted-foreground hover:bg-background/70 hover:text-foreground"
             >
               <PlusIcon className="size-4" /> Adicionar coluna
             </button>
           ) : (
             <form
-              className="w-72 shrink-0 space-y-2 rounded-xl bg-muted/60 p-2"
+              className="w-[80vw] max-w-72 shrink-0 space-y-2 rounded-xl bg-muted/60 p-2 sm:w-72"
               onSubmit={(evento) => {
                 evento.preventDefault()
                 if (!novaColuna.trim()) return

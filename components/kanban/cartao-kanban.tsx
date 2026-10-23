@@ -115,7 +115,7 @@ export function ConteudoCartao({
       )}
     >
       {exibicao.faixaCor && cartao.cor && <div className="h-1.5" style={{ background: cartao.cor }} />}
-      <div className="space-y-2 p-3">
+      <div className="space-y-1.5 p-2.5 sm:space-y-2 sm:p-3">
         {doCartao.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {doCartao.map((etiqueta) => (

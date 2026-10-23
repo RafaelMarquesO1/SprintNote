@@ -185,7 +185,7 @@ export function Coluna({
       }}
       aria-label={coluna.titulo}
       className={cn(
-        "flex w-72 shrink-0 flex-col gap-2 rounded-xl bg-muted/60 p-2 backdrop-blur-sm transition-colors",
+        "flex w-[80vw] max-w-72 shrink-0 flex-col gap-2 rounded-xl bg-muted/60 p-2 backdrop-blur-sm transition-colors sm:w-72",
         isOver && "bg-muted ring-2 ring-primary/20",
         isDragging && "opacity-40"
       )}

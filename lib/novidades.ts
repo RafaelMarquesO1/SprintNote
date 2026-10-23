@@ -6,7 +6,8 @@
 //  1. acrescente uma entrada NO TOPO da lista;
 //  2. "id" = data (AAAA-MM-DD); se houver mais de uma no dia, "-b", "-c"... O id precisa ficar
 //     "maior" que o da entrada anterior, pois é assim que o app sabe o que é novo;
-//  3. "versao" = a do package.json sem o ".0" final (funcionalidade: "1.2", package.json 1.2.0; correção: "1.2.1").
+//  3. "versao" = o texto que aparece no app (campo "versaoExibida" do package.json, ex.: "1.1a"); suba também
+//     o "version" do package.json (o npm exige três números, ex.: 1.1.1).
 
 export type TipoNovidade = "novo" | "melhorado" | "corrigido"
 
@@ -31,6 +32,20 @@ export const ordemTipos: TipoNovidade[] = ["novo", "melhorado", "corrigido"]
 
 // Mais recente primeiro.
 export const NOVIDADES: Novidade[] = [
+  // Rafael Marques - 23/10/2026
+  {
+    id: "2026-10-23-c",
+    versao: "1.1a",
+    data: "23/10/2026",
+    titulo: "Kanban mais compacto no celular",
+    resumo: "O quadro ganhou um layout enxuto em telas pequenas, com mais espaço para os cartões.",
+    itens: [
+      { tipo: "melhorado", texto: "Cabeçalho do Kanban mais enxuto no celular, com botões só de ícone." },
+      { tipo: "melhorado", texto: "Filtros recolhidos atrás do botão “Filtros”, que mostra quantos estão ativos." },
+      { tipo: "melhorado", texto: "Colunas um pouco mais estreitas: um pedaço da próxima coluna aparece, indicando que dá para rolar." },
+      { tipo: "melhorado", texto: "Faixa da equipe e cartões com menos espaço sobrando." },
+    ],
+  },
   {
     id: "2026-10-23-b",
     versao: "1.1",

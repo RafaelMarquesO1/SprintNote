@@ -29,6 +29,7 @@ export function CabecalhoPagina({
   descricao,
   resumo,
   acoes,
+  compactoNoCelular = false,
 }: {
   // Rótulo pequeno acima do título (ex.: "Organização", "Biblioteca").
   secao: string
@@ -39,17 +40,19 @@ export function CabecalhoPagina({
   // Linha curta de números (ex.: "2 para hoje · 1 atrasada").
   resumo?: React.ReactNode
   acoes?: React.ReactNode
+  // Rafael Marques - 23/10/2026: no celular esconde o rótulo e a descrição para sobrar espaço (Kanban).
+  compactoNoCelular?: boolean
 }) {
   return (
     <header className="flex flex-wrap items-end justify-between gap-4">
       {/* Rafael Marques - 22/10/2026: base de 18rem para os botões irem para a
           linha de baixo no celular, em vez de espremer o título. */}
       <div className="min-w-0 flex-[1_1_18rem] space-y-1">
-        <p className="flex items-center gap-1.5 text-xs font-medium tracking-wider text-muted-foreground uppercase">
+        <p className={cn("flex items-center gap-1.5 text-xs font-medium tracking-wider text-muted-foreground uppercase", compactoNoCelular && "max-sm:hidden")}>
           <IconeSecao className="size-3.5" /> {secao}
         </p>
         {typeof titulo === "string" ? <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{titulo}</h1> : titulo}
-        {descricao && <p className="text-sm text-muted-foreground">{descricao}</p>}
+        {descricao && <p className={cn("text-sm text-muted-foreground", compactoNoCelular && "max-sm:hidden")}>{descricao}</p>}
         {resumo}
       </div>
       {acoes && <div className="flex flex-wrap items-center gap-2">{acoes}</div>}
