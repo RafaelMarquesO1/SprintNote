@@ -37,7 +37,7 @@ Ele junta em um só app aquilo que eu usava espalhado em várias ferramentas: um
 | Área | O que faz |
 |---|---|
 | **Início** | Painel com widgets personalizáveis do seu dia |
-| **Kanban** | Quadros, colunas e cartões com arrastar e soltar |
+| **Kanban** | Quadros, colunas e cartões com arrastar e soltar; visões em lista e calendário, raias, modelos, importar/exportar, anexos, repetição, bloqueios, estimativa, resumo e foto de fundo (também nas equipes) |
 | **Notas** | Editor ao estilo Notion (texto formatado ao digitar, menu `/`, imagens, tabelas, destaques), links entre notas (`[[nota]]`), capas e tags; por baixo continuam sendo Markdown |
 | **Quadros** | Tela infinita ao estilo Canvas do Obsidian: formas, notas e grupos ligados por setas, tudo com o mouse ou o dedo |
 | **Livros** | Árvore de livros e notas na barra lateral, com arrastar e soltar; a página do livro abre ao lado |

@@ -1,0 +1,294 @@
+"use client"
+
+// Rafael Marques - 26/10/2026
+// Partes novas do cartão: anexos (imagens e links), repetição, estimativa e bloqueios.
+// Valem para quadros pessoais e de equipe.
+
+import { useRef, useState } from "react"
+import { ImageIcon, LinkIcon, LockIcon, PaperclipIcon, PlusIcon, XIcon } from "lucide-react"
+
+import { Propriedade, Secao } from "@/components/kanban/blocos-cartao"
+import { classeSelect } from "@/components/tarefas/dialogo-tarefa"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { gerarId } from "@/lib/gerar-id"
+import { comprimirImagem } from "@/lib/imagem"
+import { descreverRecorrencia, nomesFrequencia, type FrequenciaRecorrencia } from "@/lib/kanban/recorrencia"
+import type { AnexoCartao, CartaoKanban } from "@/lib/tipos"
+import { cn } from "@/lib/utils"
+
+const MAXIMO_ANEXOS = 6
+// Cada imagem fica pequena: tudo é guardado no navegador (~5 MB para o app inteiro) e, em equipe, vai
+// para o servidor junto com o cartão.
+const LIMITE_IMAGEM_CARACTERES = 380_000
+
+type Atualizar = (mudancas: Partial<Pick<CartaoKanban, "anexos" | "recorrencia" | "bloqueadoPor" | "estimativa">>, atividade?: string) => void
+
+export function SecaoAnexos({ cartao, atualizar }: { cartao: CartaoKanban; atualizar: Atualizar }) {
+  const entrada = useRef<HTMLInputElement>(null)
+  const [aviso, setAviso] = useState<string | null>(null)
+  const [adicionandoLink, setAdicionandoLink] = useState(false)
+  const [endereco, setEndereco] = useState("")
+  const [nomeLink, setNomeLink] = useState("")
+  const [ampliado, setAmpliado] = useState<AnexoCartao | null>(null)
+  const cheio = cartao.anexos.length >= MAXIMO_ANEXOS
+
+  async function enviar(arquivos: FileList | null) {
+    if (!arquivos?.length) return
+    setAviso(null)
+    const novos: AnexoCartao[] = []
+    for (const arquivo of Array.from(arquivos)) {
+      if (cartao.anexos.length + novos.length >= MAXIMO_ANEXOS) {
+        setAviso(`Cada cartão aceita até ${MAXIMO_ANEXOS} anexos.`)
+        break
+      }
+      if (!arquivo.type.startsWith("image/")) {
+        setAviso("Por enquanto só imagens podem ser enviadas. Para outros arquivos, adicione o link.")
+        continue
+      }
+      try {
+        // Tenta qualidades menores até caber no limite.
+        let url = await comprimirImagem(arquivo, 1280, 0.75)
+        if (url.length > LIMITE_IMAGEM_CARACTERES) url = await comprimirImagem(arquivo, 1000, 0.6)
+        if (url.length > LIMITE_IMAGEM_CARACTERES) {
+          setAviso(`“${arquivo.name}” continua grande demais mesmo reduzida.`)
+          continue
+        }
+        novos.push({ id: gerarId(), tipo: "imagem", nome: arquivo.name.slice(0, 120), url, criadoEm: Date.now() })
+      } catch {
+        setAviso(`Não consegui ler “${arquivo.name}”.`)
+      }
+    }
+    if (novos.length) atualizar({ anexos: [...cartao.anexos, ...novos] }, `${novos.length === 1 ? "Imagem anexada" : `${novos.length} imagens anexadas`}`)
+    if (entrada.current) entrada.current.value = ""
+  }
+
+  function adicionarLink() {
+    const limpo = endereco.trim()
+    const comProtocolo = /^https?:\/\//i.test(limpo) ? limpo : `https://${limpo}`
+    try {
+      const url = new URL(comProtocolo)
+      if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error("protocolo")
+      atualizar({ anexos: [...cartao.anexos, { id: gerarId(), tipo: "link", nome: nomeLink.trim().slice(0, 120) || url.hostname, url: url.toString(), criadoEm: Date.now() }] }, "Link anexado")
+      setEndereco("")
+      setNomeLink("")
+      setAdicionandoLink(false)
+      setAviso(null)
+    } catch {
+      setAviso("Esse endereço não parece válido.")
+    }
+  }
+
+  const imagens = cartao.anexos.filter((anexo) => anexo.tipo === "imagem")
+  const links = cartao.anexos.filter((anexo) => anexo.tipo === "link")
+  const remover = (anexo: AnexoCartao) => atualizar({ anexos: cartao.anexos.filter((item) => item.id !== anexo.id) }, "Anexo removido")
+
+  return (
+    <Secao titulo="Anexos" icone={PaperclipIcon} extra={cartao.anexos.length > 0 && `${cartao.anexos.length}/${MAXIMO_ANEXOS}`}>
+      {imagens.length > 0 && (
+        <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+          {imagens.map((anexo) => (
+            <li key={anexo.id} className="group relative aspect-square overflow-hidden rounded-lg border bg-muted">
+              <button type="button" onClick={() => setAmpliado(anexo)} className="size-full" aria-label={`Ampliar ${anexo.nome}`}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={anexo.url} alt={anexo.nome} className="size-full object-cover" />
+              </button>
+              <button
+                type="button"
+                aria-label={`Remover ${anexo.nome}`}
+                onClick={() => remover(anexo)}
+                className="absolute top-1 right-1 flex size-6 items-center justify-center rounded-md bg-background/85 opacity-0 group-hover:opacity-100 hover:bg-background focus-visible:opacity-100 max-md:opacity-100"
+              >
+                <XIcon className="size-3.5" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {links.length > 0 && (
+        <ul className="space-y-1">
+          {links.map((anexo) => (
+            <li key={anexo.id} className="group flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-sm">
+              <LinkIcon className="size-3.5 shrink-0 text-muted-foreground" />
+              <a href={anexo.url} target="_blank" rel="noreferrer noopener" className="min-w-0 flex-1 truncate hover:underline">
+                {anexo.nome}
+              </a>
+              <button type="button" aria-label={`Remover ${anexo.nome}`} onClick={() => remover(anexo)} className="rounded p-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground focus-visible:opacity-100 max-md:opacity-100">
+                <XIcon className="size-3.5" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {adicionandoLink ? (
+        <form
+          className="space-y-2 rounded-lg border p-2.5"
+          onSubmit={(evento) => {
+            evento.preventDefault()
+            adicionarLink()
+          }}
+        >
+          <Input autoFocus value={endereco} onChange={(evento) => setEndereco(evento.target.value)} placeholder="Endereço (https://…)" aria-label="Endereço do link" />
+          <Input value={nomeLink} onChange={(evento) => setNomeLink(evento.target.value)} placeholder="Nome (opcional)" aria-label="Nome do link" />
+          <div className="flex gap-2">
+            <Button type="submit" size="sm" disabled={!endereco.trim()}>
+              Adicionar
+            </Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => setAdicionandoLink(false)}>
+              Cancelar
+            </Button>
+          </div>
+        </form>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" disabled={cheio} onClick={() => entrada.current?.click()}>
+            <ImageIcon /> Enviar imagem
+          </Button>
+          <Button variant="outline" size="sm" disabled={cheio} onClick={() => setAdicionandoLink(true)}>
+            <LinkIcon /> Adicionar link
+          </Button>
+          <input ref={entrada} type="file" accept="image/*" multiple className="hidden" onChange={(evento) => void enviar(evento.target.files)} aria-label="Enviar imagem" />
+        </div>
+      )}
+      {aviso && (
+        <p role="alert" className="text-xs text-destructive">
+          {aviso}
+        </p>
+      )}
+      <p className="text-xs text-muted-foreground">As imagens são reduzidas e guardadas junto com os seus dados.</p>
+
+      <Dialog open={ampliado !== null} onOpenChange={(aberto) => !aberto && setAmpliado(null)}>
+        <DialogContent className="sm:max-w-3xl">
+          <DialogTitle className="truncate pr-8">{ampliado?.nome}</DialogTitle>
+          <DialogDescription className="sr-only">Imagem anexada ao cartão</DialogDescription>
+          {ampliado && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={ampliado.url} alt={ampliado.nome} className="max-h-[70svh] w-full rounded-lg object-contain" />
+          )}
+        </DialogContent>
+      </Dialog>
+    </Secao>
+  )
+}
+
+const pontosSugeridos = [1, 2, 3, 5, 8, 13]
+
+export function PropriedadesExtras({ cartao, atualizar, cartoesDoQuadro, concluidas }: { cartao: CartaoKanban; atualizar: Atualizar; cartoesDoQuadro: CartaoKanban[]; concluidas: Set<string> }) {
+  const outros = cartoesDoQuadro.filter((item) => item.id !== cartao.id && !item.arquivado)
+  const bloqueadores = cartao.bloqueadoPor.map((id) => cartoesDoQuadro.find((item) => item.id === id)).filter((item): item is CartaoKanban => Boolean(item))
+  const disponiveis = outros.filter((item) => !cartao.bloqueadoPor.includes(item.id))
+  const rec = cartao.recorrencia
+
+  return (
+    <>
+      <Propriedade titulo="Estimativa (pontos)">
+        <div className="flex flex-wrap gap-1">
+          {pontosSugeridos.map((ponto) => (
+            <button
+              key={ponto}
+              type="button"
+              aria-pressed={cartao.estimativa === ponto}
+              onClick={() => atualizar({ estimativa: cartao.estimativa === ponto ? null : ponto })}
+              className={cn("flex size-7 items-center justify-center rounded-md border text-xs tabular-nums", cartao.estimativa === ponto ? "border-foreground bg-foreground text-background" : "hover:bg-muted")}
+            >
+              {ponto}
+            </button>
+          ))}
+        </div>
+        <Input
+          type="number"
+          min={0}
+          max={999}
+          step={0.5}
+          inputMode="decimal"
+          value={cartao.estimativa ?? ""}
+          placeholder="Outro valor"
+          aria-label="Estimativa em pontos"
+          className="h-8"
+          onChange={(evento) => {
+            const numero = evento.target.value === "" ? null : Number(evento.target.value)
+            atualizar({ estimativa: numero !== null && Number.isFinite(numero) && numero >= 0 && numero < 1000 ? numero : null })
+          }}
+        />
+      </Propriedade>
+
+      <Propriedade titulo="Repetir">
+        <select
+          value={rec?.frequencia ?? ""}
+          onChange={(evento) => {
+            const frequencia = evento.target.value as FrequenciaRecorrencia | ""
+            atualizar({ recorrencia: frequencia ? { frequencia, intervalo: rec?.intervalo ?? 1 } : null }, frequencia ? "Repetição ativada" : "Repetição desativada")
+          }}
+          className={classeSelect}
+          aria-label="Repetir o cartão"
+        >
+          <option value="">Não repetir</option>
+          <option value="diaria">Todo dia</option>
+          <option value="semanal">Toda semana</option>
+          <option value="mensal">Todo mês</option>
+          <option value="anual">Todo ano</option>
+        </select>
+        {rec && (
+          <>
+            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+              A cada
+              <Input
+                type="number"
+                min={1}
+                max={365}
+                value={rec.intervalo}
+                aria-label="Intervalo da repetição"
+                className="h-7 w-16"
+                onChange={(evento) => atualizar({ recorrencia: { ...rec, intervalo: Math.min(365, Math.max(1, Math.round(Number(evento.target.value)) || 1)) } })}
+              />
+              {rec.intervalo === 1 ? nomesFrequencia[rec.frequencia].um : nomesFrequencia[rec.frequencia].varios}
+            </label>
+            <p className="text-xs text-muted-foreground">{descreverRecorrencia(rec)}: ao concluir, o próximo cartão é criado sozinho.</p>
+          </>
+        )}
+      </Propriedade>
+
+      <Propriedade titulo="Bloqueado por">
+        {bloqueadores.length > 0 && (
+          <ul className="space-y-1">
+            {bloqueadores.map((item) => {
+              const pronto = concluidas.has(item.colunaId)
+              return (
+                <li key={item.id} className="flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs">
+                  <LockIcon className={cn("size-3 shrink-0", pronto ? "text-muted-foreground/50" : "text-foreground")} />
+                  <span className={cn("min-w-0 flex-1 truncate", pronto && "text-muted-foreground line-through")}>{item.titulo}</span>
+                  <button type="button" aria-label={`Remover bloqueio de ${item.titulo}`} onClick={() => atualizar({ bloqueadoPor: cartao.bloqueadoPor.filter((id) => id !== item.id) })} className="rounded p-0.5 text-muted-foreground hover:text-foreground">
+                    <XIcon className="size-3" />
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+        {disponiveis.length > 0 ? (
+          <select
+            value=""
+            onChange={(evento) => evento.target.value && atualizar({ bloqueadoPor: [...cartao.bloqueadoPor, evento.target.value] }, "Bloqueio adicionado")}
+            className={classeSelect}
+            aria-label="Adicionar um cartão que bloqueia este"
+          >
+            <option value="">+ Esperar outro cartão…</option>
+            {disponiveis.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.titulo}
+              </option>
+            ))}
+          </select>
+        ) : (
+          bloqueadores.length === 0 && (
+            <p className="flex items-center gap-1 text-xs text-muted-foreground">
+              <PlusIcon className="size-3" /> Crie outros cartões para ligar bloqueios.
+            </p>
+          )
+        )}
+      </Propriedade>
+    </>
+  )
+}

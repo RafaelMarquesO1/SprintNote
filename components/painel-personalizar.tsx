@@ -17,16 +17,21 @@ export function PainelPersonalizar({
   descricao,
   aoRestaurar,
   tamanhoBotao = "default",
+  aberto,
+  aoMudarAberto,
   children,
 }: {
   titulo?: string
   descricao?: string
   aoRestaurar?: () => void
   tamanhoBotao?: "default" | "sm"
+  // Rafael Marques - 26/10/2026: opcional, para a tela fechar o painel (ex.: ao ajustar a foto do Kanban).
+  aberto?: boolean
+  aoMudarAberto?: (aberto: boolean) => void
   children: React.ReactNode
 }) {
   return (
-    <Popover>
+    <Popover {...(aberto !== undefined ? { open: aberto } : {})} onOpenChange={aoMudarAberto}>
       <PopoverTrigger render={<Button variant="outline" size={tamanhoBotao} />}>
         <SlidersHorizontalIcon /> <span className="max-sm:hidden">Personalizar</span>
       </PopoverTrigger>

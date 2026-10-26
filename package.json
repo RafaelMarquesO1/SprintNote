@@ -1,7 +1,7 @@
 {
   "name": "sprintnote",
-  "version": "1.2.0",
-  "versaoExibida": "1.2",
+  "version": "1.2.1",
+  "versaoExibida": "1.2a",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "teste:notas": "node --experimental-strip-types --no-warnings lib/editor/markdown-documento.teste.ts",
+    "teste:kanban": "node --experimental-strip-types --no-warnings lib/kanban/recorrencia.teste.ts && node --experimental-strip-types --no-warnings lib/kanban/modelos.teste.ts && node --experimental-strip-types --no-warnings lib/kanban/fundo.teste.ts",
     "teste:quadro": "node --experimental-strip-types --no-warnings lib/quadro/modelo.teste.ts"
   },
   "dependencies": {

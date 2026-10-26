@@ -9,8 +9,11 @@ import {
   FileTextIcon,
   FlagIcon,
   ListChecksIcon,
+  LockIcon,
   MessageSquareIcon,
   MoreHorizontalIcon,
+  PaperclipIcon,
+  RepeatIcon,
   Trash2Icon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -29,6 +32,7 @@ import { membroPorId, useEquipes } from "@/lib/estado/equipes"
 import { alternarFiltroPorResponsavel, useFiltroAtribuidos } from "@/lib/estado/filtro-atribuidos"
 import { exibicaoPadrao, useKanban } from "@/lib/estado/kanban"
 import { useNotas } from "@/lib/estado/notas"
+import { descreverRecorrencia } from "@/lib/kanban/recorrencia"
 import { rotuloPrazo } from "@/lib/tarefas-notas"
 import type { CartaoKanban, EtiquetaKanban, ExibicaoCartao, Prioridade } from "@/lib/tipos"
 
@@ -99,18 +103,29 @@ export function ConteudoCartao({
   const doCartao = exibicao.etiquetas ? etiquetas.filter((etiqueta) => cartao.etiquetas.includes(etiqueta.id)) : []
   const feitos = cartao.checklist.filter((item) => item.feito).length
   const atrasado = Boolean(hoje && cartao.prazo && cartao.prazo < hoje && !concluido)
+  // Rafael Marques - 26/10/2026: vence hoje, bloqueado por outro cartão, anexos, repetição e estimativa.
+  const venceHoje = Boolean(hoje && cartao.prazo === hoje && !concluido)
+  const bloqueado = useKanban((estado) =>
+    cartao.bloqueadoPor.some((id) => {
+      const outro = estado.cartoes.find((item) => item.id === id)
+      return Boolean(outro && !outro.arquivado && !estado.colunas.find((coluna) => coluna.id === outro.colunaId)?.concluida)
+    })
+  )
+  const mostrarExtras = !concluido && (bloqueado || cartao.anexos.length > 0 || cartao.recorrencia !== null || cartao.estimativa !== null)
 
   const mostrarPrazo = exibicao.prazo && cartao.prazo && hoje
   const mostrarProgresso = exibicao.checklist === "progresso" && cartao.checklist.length > 0
   const mostrarNota = exibicao.nota && nota
   const mostrarPrioridade = exibicao.prioridade && cartao.prioridade
   const mostrarComentarios = exibicao.comentarios && cartao.comentarios.length > 0
-  const temRodape = mostrarPrazo || mostrarProgresso || mostrarNota || mostrarPrioridade || mostrarComentarios || Boolean(responsavel)
+  const temRodape = mostrarPrazo || mostrarProgresso || mostrarNota || mostrarPrioridade || mostrarComentarios || Boolean(responsavel) || mostrarExtras || cartao.anexos.length > 0 || cartao.recorrencia !== null || cartao.estimativa !== null
 
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-lg border bg-card text-left text-sm shadow-xs",
+        "overflow-hidden rounded-lg border bg-card text-left text-sm shadow-xs transition-[transform,box-shadow] duration-200 group-hover/cartao:-translate-y-0.5 group-hover/cartao:shadow-md",
+        atrasado && "border-l-[3px] border-l-destructive",
+        venceHoje && "ring-1 ring-foreground/40",
         arrastando && "rotate-2 shadow-lg ring-2 ring-primary/30"
       )}
     >
@@ -188,6 +203,26 @@ export function ConteudoCartao({
                 <ListChecksIcon className="size-3" /> {feitos}/{cartao.checklist.length}
               </span>
             )}
+            {bloqueado && (
+              <span className="flex items-center gap-1 font-medium text-foreground" title="Bloqueado: espera outro cartão ficar pronto">
+                <LockIcon className="size-3" /> Bloqueado
+              </span>
+            )}
+            {cartao.anexos.length > 0 && (
+              <span className="flex items-center gap-1" title={`${cartao.anexos.length} anexo(s)`}>
+                <PaperclipIcon className="size-3" /> {cartao.anexos.length}
+              </span>
+            )}
+            {cartao.recorrencia && (
+              <span className="flex items-center gap-1" title={descreverRecorrencia(cartao.recorrencia)}>
+                <RepeatIcon className="size-3" />
+              </span>
+            )}
+            {cartao.estimativa !== null && (
+              <span className="rounded-full bg-muted px-1.5 text-[11px] leading-4 font-medium tabular-nums" title="Estimativa em pontos">
+                {cartao.estimativa} pt
+              </span>
+            )}
             {mostrarComentarios && (
               <span className="flex items-center gap-1" title={`${cartao.comentarios.length} comentário(s)`}>
                 <MessageSquareIcon className="size-3" /> {cartao.comentarios.length}
@@ -227,12 +262,15 @@ export function ConteudoCartao({
 
 // Cartão arrastável: também é um alvo (soltar em cima dele = entrar no lugar).
 export function Cartao({
+  ordem = 0,
   cartao,
   etiquetas,
   concluido,
   exibicao,
   aoAbrir,
 }: {
+  // Posição na coluna (atraso da animação de entrada).
+  ordem?: number
   cartao: CartaoKanban
   etiquetas: EtiquetaKanban[]
   concluido: boolean
@@ -254,7 +292,7 @@ export function Cartao({
   })
 
   return (
-    <div ref={definirAlvo} className="group/cartao relative">
+    <div ref={definirAlvo} className="animacao-cartao group/cartao relative" style={{ ["--ordem" as string]: Math.min(ordem, 12) }}>
       {/* Linha indicando onde o cartão será solto */}
       {isOver && !isDragging && <div className="absolute -top-1.5 right-0 left-0 h-0.5 rounded-full bg-primary" />}
       <div

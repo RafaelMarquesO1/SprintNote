@@ -6,7 +6,11 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 
 import { oferecerDesfazer } from "@/lib/estado/desfazer-kanban"
+import { chaveHoje } from "@/lib/datas"
 import { gerarId } from "@/lib/gerar-id"
+import { montarQuadroDoModelo, type ModeloKanban } from "@/lib/kanban/modelos"
+import { prazoDaProxima } from "@/lib/kanban/recorrencia"
+import { lerQuadroImportado } from "@/lib/kanban/transferir"
 import type {
   AtividadeCartao,
   CartaoKanban,
@@ -35,7 +39,7 @@ export function exibicaoDoQuadro(quadro: QuadroKanban | undefined): ExibicaoCart
 }
 
 type MudancasCartao = Partial<
-  Pick<CartaoKanban, "titulo" | "descricao" | "notaId" | "etiquetas" | "prazo" | "cor" | "checklist" | "prioridade" | "responsavelId">
+  Pick<CartaoKanban, "titulo" | "descricao" | "notaId" | "etiquetas" | "prazo" | "cor" | "checklist" | "prioridade" | "responsavelId" | "anexos" | "recorrencia" | "bloqueadoPor" | "estimativa">
 >
 type MudancasColuna = Partial<Pick<ColunaKanban, "titulo" | "cor" | "limite" | "concluida" | "recolhida">>
 
@@ -47,7 +51,7 @@ type EstadoKanban = {
 
   // Quadros
   criarQuadro: (titulo?: string) => QuadroKanban
-  atualizarQuadro: (id: string, mudancas: Partial<Pick<QuadroKanban, "titulo" | "icone" | "fundo">>) => void
+  atualizarQuadro: (id: string, mudancas: Partial<Pick<QuadroKanban, "titulo" | "icone" | "fundo" | "imagemFundo">>) => void
   excluirQuadro: (id: string) => void
   definirQuadroAtivo: (id: string) => void
   definirExibicao: (quadroId: string, mudancas: Partial<ExibicaoCartao>) => void
@@ -80,6 +84,11 @@ type EstadoKanban = {
   // Move o cartão para a coluna, antes do cartão "antesDeId" (ou no fim).
   moverCartao: (id: string, colunaId: IdColuna, antesDeId?: string | null) => void
   desvincularNotas: (notaIds: string[]) => void
+
+  // Rafael Marques - 26/10/2026: modelos e importação de quadros.
+  criarQuadroDeModelo: (modelo: ModeloKanban, comExemplos: boolean) => QuadroKanban
+  // Devolve o quadro criado ou o motivo da recusa.
+  importarQuadro: (conteudo: string) => { quadro: QuadroKanban } | { erro: string }
 }
 
 // Rafael Marques - 23/10/2026: exportadas para a criação de quadros de equipe.
@@ -114,6 +123,10 @@ function completarCartao(cartao: Partial<CartaoKanban> & Pick<CartaoKanban, "id"
     comentarios: [],
     atividade: [],
     responsavelId: null, // Rafael Marques - 23/10/2026
+    anexos: [], // Rafael Marques - 26/10/2026
+    recorrencia: null,
+    bloqueadoPor: [],
+    estimativa: null,
     ...cartao,
   }
 }
@@ -292,6 +305,8 @@ export const useKanban = create<EstadoKanban>()(
           titulo: `${original.titulo} (cópia)`,
           criadoEm: Date.now(),
           checklist: original.checklist.map((item) => ({ ...item, id: gerarId() })),
+          anexos: original.anexos.map((anexo) => ({ ...anexo, id: gerarId() })),
+          bloqueadoPor: [],
           comentarios: [],
           atividade: [],
         }
@@ -369,7 +384,55 @@ export const useKanban = create<EstadoKanban>()(
         const indice = antesDeId ? restantes.findIndex((item) => item.id === antesDeId) : -1
         if (indice === -1) restantes.push(movido)
         else restantes.splice(indice, 0, movido)
+        // Rafael Marques - 26/10/2026: cartão que se repete, ao ser concluído, gera o próximo.
+        const destino = get().colunas.find((coluna) => coluna.id === colunaId)
+        const origem = get().colunas.find((coluna) => coluna.id === cartao.colunaId)
+        if (cartao.recorrencia && destino?.concluida && origem && !origem.concluida) {
+          const abertas = get().colunas.filter((coluna) => coluna.quadroId === destino.quadroId && !coluna.concluida)
+          const inicial = abertas.find((coluna) => coluna.id === origem.id) ?? abertas[0]
+          if (inicial) {
+            const prazo = prazoDaProxima(cartao.prazo, cartao.recorrencia, chaveHoje())
+            const proximo = comAtividade(
+              {
+                ...cartao,
+                id: gerarId(),
+                colunaId: inicial.id,
+                criadoEm: Date.now(),
+                prazo,
+                checklist: cartao.checklist.map((item) => ({ ...item, id: gerarId(), feito: false })),
+                anexos: cartao.anexos.map((anexo) => ({ ...anexo, id: gerarId() })),
+                bloqueadoPor: [],
+                comentarios: [],
+                atividade: [],
+                arquivado: false,
+              },
+              "Criado pela repetição do cartão anterior"
+            )
+            const posicao = restantes.findIndex((item) => item.id === id)
+            restantes[posicao] = comAtividade({ ...movido, recorrencia: null }, "Repetição: o próximo cartão já foi criado")
+            restantes.push(proximo)
+          }
+        }
         set({ cartoes: restantes })
+      },
+
+      // ---------- Modelos e importação (26/10/2026) ----------
+      criarQuadroDeModelo: (modelo, comExemplos) => {
+        const { quadro, colunas, cartoes } = montarQuadroDoModelo(modelo, gerarId, completarCartao, comExemplos)
+        set({ quadros: [...get().quadros, quadro], colunas: [...get().colunas, ...colunas], cartoes: [...get().cartoes, ...cartoes], quadroAtivoId: quadro.id })
+        return quadro
+      },
+
+      importarQuadro: (conteudo) => {
+        const lido = lerQuadroImportado(conteudo, gerarId, completarCartao)
+        if ("erro" in lido) return lido
+        set({
+          quadros: [...get().quadros, lido.quadro],
+          colunas: [...get().colunas, ...lido.colunas],
+          cartoes: [...get().cartoes, ...lido.cartoes],
+          quadroAtivoId: lido.quadro.id,
+        })
+        return { quadro: lido.quadro }
       },
 
       // Quando notas são excluídas, os cartões perdem o vínculo.
@@ -382,7 +445,17 @@ export const useKanban = create<EstadoKanban>()(
     }),
     {
       name: "sprintnote-kanban",
-      version: 4,
+      // Rafael Marques - 26/10/2026: v5 = cartões com anexos, repetição, bloqueios e estimativa.
+      version: 5,
+      // Qualquer cartão guardado antes (neste navegador ou na conta) ganha os campos novos ao carregar.
+      merge: (salvo, atual) => {
+        const dados = (salvo ?? {}) as Partial<EstadoKanban>
+        return {
+          ...atual,
+          ...dados,
+          cartoes: (dados.cartoes ?? atual.cartoes).map((cartao) => completarCartao(cartao as Partial<CartaoKanban> & Pick<CartaoKanban, "id" | "titulo" | "colunaId">)),
+        }
+      },
       // Só o que é pessoal vai para o navegador e para a conta (equipes ficam no servidor).
       partialize: (estado) => ({
         ...estado,

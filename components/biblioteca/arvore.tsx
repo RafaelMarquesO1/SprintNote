@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { DndContext, DragOverlay, KeyboardSensor, PointerSensor, TouchSensor, useDraggable, useDroppable, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core"
 import { useShallow } from "zustand/react/shallow"
-import { BookPlusIcon, ChevronRightIcon, FilePlusIcon, FolderInputIcon, LibraryIcon, MoreHorizontalIcon, PencilIcon, PlusIcon, Trash2Icon, WorkflowIcon } from "lucide-react"
+import { ChevronRightIcon, FilePlusIcon, FolderInputIcon, MoreHorizontalIcon, PencilIcon, Trash2Icon, WorkflowIcon } from "lucide-react"
 
 import { Icone } from "@/components/icone"
 import { DialogoExcluirLivro } from "@/components/livros/dialogo-excluir-livro"
@@ -49,8 +49,8 @@ export function ArvoreBiblioteca({ selecao, aoSelecionar, modo = "painel", notaA
   const lateral = modo === "lateral"
   const router = useRouter()
   const { livros, notas } = useNotas(useShallow((estado) => ({ livros: estado.livros, notas: estado.notas })))
-  const { criarNota, criarLivro, moverNota, renomearNota, renomearLivro } = useNotas(
-    useShallow((estado) => ({ criarNota: estado.criarNota, criarLivro: estado.criarLivro, moverNota: estado.moverNota, renomearNota: estado.renomearNota, renomearLivro: estado.renomearLivro }))
+  const { criarNota, moverNota, renomearNota, renomearLivro } = useNotas(
+    useShallow((estado) => ({ criarNota: estado.criarNota, moverNota: estado.moverNota, renomearNota: estado.renomearNota, renomearLivro: estado.renomearLivro }))
   )
   const [abertos, setAbertos] = useState<Set<string>>(() => (typeof window === "undefined" ? new Set() : lerAbertos()))
   const [renomeando, setRenomeando] = useState<string | null>(null)
@@ -184,11 +184,6 @@ export function ArvoreBiblioteca({ selecao, aoSelecionar, modo = "painel", notaA
               aberto={abertos.has("soltas")}
               total={soltas.length}
               aoAlternar={() => alternar("soltas")}
-              aoSelecionar={() => {
-                aoSelecionar({ tipo: "soltas" })
-                abrir("soltas")
-              }}
-              aoNova={(quadro) => novaNota(null, null, quadro)}
             >
               {ramo(null, null, 1)}
             </LinhaSoltas>
@@ -312,7 +307,7 @@ function LinhaLivro({
   )
 }
 
-function LinhaSoltas({ selecionado, aberto, total, aoAlternar, aoSelecionar, aoNova, children }: { selecionado: boolean; aberto: boolean; total: number; aoAlternar: () => void; aoSelecionar: () => void; aoNova: (quadro: boolean) => void; children: React.ReactNode }) {
+function LinhaSoltas({ selecionado, aberto, total, aoAlternar, children }: { selecionado: boolean; aberto: boolean; total: number; aoAlternar: () => void; children: React.ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({ id: "soltas" })
   return (
     <div role="treeitem" aria-expanded={aberto} aria-selected={selecionado}>

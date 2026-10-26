@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import {
   closestCenter,
   DndContext,
@@ -16,7 +16,14 @@ import {
 } from "@dnd-kit/core"
 import {
   ArchiveIcon,
+  CalendarDaysIcon,
+  ChartColumnIcon,
   CheckIcon,
+  DownloadIcon,
+  LayoutTemplateIcon,
+  ListIcon,
+  Rows3Icon,
+  UploadIcon,
   FilterIcon,
   Share2Icon,
   UserCheckIcon,
@@ -67,14 +74,27 @@ import {
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { CabecalhoPagina, ResumoLinha, classeTituloEditavel } from "@/components/pagina"
-import { Interruptor, MiniaturasOpcoes, OpcoesLadoALado, PainelPersonalizar, SecaoPersonalizar } from "@/components/painel-personalizar"
+import { Interruptor, OpcoesLadoALado, PainelPersonalizar, SecaoPersonalizar } from "@/components/painel-personalizar"
 import { useHidratado } from "@/hooks/use-hidratado"
 import { useHoje } from "@/hooks/use-hoje"
 import { AvisosPrazo } from "@/components/avisos-prazo"
-import { estiloFundoQuadro, fundosQuadro, idFundoQuadro } from "@/lib/cores"
+import { DialogoModelos } from "@/components/kanban/dialogo-modelos"
+import { DialogoResumo } from "@/components/kanban/dialogo-resumo"
+import { chaveDaRaia, montarRaias, mudancasDaRaia, RaiasKanban } from "@/components/kanban/raias-kanban"
+import { CamadaFundo } from "@/components/kanban/camada-fundo"
+import { SeletorFundo } from "@/components/kanban/seletor-fundo"
+import { VisaoCalendario } from "@/components/kanban/visao-calendario"
+import { VisaoLista } from "@/components/kanban/visao-lista"
+import { AjusteFotoAoVivo } from "@/components/kanban/ajuste-foto-ao-vivo"
+import { estiloDoContraste, useLeituraDaFoto } from "@/components/kanban/leitura-foto"
+import { prepararFoto } from "@/lib/kanban/preparar-foto"
+import { ajusteFotoPadrao, codificarAjusteFoto, resolverFundoQuadro, temFundoQuadro, type AjusteFoto } from "@/lib/kanban/fundo"
 import { useEquipes } from "@/lib/estado/equipes"
 import { alternarFiltroPorResponsavel, filtrarPorResponsavel, useFiltroAtribuidos } from "@/lib/estado/filtro-atribuidos"
 import { colunasDoQuadro, exibicaoDoQuadro, exibicaoPadrao, useKanban } from "@/lib/estado/kanban"
+import { rotulosRaia, rotulosVisao, useVisaoKanban, type RaiaKanban, type VisaoKanban } from "@/lib/estado/visao-kanban"
+import { baixarArquivo, nomeSeguro } from "@/lib/exportar"
+import { exportarQuadro, quadroParaCsv } from "@/lib/kanban/transferir"
 import { criarQuadroDeEquipe } from "@/lib/estado/sincronizacao-equipes"
 import { mensagemDoErro } from "@/lib/equipes/api"
 import { descricoesPapel, rotulosPapel } from "@/lib/tipos-equipe"
@@ -161,6 +181,27 @@ export function QuadroKanban() {
   const [compartilhando, setCompartilhando] = useState(false)
   const [erroEquipe, setErroEquipe] = useState<string | null>(null)
   const meuId = conta?.usuario.id ?? null
+  // Rafael Marques - 26/10/2026: visões (quadro, lista, calendário), raias, modelos, resumo, seleção e importação.
+  const visoes = useVisaoKanban((estado) => estado.visoes)
+  const raiasGuardadas = useVisaoKanban((estado) => estado.raias)
+  const definirVisao = useVisaoKanban((estado) => estado.definirVisao)
+  const definirRaia = useVisaoKanban((estado) => estado.definirRaia)
+  const importarQuadro = useKanban((estado) => estado.importarQuadro)
+  const atualizarCartao = useKanban((estado) => estado.atualizarCartao)
+  const [escolhendoModelo, setEscolhendoModelo] = useState(false)
+  const [verResumo, setVerResumo] = useState(false)
+  const [avisoArquivo, setAvisoArquivo] = useState<string | null>(null)
+  const entradaArquivo = useRef<HTMLInputElement>(null)
+  // Rafael Marques - 26/10/2026: com foto de fundo, as letras do cabeçalho ficam claras ou escuras conforme a foto.
+  const quadroDaVez = quadros.find((item) => item.id === quadroAtivoId) ?? quadros[0]
+  const fotoDaVez = quadroDaVez ? resolverFundoQuadro(quadroDaVez.fundo, quadroDaVez.imagemFundo) : null
+  // Ajuste ao vivo da foto (rascunho mostrado no próprio quadro até "Aplicar").
+  const [rascunhoFoto, setRascunhoFoto] = useState<{ imagem: string; ajuste: AjusteFoto } | null>(null)
+  const [preparandoFoto, setPreparandoFoto] = useState(false)
+  const [avisoFoto, setAvisoFoto] = useState<string | null>(null)
+  const [personalizarAberto, setPersonalizarAberto] = useState(false)
+  // Visibilidade, brilho e cor das letras: calculados pela foto e pelo tema.
+  const { automatico, contraste } = useLeituraDaFoto(rascunhoFoto?.imagem ?? (fotoDaVez?.tipo === "foto" ? quadroDaVez?.imagemFundo : null))
 
   const sensores = useSensors(
     // Precisa arrastar 5px para começar: assim um clique simples abre o cartão.
@@ -189,6 +230,8 @@ export function QuadroKanban() {
   }
 
   const colunas = colunasDoQuadro(todasColunas, quadro.id)
+  const visao: VisaoKanban = visoes[quadro.id] ?? "quadro"
+  const raiaEscolhida: RaiaKanban = raiasGuardadas[quadro.id] ?? "nenhuma"
   const exibicao = exibicaoDoQuadro(quadro)
   const idsColunas = new Set(colunas.map((coluna) => coluna.id))
   const termo = busca.trim().toLowerCase()
@@ -197,6 +240,30 @@ export function QuadroKanban() {
   const responsavelFiltrado = equipeDoQuadro?.membros.find((membro) => membro.id === filtroResp) ?? null
   const filtroEMeu = responsavelFiltrado !== null && responsavelFiltrado.id === meuId
   const meuPapel = quadro.equipeId ? papelDoQuadro[quadro.id] : undefined
+  const membrosDoQuadro = equipeDoQuadro?.membros ?? []
+  // "Por pessoa" só faz sentido em quadro de equipe.
+  const raia: RaiaKanban = raiaEscolhida === "responsavel" && !equipeDoQuadro ? "nenhuma" : raiaEscolhida
+  const vidro = rascunhoFoto !== null || temFundoQuadro(quadro.fundo, quadro.imagemFundo)
+
+  async function ajustarFoto(arquivo?: File) {
+    setPersonalizarAberto(false)
+    setAvisoFoto(null)
+    const atual = resolverFundoQuadro(quadro.fundo, quadro.imagemFundo)
+    if (!arquivo) {
+      if (quadro.imagemFundo) setRascunhoFoto({ imagem: quadro.imagemFundo, ajuste: atual?.tipo === "foto" ? atual.ajuste : ajusteFotoPadrao })
+      return
+    }
+    setPreparandoFoto(true)
+    try {
+      const imagem = await prepararFoto(arquivo)
+      setRascunhoFoto({ imagem, ajuste: ajusteFotoPadrao })
+    } catch (erro) {
+      setAvisoFoto(erro instanceof Error ? erro.message : "Não consegui usar essa imagem.")
+      if (!rascunhoFoto) setPersonalizarAberto(true)
+    } finally {
+      setPreparandoFoto(false)
+    }
+  }
   const filtrando = Boolean(termo) || filtroEtiquetas.length > 0 || filtroPrioridades.length > 0 || soAtrasados || Boolean(responsavelFiltrado)
   const concluidaId = (colunaId: string) => Boolean(colunas.find((coluna) => coluna.id === colunaId)?.concluida)
   const visivel = (cartao: (typeof cartoes)[number]) =>
@@ -231,10 +298,14 @@ export function QuadroKanban() {
     const id = active.data.current?.cartaoId as string
     if (!cartoes.some((cartao) => cartao.id === id)) return
 
+    const movido = cartoes.find((cartao) => cartao.id === id)!
     // Soltou na coluna (área vazia): vai para o fim dela.
     const colunaAlvo = over.data.current?.colunaId as string | undefined
     if (colunaAlvo) {
       moverCartao(id, colunaAlvo, null)
+      // Com raias, a raia da coluna onde soltou vira o novo valor do cartão.
+      const chaveRaia = over.data.current?.raiaChave as string | undefined
+      if (raia !== "nenhuma" && chaveRaia !== undefined) atualizarCartao(id, mudancasDaRaia(raia, chaveRaia, movido))
       return
     }
 
@@ -242,6 +313,7 @@ export function QuadroKanban() {
     const idAlvo = over.data.current?.cartaoId as string
     const cartaoAlvo = cartoes.find((cartao) => cartao.id === idAlvo)
     if (!cartaoAlvo || idAlvo === id) return
+    if (raia !== "nenhuma") atualizarCartao(id, mudancasDaRaia(raia, chaveDaRaia(raia, cartaoAlvo, quadro.etiquetas), movido))
     const daColuna = cartoes.filter((cartao) => cartao.colunaId === cartaoAlvo.colunaId)
     const indiceMovido = daColuna.findIndex((cartao) => cartao.id === id)
     const indiceAlvo = daColuna.findIndex((cartao) => cartao.id === idAlvo)
@@ -249,6 +321,22 @@ export function QuadroKanban() {
     const antesDeId =
       indiceMovido !== -1 && indiceMovido < indiceAlvo ? (daColuna[indiceAlvo + 1]?.id ?? null) : idAlvo
     moverCartao(id, cartaoAlvo.colunaId, antesDeId)
+  }
+
+  function exportarJson() {
+    const arquivo = exportarQuadro(quadro, colunas, todosDoQuadro)
+    baixarArquivo(`${nomeSeguro(quadro.titulo)}.sprintnote-quadro.json`, JSON.stringify(arquivo, null, 2), "application/json")
+  }
+  function exportarCsv() {
+    baixarArquivo(`${nomeSeguro(quadro.titulo)}.csv`, quadroParaCsv(colunas, todosDoQuadro, quadro.etiquetas), "text/csv;charset=utf-8")
+  }
+  async function aoEscolherArquivo(evento: React.ChangeEvent<HTMLInputElement>) {
+    const arquivo = evento.target.files?.[0]
+    evento.target.value = ""
+    if (!arquivo) return
+    if (arquivo.size > 8 * 1024 * 1024) return setAvisoArquivo("O arquivo é grande demais (máximo de 8 MB).")
+    const resultado = importarQuadro(await arquivo.text())
+    setAvisoArquivo("erro" in resultado ? resultado.erro : null)
   }
 
   function moverColunaPorMenu(coluna: ColunaKanban, delta: -1 | 1) {
@@ -271,9 +359,11 @@ export function QuadroKanban() {
   ).length
 
   return (
-    <div className="-mx-4 -mt-4 flex min-h-[calc(100svh-3rem)] flex-col md:-mx-6 md:-mt-6" style={estiloFundoQuadro(quadro.fundo)}>
+    // Rafael Marques - 26/10/2026: fundo numa camada própria (modelo neutro ou foto) e animações de entrada.
+    <div className="relative isolate -mx-4 -mt-4 flex min-h-[calc(100svh-3rem)] flex-col md:-mx-6 md:-mt-6">
+      <CamadaFundo quadro={quadro} automatico={automatico} rascunho={rascunhoFoto} />
       {/* Cabeçalho no padrão das outras telas + números do quadro */}
-      <div className="space-y-3 px-4 pt-4 md:space-y-5 md:px-6 md:pt-6">
+      <div className="space-y-3 px-4 pt-4 transition-colors duration-500 md:space-y-5 md:px-6 md:pt-6" style={contraste ? estiloDoContraste[contraste] : undefined}>
         <CabecalhoPagina
           compactoNoCelular
           secao="Organização · Kanban"
@@ -354,6 +444,7 @@ export function QuadroKanban() {
                   })}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => criarQuadro("Novo quadro")}><PlusIcon /> Novo quadro</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setEscolhendoModelo(true)}><LayoutTemplateIcon /> Novo a partir de um modelo…</DropdownMenuItem>
                   {equipes.filter((equipe) => equipe.meuPapel !== "leitor").map((equipe) => (
                     <DropdownMenuItem
                       key={equipe.id}
@@ -366,29 +457,23 @@ export function QuadroKanban() {
               </DropdownMenu>
 
               <PainelPersonalizar
+                aberto={personalizarAberto}
+                aoMudarAberto={setPersonalizarAberto}
                 titulo="Aparência do quadro"
                 descricao="As mudanças aparecem na hora."
                 tamanhoBotao="sm"
                 aoRestaurar={() => {
                   definirExibicao(quadro.id, exibicaoPadrao)
-                  atualizarQuadro(quadro.id, { fundo: null })
+                  atualizarQuadro(quadro.id, { fundo: null, imagemFundo: null })
                 }}
               >
                 <SecaoPersonalizar titulo="Fundo do quadro">
-                  <MiniaturasOpcoes
-                    rotulo="Fundo do quadro"
-                    colunas={4}
-                    valor={idFundoQuadro(quadro.fundo) ?? "nenhum"}
-                    aoMudar={(valor) => atualizarQuadro(quadro.id, { fundo: valor === "nenhum" ? null : valor })}
-                    opcoes={[
-                      { valor: "nenhum", rotulo: "Nenhum", previa: <span className="size-full bg-background" /> },
-                      ...fundosQuadro.map((fundo) => ({
-                        valor: fundo.id,
-                        rotulo: fundo.nome,
-                        previa: <span className="size-full bg-background"><span className="block size-full" style={{ background: fundo.valor }} /></span>,
-                      })),
-                    ]}
-                  />
+                  <SeletorFundo fundo={quadro.fundo} imagem={quadro.imagemFundo} aoMudar={(mudancas) => atualizarQuadro(quadro.id, mudancas)} aoAjustarFoto={(arquivo) => void ajustarFoto(arquivo)} />
+                  {avisoFoto && !rascunhoFoto && (
+                    <p role="alert" className="text-xs text-destructive">
+                      {avisoFoto}
+                    </p>
+                  )}
                 </SecaoPersonalizar>
                 <SecaoPersonalizar titulo="Mostrar nos cartões">
                   <Interruptor
@@ -425,11 +510,16 @@ export function QuadroKanban() {
                   <MoreHorizontalIcon />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem onClick={() => setVerResumo(true)}><ChartColumnIcon /> Resumo do quadro…</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setEditandoEtiquetas(true)}><TagIcon /> Etiquetas…</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setNovaColuna("")}><PlusIcon /> Nova coluna</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setVerArquivados(true)}>
                     <ArchiveIcon /> Arquivados{arquivados.length > 0 && ` (${arquivados.length})`}
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={exportarJson}><DownloadIcon /> Exportar quadro (.json)</DropdownMenuItem>
+                  <DropdownMenuItem onClick={exportarCsv}><DownloadIcon /> Exportar planilha (.csv)</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => entradaArquivo.current?.click()}><UploadIcon /> Importar quadro…</DropdownMenuItem>
                   <DropdownMenuSeparator />
                   {!quadro.equipeId && equipes.some((equipe) => equipe.meuPapel !== "leitor") && (
                     <DropdownMenuItem onClick={() => setCompartilhando(true)}><Share2Icon /> Compartilhar com equipe…</DropdownMenuItem>
@@ -481,6 +571,42 @@ export function QuadroKanban() {
             <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input value={busca} onChange={(evento) => setBusca(evento.target.value)} placeholder="Filtrar cartões…" aria-label="Filtrar cartões" className="h-8 w-full bg-background/70 pl-8 md:w-52" />
           </div>
+          <div role="tablist" aria-label="Como ver o quadro" className="inline-flex rounded-lg border bg-background/70 p-0.5">
+            {([
+              { id: "quadro", Icone: KanbanIcon },
+              { id: "lista", Icone: ListIcon },
+              { id: "calendario", Icone: CalendarDaysIcon },
+            ] as const).map(({ id, Icone: IconeVisao }) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={visao === id}
+                title={rotulosVisao[id]}
+                onClick={() => definirVisao(quadro.id, id)}
+                className={cn("flex h-7 items-center gap-1.5 rounded-md px-2 text-xs font-medium", visao === id ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground")}
+              >
+                <IconeVisao className="size-3.5" /> <span className="max-sm:hidden">{rotulosVisao[id]}</span>
+              </button>
+            ))}
+          </div>
+          {visao === "quadro" && (
+            <DropdownMenu>
+              <DropdownMenuTrigger render={<Button variant="outline" size="sm" className="bg-background/70" aria-label="Agrupar em raias" />}>
+                <Rows3Icon /> <span className="max-sm:hidden">{raia === "nenhuma" ? "Raias" : rotulosRaia[raia]}</span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-48">
+                <p className="px-1.5 py-1 text-xs font-medium text-muted-foreground">Agrupar o quadro</p>
+                {(Object.keys(rotulosRaia) as RaiaKanban[])
+                  .filter((opcao) => opcao !== "responsavel" || equipeDoQuadro)
+                  .map((opcao) => (
+                    <DropdownMenuItem key={opcao} onClick={() => definirRaia(quadro.id, opcao)}>
+                      {rotulosRaia[opcao]} {raia === opcao && <CheckIcon className="ml-auto" />}
+                    </DropdownMenuItem>
+                  ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -505,7 +631,7 @@ export function QuadroKanban() {
                 aria-pressed={ativa}
                 onClick={() => setFiltroEtiquetas(ativa ? filtroEtiquetas.filter((id) => id !== etiqueta.id) : [...filtroEtiquetas, etiqueta.id])}
                 className={cn("rounded-md px-2 py-0.5 text-xs font-medium transition-opacity", !ativa && "opacity-60 hover:opacity-100")}
-                style={{ background: `color-mix(in oklch, ${etiqueta.cor} ${ativa ? 28 : 14}%, transparent)`, color: etiqueta.cor }}
+                style={{ background: `color-mix(in oklch, ${etiqueta.cor} ${ativa ? 28 : 14}%, var(--background))`, color: etiqueta.cor }}
               >
                 {etiqueta.nome}
               </button>
@@ -551,8 +677,30 @@ export function QuadroKanban() {
         </div>
       </div>
 
+      {avisoArquivo && (
+        <p role="alert" className="mx-4 mt-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive md:mx-6">
+          {avisoArquivo}
+        </p>
+      )}
+      <input ref={entradaArquivo} type="file" accept=".json,application/json" className="hidden" onChange={aoEscolherArquivo} aria-label="Importar quadro" />
+
+      {visao === "lista" && (
+        <div key="lista" className="animacao-visao">
+        <VisaoLista
+          cartoes={cartoesDoQuadro.filter(visivel)}
+          colunas={colunas}
+          etiquetas={quadro.etiquetas}
+          vidro={vidro}
+          aoAbrir={(cartao) => setIdAberto(cartao.id)}
+        />
+        </div>
+      )}
+      {visao === "calendario" && (
+        <div key="calendario" className="animacao-visao"><VisaoCalendario cartoes={cartoesDoQuadro.filter(visivel)} colunas={colunas} vidro={vidro} aoAbrir={(cartao) => setIdAberto(cartao.id)} somenteLeitura={meuPapel === "leitor"} /></div>
+      )}
+
       {/* Colunas */}
-      <DndContext
+      {visao === "quadro" && <DndContext
         id="quadro-kanban"
         sensors={sensores}
         collisionDetection={detectarColisao}
@@ -571,6 +719,18 @@ export function QuadroKanban() {
           },
         }}
       >
+        {raia !== "nenhuma" ? (
+          <RaiasKanban
+            raias={montarRaias(raia, cartoesDoQuadro.filter(visivel), quadro.etiquetas, membrosDoQuadro)}
+            colunas={colunas}
+            etiquetas={quadro.etiquetas}
+            exibicao={exibicao}
+            vidro={vidro}
+            aoAbrirCartao={(cartao) => setIdAberto(cartao.id)}
+            aoMoverColuna={moverColunaPorMenu}
+            aoExcluirColuna={setColunaParaExcluir}
+          />
+        ) : (
         <div className="flex flex-1 items-start gap-3 overflow-x-auto px-4 pt-2 pb-6 md:px-6 md:pt-4">
           {colunas.map((coluna, indice) => (
             <Coluna
@@ -579,6 +739,7 @@ export function QuadroKanban() {
               cartoes={cartoes.filter((cartao) => cartao.colunaId === coluna.id && visivel(cartao))}
               etiquetas={quadro.etiquetas}
               exibicao={exibicao}
+              vidro={vidro}
               posicao={indice}
               total={colunas.length}
               aoAbrirCartao={(cartao) => setIdAberto(cartao.id)}
@@ -592,13 +753,13 @@ export function QuadroKanban() {
             <button
               type="button"
               onClick={() => setNovaColuna("")}
-              className="flex h-12 w-[80vw] max-w-72 shrink-0 items-center gap-2 rounded-xl border border-dashed sm:w-72 bg-background/40 px-3 text-sm text-muted-foreground hover:bg-background/70 hover:text-foreground"
+              className={cn("flex h-12 w-[80vw] max-w-72 shrink-0 items-center gap-2 rounded-xl border border-dashed px-3 text-sm text-muted-foreground hover:text-foreground sm:w-72", vidro ? "bg-card/90 backdrop-blur-xl hover:bg-card" : "bg-background/40 hover:bg-background/70")}
             >
               <PlusIcon className="size-4" /> Adicionar coluna
             </button>
           ) : (
             <form
-              className="w-[80vw] max-w-72 shrink-0 space-y-2 rounded-xl bg-muted/60 p-2 sm:w-72"
+              className="w-[80vw] max-w-72 shrink-0 space-y-2 rounded-xl border border-foreground/10 bg-card/90 p-2 backdrop-blur-xl sm:w-72"
               onSubmit={(evento) => {
                 evento.preventDefault()
                 if (!novaColuna.trim()) return
@@ -621,6 +782,7 @@ export function QuadroKanban() {
             </form>
           )}
         </div>
+        )}
 
         <DragOverlay>
           {cartaoArrastado && (
@@ -638,7 +800,7 @@ export function QuadroKanban() {
             </div>
           )}
         </DragOverlay>
-      </DndContext>
+      </DndContext>}
 
       <DialogoCartao
         cartao={cartaoAberto}
@@ -648,6 +810,46 @@ export function QuadroKanban() {
       />
       <DialogoArquivados cartoes={arquivados} aberto={verArquivados} aoMudarAberto={setVerArquivados} aoAbrirCartao={(cartao) => { setVerArquivados(false); setIdAberto(cartao.id) }} />
       <AvisoDesfazer />
+      {rascunhoFoto && (
+        <AjusteFotoAoVivo
+          ajuste={rascunhoFoto.ajuste}
+          aoMudar={(ajuste) => setRascunhoFoto((atual) => (atual ? { ...atual, ajuste } : atual))}
+          aoTrocarFoto={(arquivo) => {
+            setPreparandoFoto(true)
+            prepararFoto(arquivo)
+              .then((imagem) => setRascunhoFoto({ imagem, ajuste: ajusteFotoPadrao }))
+              .catch((erro) => setAvisoFoto(erro instanceof Error ? erro.message : "Não consegui usar essa imagem."))
+              .finally(() => setPreparandoFoto(false))
+          }}
+          aoRemover={() => {
+            atualizarQuadro(quadro.id, { fundo: null, imagemFundo: null })
+            setRascunhoFoto(null)
+          }}
+          aoCancelar={() => {
+            setRascunhoFoto(null)
+            setAvisoFoto(null)
+          }}
+          aoAplicar={() => {
+            atualizarQuadro(quadro.id, { ...(rascunhoFoto.imagem !== quadro.imagemFundo ? { imagemFundo: rascunhoFoto.imagem } : {}), fundo: codificarAjusteFoto(rascunhoFoto.ajuste) })
+            setRascunhoFoto(null)
+          }}
+          preparando={preparandoFoto}
+          aviso={avisoFoto}
+        />
+      )}
+      <DialogoModelos aberto={escolhendoModelo} aoMudarAberto={setEscolhendoModelo} />
+      <DialogoResumo
+        aberto={verResumo}
+        aoMudarAberto={setVerResumo}
+        quadro={quadro}
+        colunas={colunas}
+        cartoes={cartoesDoQuadro}
+        membros={equipeDoQuadro ? membrosDoQuadro : undefined}
+        aoAbrirCartao={(cartao) => {
+          setVerResumo(false)
+          setIdAberto(cartao.id)
+        }}
+      />
       <PaineisKanban />
       <DialogoCompartilhar quadro={quadro} aberto={compartilhando} aoMudarAberto={setCompartilhando} />
       <DialogoEtiquetas quadro={quadro} aberto={editandoEtiquetas} aoMudarAberto={setEditandoEtiquetas} />

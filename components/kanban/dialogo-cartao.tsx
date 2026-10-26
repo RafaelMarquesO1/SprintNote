@@ -10,6 +10,8 @@ import { useConta } from "@/components/conta/portao-conta"
 import { AvatarPessoa } from "@/components/equipes/avatar-pessoa"
 import { useEquipes } from "@/lib/estado/equipes"
 import { estilosPrioridade } from "@/components/kanban/cartao-kanban"
+import { Propriedade, Secao } from "@/components/kanban/blocos-cartao"
+import { PropriedadesExtras, SecaoAnexos } from "@/components/kanban/extras-cartao"
 import { SeletorCor } from "@/components/kanban/dialogos-quadro"
 import { classeSelect } from "@/components/tarefas/dialogo-tarefa"
 import { Button } from "@/components/ui/button"
@@ -132,29 +134,6 @@ function Comentarios({ cartao }: { cartao: CartaoKanban }) {
   )
 }
 
-// Bloco da lateral direita (propriedades do cartão).
-function Propriedade({ titulo, children }: { titulo: string; children: React.ReactNode }) {
-  return (
-    <section className="space-y-1.5">
-      <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{titulo}</h3>
-      {children}
-    </section>
-  )
-}
-
-// Seção da coluna principal (descrição e checklist).
-function Secao({ titulo, icone: IconeSecao, extra, children }: { titulo: string; icone: React.ElementType; extra?: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <section className="space-y-2">
-      <h3 className="flex items-center gap-2 text-sm font-semibold">
-        <IconeSecao className="size-4 text-muted-foreground" /> {titulo}
-        {extra && <span className="ml-auto text-xs font-normal text-muted-foreground">{extra}</span>}
-      </h3>
-      {children}
-    </section>
-  )
-}
-
 const classeCampoTexto =
   "w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
 
@@ -169,6 +148,7 @@ function FormularioCartao({ cartao, aoFechar }: { cartao: CartaoKanban; aoFechar
   const excluirCartao = useKanban((estado) => estado.excluirCartao)
   const arquivarCartao = useKanban((estado) => estado.arquivarCartao)
   const criarEtiqueta = useKanban((estado) => estado.criarEtiqueta)
+  const todosCartoes = useKanban((estado) => estado.cartoes)
   const notas = useNotas((estado) => estado.notas)
   const livros = useNotas((estado) => estado.livros)
   const criarNota = useNotas((estado) => estado.criarNota)
@@ -184,6 +164,11 @@ function FormularioCartao({ cartao, aoFechar }: { cartao: CartaoKanban; aoFechar
   const notaVinculada = notas.find((nota) => nota.id === cartao.notaId)
   const atualizar = (mudancas: Parameters<typeof atualizarCartao>[1], atividade?: string) => atualizarCartao(cartao.id, mudancas, atividade)
   const feitos = cartao.checklist.filter((item) => item.feito).length
+  // Rafael Marques - 26/10/2026: cartões do mesmo quadro (para bloqueios) e colunas de concluídos.
+  const colunasDoMesmoQuadro = colunasDoQuadro(colunas, quadro?.id ?? null)
+  const idsColunas = new Set(colunasDoMesmoQuadro.map((item) => item.id))
+  const cartoesDoQuadro = todosCartoes.filter((item) => idsColunas.has(item.colunaId))
+  const idsConcluidas = new Set(colunasDoMesmoQuadro.filter((item) => item.concluida).map((item) => item.id))
 
   function alternarEtiqueta(id: string) {
     atualizar({ etiquetas: cartao.etiquetas.includes(id) ? cartao.etiquetas.filter((item) => item !== id) : [...cartao.etiquetas, id] })
@@ -290,6 +275,8 @@ function FormularioCartao({ cartao, aoFechar }: { cartao: CartaoKanban; aoFechar
             </form>
           </Secao>
 
+          <SecaoAnexos cartao={cartao} atualizar={atualizar} />
+
           <Comentarios cartao={cartao} />
         </div>
 
@@ -384,6 +371,8 @@ function FormularioCartao({ cartao, aoFechar }: { cartao: CartaoKanban; aoFechar
               )}
             </div>
           </Propriedade>
+
+          <PropriedadesExtras cartao={cartao} atualizar={atualizar} cartoesDoQuadro={cartoesDoQuadro} concluidas={idsConcluidas} />
 
           <Propriedade titulo="Cor">
             <SeletorCor valor={cartao.cor} aoMudar={(cor) => atualizar({ cor })} permitirNenhuma />

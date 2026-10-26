@@ -35,10 +35,24 @@ export const ordemTipos: TipoNovidade[] = ["novo", "melhorado", "corrigido"]
 export const NOVIDADES: Novidade[] = [
   // Rafael Marques - 26/10/2026
   {
+    id: "2026-10-26-b",
+    versao: "1.2a",
+    data: "26/10/2026",
+    titulo: "Kanban turbinado",
+    resumo: "Novas formas de ver e organizar o Kanban, cartões mais completos e fundo com a sua foto.",
+    itens: [
+      { tipo: "novo", titulo: "Kanban em lista e calendário", texto: "Veja o quadro como lista ou calendário e agrupe em raias por pessoa, prioridade ou etiqueta." },
+      { tipo: "novo", titulo: "Mais nos cartões", texto: "Anexos, repetição, bloqueios e pontos de estimativa, também nos quadros de equipe, além de um resumo do quadro." },
+      { tipo: "novo", titulo: "Modelos e importação", texto: "Crie quadros prontos (Sprint, Estudos, Atendimento…) e exporte ou importe quadros." },
+      { tipo: "melhorado", titulo: "Fundo com a sua foto", texto: "Use uma foto como fundo do quadro e enquadre direto no quadro. Brilho, transparência e a cor das letras se ajustam sozinhos ao tema; você escolhe zoom e desfoque." },
+    ],
+  },
+  // Rafael Marques - 26/10/2026
+  {
     id: "2026-10-26",
     versao: "1.2",
     data: "26/10/2026",
-    titulo: "Novo editor de notas e quadros",
+    titulo: "Novo editor e quadros livres",
     resumo: "Escreva com o texto já formatado e desenhe ideias em quadros.",
     itens: [
       { tipo: "novo", titulo: "Novo editor", texto: "Texto formatado na hora, menu “/” para inserir blocos, imagens e tabelas." },

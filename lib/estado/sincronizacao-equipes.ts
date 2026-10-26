@@ -183,7 +183,7 @@ export async function criarQuadroDeEquipe(equipeId: string, titulo = "Novo quadr
   const papel = useEquipes.getState().equipes.find((equipe) => equipe.id === equipeId)?.meuPapel ?? "editor"
   definirPapel(id, papel)
   // O servidor só tem o quadro vazio: o que está na tela é enviado como mudança.
-  bases.set(id, { versao: 1, foto: { quadro: { ...quadro, fundo: null, exibicao: {}, etiquetas: [] }, colunas: [], cartoes: [] } })
+  bases.set(id, { versao: 1, foto: { quadro: { ...quadro, fundo: null, imagemFundo: null, exibicao: {}, etiquetas: [] }, colunas: [], cartoes: [] } })
   agendar(id, 50)
   void recarregarEquipes().catch(() => undefined)
   return id
@@ -209,7 +209,7 @@ export async function compartilharQuadroPessoal(quadroId: string, equipeId: stri
   })
   const papel = useEquipes.getState().equipes.find((equipe) => equipe.id === equipeId)?.meuPapel ?? "editor"
   definirPapel(novoId, papel)
-  bases.set(novoId, { versao: 1, foto: { quadro: { ...quadro, id: novoId, equipeId, fundo: null, exibicao: {}, etiquetas: [] }, colunas: [], cartoes: [] } })
+  bases.set(novoId, { versao: 1, foto: { quadro: { ...quadro, id: novoId, equipeId, fundo: null, imagemFundo: null, exibicao: {}, etiquetas: [] }, colunas: [], cartoes: [] } })
   agendar(novoId, 50)
   void recarregarEquipes().catch(() => undefined)
   return novoId

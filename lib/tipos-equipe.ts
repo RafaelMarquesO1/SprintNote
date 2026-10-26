@@ -77,7 +77,8 @@ export type QuadroEquipeBaixado = {
 export type CartaoGravar = Omit<CartaoKanban, "comentarios" | "atividade" | "notaId" | "criadoEm">
 
 export type OperacoesQuadro = {
-  quadro?: { titulo?: string; icone?: string; fundo?: string | null; exibicao?: Partial<ExibicaoCartao> }
+  // Rafael Marques - 26/10/2026: imagemFundo = foto nova (data URL) ou null para remover.
+  quadro?: { titulo?: string; icone?: string; fundo?: string | null; imagemFundo?: string | null; exibicao?: Partial<ExibicaoCartao> }
   colunas?: { gravar: (ColunaKanban & { ordem: number })[]; excluir: string[] }
   etiquetas?: { gravar: (EtiquetaKanban & { ordem: number })[]; excluir: string[] }
   cartoes?: { gravar: (CartaoGravar & { ordem: number })[]; excluir: string[] }

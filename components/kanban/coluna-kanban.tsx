@@ -131,6 +131,8 @@ export function Coluna({
   cartoes,
   etiquetas,
   exibicao,
+  vidro = false,
+  raia,
   posicao,
   total,
   aoAbrirCartao,
@@ -141,6 +143,10 @@ export function Coluna({
   cartoes: CartaoKanban[]
   etiquetas: EtiquetaKanban[]
   exibicao: ExibicaoCartao
+  // Rafael Marques - 26/10/2026: com fundo no quadro, a coluna fica em "vidro" (mais opaca, com desfoque e borda) para se destacar.
+  vidro?: boolean
+  // Rafael Marques - 26/10/2026: chave da raia (linha) em que esta coluna aparece; na vista com raias a coluna não se arrasta.
+  raia?: string
   posicao: number
   total: number
   aoAbrirCartao: (cartao: CartaoKanban) => void
@@ -149,13 +155,13 @@ export function Coluna({
 }) {
   const atualizarColuna = useKanban((estado) => estado.atualizarColuna)
   const [editando, setEditando] = useState(false)
-  const { setNodeRef: definirAlvo, isOver } = useDroppable({ id: PREFIXO_COLUNA + coluna.id, data: { colunaId: coluna.id } })
+  const { setNodeRef: definirAlvo, isOver } = useDroppable({ id: PREFIXO_COLUNA + coluna.id + (raia ? `@${raia}` : ""), data: { colunaId: coluna.id, raiaChave: raia } })
   const {
     setNodeRef: definirArrastavel,
     listeners,
     attributes,
     isDragging,
-  } = useDraggable({ id: PREFIXO_ARRASTAR_COLUNA + coluna.id, data: { colunaArrastadaId: coluna.id } })
+  } = useDraggable({ id: PREFIXO_ARRASTAR_COLUNA + coluna.id, data: { colunaArrastadaId: coluna.id }, disabled: Boolean(raia) })
 
   const passouDoLimite = coluna.limite !== null && cartoes.length > coluna.limite
 
@@ -167,7 +173,7 @@ export function Coluna({
           type="button"
           onClick={() => atualizarColuna(coluna.id, { recolhida: false })}
           title="Expandir coluna"
-          className="flex h-64 w-10 flex-col items-center gap-2 rounded-xl bg-muted/60 py-3 text-sm font-semibold hover:bg-muted"
+          className={cn("flex h-64 w-10 flex-col items-center gap-2 rounded-xl py-3 text-sm font-semibold", vidro ? "border border-foreground/10 bg-card/90 backdrop-blur-xl hover:bg-card/95" : "bg-muted/60 hover:bg-muted")}
         >
           {coluna.cor && <span className="size-2.5 rounded-full" style={{ background: coluna.cor }} />}
           <span className="text-xs text-muted-foreground tabular-nums">{cartoes.length}</span>
@@ -185,14 +191,15 @@ export function Coluna({
       }}
       aria-label={coluna.titulo}
       className={cn(
-        "flex w-[80vw] max-w-72 shrink-0 flex-col gap-2 rounded-xl bg-muted/60 p-2 backdrop-blur-sm transition-colors sm:w-72",
-        isOver && "bg-muted ring-2 ring-primary/20",
+        "animacao-entrar flex w-[80vw] max-w-72 shrink-0 flex-col gap-2 rounded-xl p-2 transition-colors sm:w-72",
+        vidro ? "border border-foreground/10 bg-card/90 shadow-sm backdrop-blur-xl" : "bg-muted/60 backdrop-blur-sm",
+        isOver && (vidro ? "bg-card/95 ring-2 ring-primary/30" : "bg-muted ring-2 ring-primary/20"),
         isDragging && "opacity-40"
       )}
-      style={coluna.cor ? estiloFaixa(coluna.cor) : undefined}
+      style={{ ...(coluna.cor ? estiloFaixa(coluna.cor) : {}), ["--ordem" as string]: posicao }}
     >
       <header className="flex items-center gap-1 px-1 pt-1">
-        <button
+        {!raia && <button
           type="button"
           aria-label={`Arrastar a coluna ${coluna.titulo}`}
           title="Arraste para reordenar"
@@ -201,7 +208,7 @@ export function Coluna({
           {...attributes}
         >
           <GripVerticalIcon className="size-4" />
-        </button>
+        </button>}
         {coluna.cor && <span className="size-2.5 shrink-0 rounded-full" style={{ background: coluna.cor }} />}
         <TituloColuna coluna={coluna} editando={editando} aoEditar={setEditando} />
         {coluna.concluida && <CheckCheckIcon className="size-3.5 shrink-0 text-muted-foreground" aria-label="Coluna de concluídos" />}
@@ -260,8 +267,8 @@ export function Coluna({
       </header>
 
       <div className="flex min-h-16 flex-col gap-2">
-        {cartoes.map((cartao) => (
-          <Cartao key={cartao.id} cartao={cartao} etiquetas={etiquetas} concluido={coluna.concluida} exibicao={exibicao} aoAbrir={() => aoAbrirCartao(cartao)} />
+        {cartoes.map((cartao, indice) => (
+          <Cartao key={cartao.id} ordem={indice} cartao={cartao} etiquetas={etiquetas} concluido={coluna.concluida} exibicao={exibicao} aoAbrir={() => aoAbrirCartao(cartao)} />
         ))}
       </div>
       <NovoCartao colunaId={coluna.id} />

@@ -486,3 +486,16 @@ select optgroup {
   .drag-handle { z-index: 20; display: flex; }
 }
 
+
+/* Rafael Marques - 26/10/2026: animações do Kanban (colunas entram em cascata, cartões logo depois,
+   o fundo esmaece ao trocar). Quem pede menos movimento no sistema não vê nenhuma. */
+@keyframes kanban-entrar { from { opacity: 0; transform: translateY(12px) scale(0.98); } }
+@keyframes kanban-cartao { from { opacity: 0; transform: translateY(8px); } }
+@keyframes kanban-esmaecer { from { opacity: 0; } }
+.animacao-entrar { animation: kanban-entrar 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: calc(var(--ordem, 0) * 60ms); }
+.animacao-cartao { animation: kanban-cartao 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: calc(var(--ordem, 0) * 35ms + 150ms); }
+.animacao-fundo { animation: kanban-esmaecer 0.7s ease-out backwards; }
+.animacao-visao { animation: kanban-esmaecer 0.3s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .animacao-entrar, .animacao-cartao, .animacao-fundo, .animacao-visao { animation: none; }
+}

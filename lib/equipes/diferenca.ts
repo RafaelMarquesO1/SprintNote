@@ -36,6 +36,11 @@ const chaveCartao = (cartao: CartaoKanban, ordem: number) =>
     cartao.prioridade,
     cartao.arquivado,
     cartao.responsavelId,
+    // Rafael Marques - 26/10/2026: anexos (pelos ids), repetição, bloqueios e estimativa.
+    cartao.anexos.map((anexo) => anexo.id),
+    cartao.recorrencia,
+    cartao.bloqueadoPor,
+    cartao.estimativa,
     ordem,
   ])
 
@@ -52,6 +57,10 @@ function paraGravar(cartao: CartaoKanban, ordem: number): CartaoGravar & { ordem
     prioridade: cartao.prioridade,
     arquivado: cartao.arquivado,
     responsavelId: cartao.responsavelId,
+    anexos: cartao.anexos,
+    recorrencia: cartao.recorrencia,
+    bloqueadoPor: cartao.bloqueadoPor,
+    estimativa: cartao.estimativa,
     ordem,
   }
 }
@@ -65,6 +74,9 @@ export function calcularOperacoes(base: FotoQuadro, atual: FotoQuadro): Operacoe
   if (atual.quadro.titulo !== base.quadro.titulo) q.titulo = atual.quadro.titulo
   if (atual.quadro.icone !== base.quadro.icone) q.icone = atual.quadro.icone
   if (atual.quadro.fundo !== base.quadro.fundo) q.fundo = atual.quadro.fundo
+  // Foto de fundo: só vai quando é nova (data URL) ou foi removida; o endereço que vem do servidor não volta.
+  const imagemAtual = atual.quadro.imagemFundo ?? null
+  if (imagemAtual !== (base.quadro.imagemFundo ?? null) && (imagemAtual === null || imagemAtual.startsWith("data:"))) q.imagemFundo = imagemAtual
   if (JSON.stringify(atual.quadro.exibicao ?? {}) !== JSON.stringify(base.quadro.exibicao ?? {})) q.exibicao = atual.quadro.exibicao ?? {}
   if (Object.keys(q).length > 0) ops.quadro = q
 

@@ -67,6 +67,8 @@ export type Nota = {
   tipo?: "quadro"
 }
 
+import type { RecorrenciaCartao } from "@/lib/kanban/recorrencia"
+
 // ---------- Kanban ----------
 // Rafael Marques - 21/10/2026: quadros, colunas e etiquetas personalizáveis.
 
@@ -97,8 +99,10 @@ export type QuadroKanban = {
   id: string
   titulo: string
   icone: string
-  // Fundo do quadro: id de `fundosQuadro` (quadros antigos podem ter o degradê em CSS; null = sem fundo).
+  // Fundo do quadro: id de um modelo de `lib/kanban/fundo.ts`, ou "foto:{ajuste}" (null = sem fundo).
   fundo: string | null
+  // Rafael Marques - 26/10/2026: foto de fundo. Pessoal: data URL; equipe: endereço da foto no servidor.
+  imagemFundo?: string | null
   etiquetas: EtiquetaKanban[]
   criadoEm: number
   exibicao?: Partial<ExibicaoCartao>
@@ -159,6 +163,22 @@ export type CartaoKanban = {
   atividade: AtividadeCartao[]
   // Rafael Marques - 23/10/2026: pessoa da equipe responsável (só em quadros de equipe).
   responsavelId: string | null
+  // Rafael Marques - 26/10/2026: anexos, repetição, bloqueios e estimativa (só em quadros pessoais por enquanto).
+  anexos: AnexoCartao[]
+  recorrencia: RecorrenciaCartao | null
+  // Cartões que precisam ficar prontos antes deste.
+  bloqueadoPor: string[]
+  // Pontos (esforço) do cartão.
+  estimativa: number | null
+}
+
+// Imagem (já reduzida, guardada no próprio cartão) ou link para um arquivo/página.
+export type AnexoCartao = {
+  id: string
+  tipo: "imagem" | "link"
+  nome: string
+  url: string
+  criadoEm: number
 }
 
 export type Prioridade = "baixa" | "media" | "alta"

@@ -14,37 +14,7 @@ export const paletaCores = [
   { id: "cinza", nome: "Cinza", valor: "oklch(0.6 0.01 260)" },
 ]
 
-// Rafael Marques - 22/10/2026
-// Fundos dos quadros do Kanban: só tons de cinza (seguem o visual preto e branco)
-// e feitos com a cor do texto em baixa opacidade, então funcionam no claro e no escuro.
-const tracoFundo = "color-mix(in oklch, var(--foreground) 9%, transparent)"
-export const fundosQuadro = [
-  { id: "pontos", nome: "Pontos", valor: `radial-gradient(color-mix(in oklch, var(--foreground) 20%, transparent) 1px, transparent 1.3px) 0 0 / 20px 20px` },
-  { id: "quadriculado", nome: "Quadriculado", valor: `linear-gradient(${tracoFundo} 1px, transparent 1px) 0 0 / 28px 28px, linear-gradient(90deg, ${tracoFundo} 1px, transparent 1px) 0 0 / 28px 28px` },
-  { id: "diagonal", nome: "Diagonal", valor: `repeating-linear-gradient(135deg, ${tracoFundo} 0 1px, transparent 1px 14px)` },
-  { id: "nevoa", nome: "Névoa", valor: "linear-gradient(to bottom, color-mix(in oklch, var(--foreground) 7%, transparent), transparent 70%)" },
-  { id: "cinza", nome: "Cinza", valor: "color-mix(in oklch, var(--foreground) 5%, transparent)" },
-  { id: "grafite", nome: "Grafite", valor: "color-mix(in oklch, var(--foreground) 10%, transparent)" },
-]
-
-// Quadros antigos guardavam o degradê colorido inteiro; agora viram o fundo neutro mais próximo.
-const fundosAntigos: Record<string, string> = {
-  ceu: "nevoa", menta: "nevoa", "por-do-sol": "nevoa", lavanda: "nevoa", areia: "cinza", grafite: "grafite",
-}
-
-// Recebe o que está salvo no quadro (id novo ou degradê antigo) e devolve o id do fundo.
-export function idFundoQuadro(fundo: string | null | undefined) {
-  if (!fundo) return null
-  if (fundosQuadro.some((item) => item.id === fundo)) return fundo
-  const antigo = gradientesCapa.find((item) => item.valor === fundo)
-  return antigo ? fundosAntigos[antigo.id] : null
-}
-
-export function estiloFundoQuadro(fundo: string | null | undefined): CSSProperties | undefined {
-  const id = idFundoQuadro(fundo)
-  const item = fundosQuadro.find((opcao) => opcao.id === id)
-  return item ? { background: item.valor } : undefined
-}
+// Rafael Marques - 26/10/2026: os fundos dos quadros do Kanban agora ficam em lib/kanban/fundo.ts.
 
 // Degradês das capas dos livros (eram os fundos antigos do Kanban).
 export const gradientesCapa = [

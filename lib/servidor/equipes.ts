@@ -329,7 +329,9 @@ type LinhaQuadro = { id: string; equipe_id: string; versao: string | number; pap
 async function quadroDaPessoa(quadroId: string, usuarioId: string): Promise<LinhaQuadro & Record<string, unknown>> {
   if (typeof quadroId !== "string" || !formatoId.test(quadroId)) throw new ErroEquipe(404, "Quadro não encontrado.")
   const [linha] = await banco()`
-    SELECT q.*, m.papel FROM quadros_equipe q
+    SELECT q.id, q.equipe_id, q.titulo, q.icone, q.fundo, q.exibicao, q.versao, q.criado_por, q.criado_em, q.atualizado_em,
+           q.imagem_fundo_versao, (q.imagem_fundo IS NOT NULL) AS tem_imagem_fundo, m.papel
+    FROM quadros_equipe q
     JOIN membros_equipe m ON m.equipe_id = q.equipe_id AND m.usuario_id = ${usuarioId}
     WHERE q.id = ${quadroId}
   `
@@ -381,6 +383,11 @@ function converterCartao(
     comentarios: comentarios.get(cartaoId) ?? [],
     atividade: atividade.get(cartaoId) ?? [],
     responsavelId: linha.responsavel_id ? String(linha.responsavel_id) : null,
+    // Rafael Marques - 26/10/2026: anexos, repetição, bloqueios e estimativa.
+    anexos: (linha.anexos as CartaoKanban["anexos"]) ?? [],
+    recorrencia: (linha.recorrencia as CartaoKanban["recorrencia"]) ?? null,
+    bloqueadoPor: (linha.bloqueado_por as string[]) ?? [],
+    estimativa: linha.estimativa === null || linha.estimativa === undefined ? null : Number(linha.estimativa),
   }
 }
 
@@ -432,6 +439,8 @@ export async function baixarQuadro(
       titulo: String(quadro.titulo),
       icone: String(quadro.icone),
       fundo: quadro.fundo ? String(quadro.fundo) : null,
+      // A foto vem por outro endereço (com a versão no fim, fica no cache do navegador).
+      imagemFundo: quadro.tem_imagem_fundo ? `/api/quadros-equipe/${quadroId}/fundo?v=${Number(quadro.imagem_fundo_versao)}` : null,
       etiquetas: etiquetas.map((linha) => ({ id: String(linha.id), nome: String(linha.nome), cor: String(linha.cor) })),
       criadoEm: new Date(quadro.criado_em as string).getTime(),
       exibicao: (quadro.exibicao as Partial<ExibicaoCartao>) ?? {},
@@ -450,6 +459,39 @@ export async function baixarQuadro(
     ),
     cartoes: cartoes.map((linha) => converterCartao(linha, mapaComentarios, mapaAtividade)),
   }
+}
+
+// Rafael Marques - 26/10/2026: validação dos campos novos do cartão e da foto de fundo.
+const formatoImagem = /^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/
+const TAMANHO_MAXIMO_FUNDO = 650_000
+const TAMANHO_MAXIMO_ANEXO = 400_000
+const MAXIMO_ANEXOS = 6
+
+function limparAnexos(valor: unknown) {
+  return lista(valor, MAXIMO_ANEXOS).flatMap((item) => {
+    const a = objeto(item)
+    const url = typeof a.url === "string" ? a.url : ""
+    const valido =
+      a.tipo === "imagem" ? formatoImagem.test(url) && url.length <= TAMANHO_MAXIMO_ANEXO : a.tipo === "link" ? /^https?:\/\/[^\s]+$/i.test(url) && url.length <= 2000 : false
+    if (!valido) return []
+    return [{ id: texto(a.id, 64) || "anexo", tipo: a.tipo, nome: texto(a.nome, 120) || "Anexo", url, criadoEm: numero(a.criadoEm) }]
+  })
+}
+
+function limparRecorrencia(valor: unknown) {
+  const r = objeto(valor)
+  if (r.frequencia !== "diaria" && r.frequencia !== "semanal" && r.frequencia !== "mensal" && r.frequencia !== "anual") return null
+  return { frequencia: r.frequencia, intervalo: Math.min(365, Math.max(1, Math.round(numero(r.intervalo)) || 1)) }
+}
+
+// Foto de fundo de um quadro (só para quem é da equipe). Devolve o tipo e os bytes.
+export async function lerFundoQuadro(quadroId: string, usuarioId: string) {
+  await quadroDaPessoa(quadroId, usuarioId)
+  const [linha] = await banco()`SELECT imagem_fundo FROM quadros_equipe WHERE id = ${quadroId}`
+  const imagem = linha?.imagem_fundo ? String(linha.imagem_fundo) : null
+  const partes = imagem ? /^data:(image\/(?:jpeg|png|webp|gif));base64,(.+)$/.exec(imagem) : null
+  if (!partes) throw new ErroEquipe(404, "Este quadro não tem foto de fundo.")
+  return { tipo: partes[1], bytes: Buffer.from(partes[2], "base64") }
 }
 
 const chavesExibicao = ["etiquetas", "prazo", "descricao", "nota", "faixaCor", "concluir", "prioridade", "comentarios"] as const
@@ -483,6 +525,14 @@ export async function aplicarOperacoes(quadroId: string, usuario: Usuario, bruto
     const mudaFundo = "fundo" in q
     const fundo = mudaFundo && typeof q.fundo === "string" && q.fundo ? q.fundo.slice(0, 600) : null
     const exibicao = "exibicao" in q ? JSON.stringify(limparExibicao(q.exibicao)) : null
+    // Rafael Marques - 26/10/2026: foto de fundo (só imagem em data URL, com tamanho limitado).
+    if ("imagemFundo" in q) {
+      const imagem = q.imagemFundo
+      if (imagem !== null && !(typeof imagem === "string" && formatoImagem.test(imagem) && imagem.length <= TAMANHO_MAXIMO_FUNDO)) {
+        throw new ErroEquipe(400, "A foto de fundo é inválida ou grande demais.")
+      }
+      consultas.push(sql`UPDATE quadros_equipe SET imagem_fundo = ${imagem}, imagem_fundo_versao = imagem_fundo_versao + 1 WHERE id = ${quadroId}`)
+    }
     consultas.push(sql`
       UPDATE quadros_equipe SET
         titulo = COALESCE(${titulo}, titulo),
@@ -565,21 +615,30 @@ export async function aplicarOperacoes(quadroId: string, usuario: Usuario, bruto
       arquivado: c.arquivado === true,
       checklist,
       responsavel_id: responsavel,
+      // Rafael Marques - 26/10/2026
+      anexos: limparAnexos(c.anexos),
+      recorrencia: limparRecorrencia(c.recorrencia),
+      bloqueado_por: lista(c.bloqueadoPor, 50).filter((valor): valor is string => typeof valor === "string" && formatoId.test(valor)),
+      estimativa: typeof c.estimativa === "number" && Number.isFinite(c.estimativa) && c.estimativa >= 0 && c.estimativa < 1000 ? c.estimativa : null,
     }
   })
   if (cartoesGravar.length > 0) {
     consultas.push(sql`
       INSERT INTO cartoes_equipe
-        (quadro_id, id, coluna_id, titulo, descricao, ordem, etiquetas, prazo, cor, prioridade, arquivado, checklist, responsavel_id, criado_por)
+        (quadro_id, id, coluna_id, titulo, descricao, ordem, etiquetas, prazo, cor, prioridade, arquivado, checklist, responsavel_id, criado_por,
+         anexos, recorrencia, bloqueado_por, estimativa)
       SELECT ${quadroId}, c.id, c.coluna_id, c.titulo, c.descricao, c.ordem, c.etiquetas, c.prazo, c.cor, c.prioridade,
-             c.arquivado, c.checklist, c.responsavel_id, ${usuario.id}::uuid
+             c.arquivado, c.checklist, c.responsavel_id, ${usuario.id}::uuid,
+             COALESCE(c.anexos, '[]'::jsonb), c.recorrencia, COALESCE(c.bloqueado_por, '[]'::jsonb), c.estimativa
       FROM jsonb_to_recordset(${JSON.stringify(cartoesGravar)}::jsonb)
         AS c(id text, coluna_id text, titulo text, descricao text, ordem double precision, etiquetas jsonb, prazo text, cor text,
-             prioridade text, arquivado boolean, checklist jsonb, responsavel_id uuid)
+             prioridade text, arquivado boolean, checklist jsonb, responsavel_id uuid,
+             anexos jsonb, recorrencia jsonb, bloqueado_por jsonb, estimativa double precision)
       ON CONFLICT (quadro_id, id) DO UPDATE SET
         coluna_id = EXCLUDED.coluna_id, titulo = EXCLUDED.titulo, descricao = EXCLUDED.descricao, ordem = EXCLUDED.ordem,
         etiquetas = EXCLUDED.etiquetas, prazo = EXCLUDED.prazo, cor = EXCLUDED.cor, prioridade = EXCLUDED.prioridade,
         arquivado = EXCLUDED.arquivado, checklist = EXCLUDED.checklist, responsavel_id = EXCLUDED.responsavel_id,
+        anexos = EXCLUDED.anexos, recorrencia = EXCLUDED.recorrencia, bloqueado_por = EXCLUDED.bloqueado_por, estimativa = EXCLUDED.estimativa,
         atualizado_em = now()
     `)
   }
