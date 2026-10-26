@@ -18,7 +18,8 @@ export type Novidade = {
   titulo: string
   // Uma frase que resume o lançamento (aparece em destaque).
   resumo: string
-  itens: { tipo: TipoNovidade; texto: string }[]
+  // "titulo" (opcional) aparece em negrito antes do texto; mantenha o texto curto (uma frase).
+  itens: { tipo: TipoNovidade; titulo?: string; texto: string }[]
 }
 
 export const rotulosNovidade: Record<TipoNovidade, { singular: string; plural: string }> = {
@@ -32,6 +33,33 @@ export const ordemTipos: TipoNovidade[] = ["novo", "melhorado", "corrigido"]
 
 // Mais recente primeiro.
 export const NOVIDADES: Novidade[] = [
+  // Rafael Marques - 26/10/2026
+  {
+    id: "2026-10-26",
+    versao: "1.2",
+    data: "26/10/2026",
+    titulo: "Novo editor de notas e quadros",
+    resumo: "Escreva com o texto já formatado e desenhe ideias em quadros.",
+    itens: [
+      { tipo: "novo", titulo: "Novo editor", texto: "Texto formatado na hora, menu “/” para inserir blocos, imagens e tabelas." },
+      { tipo: "novo", titulo: "Quadros", texto: "Tela livre com formas, notas e setas, com modelos prontos." },
+      { tipo: "novo", titulo: "Biblioteca organizada", texto: "Árvore na barra lateral: arraste para mover e dê duplo clique para renomear." },
+      { tipo: "melhorado", titulo: "Notas em Markdown", texto: "Exportação, tags e grafo funcionam como antes." },
+    ],
+  },
+  // Rafael Marques - 23/10/2026
+  {
+    id: "2026-10-23-d",
+    versao: "1.1b",
+    data: "23/10/2026",
+    titulo: "Importe do Obsidian e enquadre sua foto",
+    resumo: "Traga seu cofre do Obsidian para o SprintNote e escolha o enquadramento da sua foto de perfil.",
+    itens: [
+      { tipo: "novo", texto: "Minha conta → Seus dados → Importar do Obsidian: pasta do cofre, .zip ou notas .md. Pastas viram livros, #tags e [[links]] são mantidos." },
+      { tipo: "novo", texto: "Enquadramento da foto de perfil: arraste e use o zoom antes de salvar." },
+      { tipo: "corrigido", texto: "Cartão “Privacidade e sessões” sem o espaço vazio no meio." },
+    ],
+  },
   // Rafael Marques - 23/10/2026
   {
     id: "2026-10-23-c",

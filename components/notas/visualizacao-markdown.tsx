@@ -18,9 +18,11 @@ const ContextoNota = createContext<{ livroId: string | null }>({ livroId: null }
 
 // Rafael Marques - 20/10/2026
 // Link [[alvo]]: abre a nota/livro ou, se não existir, cria a nota ao clicar.
-function LinkWiki({ alvo, children }: { alvo: string; children: React.ReactNode }) {
+// Rafael Marques - 23/10/2026: exportado e com "livroId" opcional para o editor (o chip do [[link]] usa).
+export function LinkWiki({ alvo, children, livroId }: { alvo: string; children: React.ReactNode; livroId?: string | null }) {
   const router = useRouter()
-  const livroAtualId = useContext(ContextoNota).livroId
+  const livroDoContexto = useContext(ContextoNota).livroId
+  const livroAtualId = livroId !== undefined ? livroId : livroDoContexto
   const biblioteca = useNotas(useShallow((estado) => ({ notas: estado.notas, livros: estado.livros })))
   const criarNota = useNotas((estado) => estado.criarNota)
   const destino = resolverLink(alvo, biblioteca, livroAtualId)

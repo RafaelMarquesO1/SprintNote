@@ -12,6 +12,7 @@ import {
   CircleCheckIcon,
   CircleIcon,
   FilePlusIcon,
+  WorkflowIcon,
   HouseIcon,
   KanbanIcon,
   SquareCheckBigIcon,
@@ -46,6 +47,7 @@ import { abrirPainelKanban } from "@/lib/estado/paineis-kanban"
 import { useTarefas } from "@/lib/estado/tarefas"
 import { contarTags } from "@/lib/tags"
 import { useNotas } from "@/lib/estado/notas"
+import { textoDoQuadro } from "@/lib/quadro/modelo"
 import { alternarTema } from "@/lib/theme"
 
 // Rafael Marques - 20/10/2026
@@ -171,7 +173,7 @@ export function DialogoBusca() {
                 <CommandItem
                   key={nota.id}
                   value={`nota-${nota.id}`}
-                  keywords={[nota.titulo, nota.conteudo, livros.find((livro) => livro.id === nota.livroId)?.titulo ?? ""]}
+                  keywords={[nota.titulo, nota.tipo === "quadro" ? textoDoQuadro(nota.conteudo) : nota.conteudo, livros.find((livro) => livro.id === nota.livroId)?.titulo ?? ""]}
                   onSelect={() => executar(() => router.push(`/notas/${nota.id}`))}
                 >
                   <Icone nome={nota.icone} className="text-muted-foreground" />
@@ -182,9 +184,9 @@ export function DialogoBusca() {
                         {" "}· {livros.find((livro) => livro.id === nota.livroId)?.titulo ?? "Nota solta"}
                       </span>
                     </span>
-                    {nota.conteudo && (
+                    {(nota.tipo === "quadro" ? textoDoQuadro(nota.conteudo) : nota.conteudo) && (
                       <span className="truncate text-xs text-muted-foreground">
-                        {resumir(nota.conteudo)}
+                        {resumir(nota.tipo === "quadro" ? textoDoQuadro(nota.conteudo) : nota.conteudo)}
                       </span>
                     )}
                   </div>
@@ -265,6 +267,14 @@ export function DialogoBusca() {
             >
               <FilePlusIcon />
               Nova nota solta
+            </CommandItem>
+            <CommandItem
+              value="acao-novo-quadro"
+              keywords={["quadro", "canvas", "diagrama", "fluxograma", "mapa mental", "criar"]}
+              onSelect={() => executar(() => router.push(`/notas/${criarNota({ titulo: "Novo quadro", tipo: "quadro" }).id}`))}
+            >
+              <WorkflowIcon />
+              Novo quadro (formas e setas)
             </CommandItem>
             <CommandItem value="acao-conta" keywords={["conta", "perfil", "senha", "backup", "exportar", "importar", "dados", "privacidade"]} onSelect={() => executar(() => router.push("/conta"))}>
               <CircleUserRoundIcon />

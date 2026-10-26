@@ -8,6 +8,7 @@ import {
   AlertTriangleIcon,
   BookOpenIcon,
   BookPlusIcon,
+  WorkflowIcon,
   CalendarClockIcon,
   CheckCheckIcon,
   CheckIcon,
@@ -266,6 +267,7 @@ function WidgetRelogio({ widget, cor }: { widget: Widget; cor: string }) {
 
 export const opcoesAtalhos: Record<string, { nome: string; icone: LucideIcon; href?: string }> = {
   "nova-nota": { nome: "Nova nota", icone: FilePlusIcon },
+  "novo-quadro": { nome: "Novo quadro", icone: WorkflowIcon },
   "novo-livro": { nome: "Novo livro", icone: BookPlusIcon },
   buscar: { nome: "Buscar", icone: SearchIcon },
   tarefas: { nome: "Tarefas", icone: ListTodoIcon, href: "/tarefas" },
@@ -287,6 +289,7 @@ function WidgetAtalhos({ widget, cor }: { widget: Widget; cor: string }) {
 
   function executar(chave: string) {
     if (chave === "nova-nota") router.push(`/notas/${criarNota().id}`)
+    else if (chave === "novo-quadro") router.push(`/notas/${criarNota({ titulo: "Novo quadro", tipo: "quadro" }).id}`)
     else if (chave === "novo-livro") router.push(`/livros/${criarLivro().id}`)
     else if (chave === "buscar") abrirBusca()
     else if (opcoesAtalhos[chave].href) router.push(opcoesAtalhos[chave].href!)

@@ -1,6 +1,6 @@
 "use client"
 
-import { useActionState, useEffect, useId, useState } from "react"
+import { useActionState, useEffect, useId, useRef, useState } from "react"
 import { useShallow } from "zustand/react/shallow"
 import {
   CameraIcon,
@@ -8,10 +8,15 @@ import {
   DatabaseBackupIcon,
   DownloadIcon,
   FileArchiveIcon,
+  FileTextIcon,
+  FolderInputIcon,
+  FolderOpenIcon,
   KeyRoundIcon,
   LibraryIcon,
   LogOutIcon,
   MapPinIcon,
+  MonitorSmartphoneIcon,
+  ScaleIcon,
   ShieldCheckIcon,
   Trash2Icon,
   UploadIcon,
@@ -44,7 +49,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { comprimirAvatar } from "@/lib/imagem"
+import { EnquadrarFoto } from "@/components/conta/enquadrar-foto"
+import { recortarAvatar, type CorteAvatar } from "@/lib/imagem"
+import { importarCofre, lerCofreDeArquivos, lerCofreDeZip, type CofreLido, type ResumoObsidian } from "@/lib/importar-obsidian"
 import { useNotas } from "@/lib/estado/notas"
 import { usePreferencias } from "@/lib/estado/preferencias"
 import { enviarPendentes } from "@/lib/estado/sincronizacao"
@@ -68,19 +75,27 @@ function FotoPerfil() {
   const definirFoto = usePreferencias((dados) => dados.definirFotoPerfil)
   const [erro, setErro] = useState<string | null>(null)
   const [lendo, setLendo] = useState(false)
+  const [pendente, setPendente] = useState<File | null>(null)
   if (!conta) return null
   const nome = conta.usuario.nome || conta.usuario.email
   const iniciais = nome.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((parte) => parte[0].toUpperCase()).join("")
 
-  async function escolher(arquivo: File | undefined) {
+  // A pessoa escolhe o arquivo e depois enquadra o rosto antes de salvar.
+  function escolher(arquivo: File | undefined) {
     if (!arquivo) return
     if (!TIPOS_FOTO.includes(arquivo.type)) return setErro("Use uma imagem JPG, PNG ou WebP.")
     if (arquivo.size > TAMANHO_MAXIMO_FOTO) return setErro("A imagem tem mais de 10 MB.")
-    setLendo(true)
     setErro(null)
+    setPendente(arquivo)
+  }
+
+  async function salvar(arquivo: File, corte: CorteAvatar) {
+    setLendo(true)
     try {
-      definirFoto(await comprimirAvatar(arquivo))
+      definirFoto(await recortarAvatar(arquivo, corte))
+      setPendente(null)
     } catch {
+      setPendente(null)
       setErro("Não foi possível ler essa imagem.")
     } finally {
       setLendo(false)
@@ -102,7 +117,7 @@ function FotoPerfil() {
               accept="image/jpeg,image/png,image/webp"
               className="sr-only"
               onChange={(evento) => {
-                void escolher(evento.target.files?.[0])
+                escolher(evento.target.files?.[0])
                 evento.target.value = ""
               }}
             />
@@ -119,6 +134,15 @@ function FotoPerfil() {
           <p className="text-xs text-muted-foreground">Opcional. Fica só na sua conta e entra no “Baixar meus dados”.</p>
         )}
       </div>
+      {pendente && (
+        <EnquadrarFoto
+          key={`${pendente.name}-${pendente.lastModified}`}
+          arquivo={pendente}
+          salvando={lendo}
+          onCancelar={() => setPendente(null)}
+          onConfirmar={(arquivo, corte) => void salvar(arquivo, corte)}
+        />
+      )}
     </div>
   )
 }
@@ -205,12 +229,36 @@ function descreverResumo(resumo: ResumoBackup) {
   return `${resumo.livros} livro(s), ${resumo.notas} nota(s), ${resumo.tarefas} tarefa(s), ${resumo.habitos} hábito(s), ${resumo.rotina} item(ns) de rotina e ${resumo.cartoes} cartão(ões) do Kanban`
 }
 
+function descreverImportacao(resumo: ResumoObsidian) {
+  const partes = [`${resumo.notas} nota(s) importada(s)`, `${resumo.livros} livro(s) novo(s)`]
+  if (resumo.repetidas) partes.push(`${resumo.repetidas} já existia(m)`)
+  if (resumo.anexos) partes.push(`${resumo.anexos} anexo(s) ignorado(s)`)
+  return `Obsidian: ${partes.join(", ")}.`
+}
+
 // Tudo fica salvo na conta: aqui só ficam as cópias para levar a outro lugar
 // (JSON completo e notas em Markdown) e a importação de backups antigos.
 function CartaoDados() {
   const { livros, notas } = useNotas(useShallow((estado) => ({ livros: estado.livros, notas: estado.notas })))
   const [lido, setLido] = useState<ReturnType<typeof lerBackup> | null>(null)
   const [mensagem, setMensagem] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null)
+  const [cofre, setCofre] = useState<CofreLido | null>(null)
+  const [lendoCofre, setLendoCofre] = useState(false)
+  const entradaPasta = useRef<HTMLInputElement>(null)
+  const entradaZip = useRef<HTMLInputElement>(null)
+  const entradaNotas = useRef<HTMLInputElement>(null)
+
+  async function escolherCofre(ler: () => Promise<CofreLido>) {
+    setLendoCofre(true)
+    try {
+      setCofre(await ler())
+      setMensagem(null)
+    } catch (erro) {
+      setMensagem({ tipo: "erro", texto: erro instanceof Error ? erro.message : "Não foi possível ler o cofre." })
+    } finally {
+      setLendoCofre(false)
+    }
+  }
 
   async function escolherArquivo(arquivo: File | undefined) {
     if (!arquivo) return
@@ -255,6 +303,56 @@ function CartaoDados() {
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
+        <DropdownMenu>
+          <DropdownMenuTrigger render={<Button variant="outline" disabled={lendoCofre} />}>
+            {lendoCofre ? <Spinner /> : <FolderInputIcon />} Importar do Obsidian
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-64">
+            <DropdownMenuItem onClick={() => entradaPasta.current?.click()}>
+              <FolderOpenIcon /> Pasta do cofre
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => entradaZip.current?.click()}>
+              <FileArchiveIcon /> Cofre compactado (.zip)
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => entradaNotas.current?.click()}>
+              <FileTextIcon /> Notas soltas (.md)
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <input
+          ref={entradaPasta}
+          type="file"
+          className="sr-only"
+          {...{ webkitdirectory: "", directory: "" }}
+          onChange={(evento) => {
+            const arquivos = evento.target.files
+            if (arquivos?.length) void escolherCofre(() => lerCofreDeArquivos(arquivos))
+            evento.target.value = ""
+          }}
+        />
+        <input
+          ref={entradaZip}
+          type="file"
+          accept=".zip,application/zip"
+          className="sr-only"
+          onChange={(evento) => {
+            const arquivo = evento.target.files?.[0]
+            if (arquivo) void escolherCofre(() => lerCofreDeZip(arquivo))
+            evento.target.value = ""
+          }}
+        />
+        <input
+          ref={entradaNotas}
+          type="file"
+          accept=".md,text/markdown"
+          multiple
+          className="sr-only"
+          onChange={(evento) => {
+            const arquivos = evento.target.files
+            if (arquivos?.length) void escolherCofre(() => lerCofreDeArquivos(arquivos))
+            evento.target.value = ""
+          }}
+        />
         <Button variant="ghost" nativeButton={false} render={<label />} className="cursor-pointer">
           <UploadIcon /> Importar backup
           <input
@@ -268,6 +366,33 @@ function CartaoDados() {
           />
         </Button>
       </CardFooter>
+
+      <AlertDialog open={cofre !== null} onOpenChange={(aberto) => !aberto && setCofre(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Importar do Obsidian?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {cofre &&
+                `Encontrei ${cofre.resumo.notas} nota(s) em ${cofre.resumo.livros} pasta(s). Cada pasta vira um livro e as notas soltas ficam fora de livros. `}
+              Suas notas atuais são mantidas: só acrescentamos as novas. Links [[assim]] e #tags continuam funcionando; imagens e outros anexos não são
+              importados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <Button
+              onClick={() => {
+                if (!cofre) return
+                const resumo = importarCofre(cofre)
+                setMensagem({ tipo: "ok", texto: descreverImportacao(resumo) })
+                setCofre(null)
+              }}
+            >
+              Importar
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={lido !== null} onOpenChange={(aberto) => !aberto && setLido(null)}>
         <AlertDialogContent>
@@ -310,8 +435,9 @@ function CartaoPrivacidade() {
           Leia a <LinkDocumento tipo="privacidade">Política de Privacidade</LinkDocumento> e os <LinkDocumento tipo="termos">Termos de Uso</LinkDocumento>.
         </CardDescription>
       </CardHeader>
-      <CardContent className="text-sm text-muted-foreground">
-        Perdeu um aparelho ou entrou num computador de outra pessoa? Encerre todas as sessões, inclusive esta.
+      <CardContent className="space-y-3 text-sm text-muted-foreground">
+        <p className="flex items-center gap-2"><ScaleIcon className="size-4 shrink-0" /> Seus dados seguem a LGPD: você corrige, baixa ou exclui quando quiser.</p>
+        <p className="flex items-center gap-2"><MonitorSmartphoneIcon className="size-4 shrink-0" /> Perdeu um aparelho ou entrou num computador de outra pessoa? Encerre todas as sessões, inclusive esta.</p>
       </CardContent>
       <CardFooter className="mt-auto">
         <Button variant="outline" onClick={() => setConfirmando(true)}><LogOutIcon /> Sair de todos os aparelhos</Button>

@@ -15,6 +15,8 @@ type DadosNota = {
   paiId?: string | null
   conteudo?: string
   icone?: string
+  // Rafael Marques - 23/10/2026: "quadro" cria um quadro interativo.
+  tipo?: "quadro"
 }
 
 type EstadoNotas = {
@@ -119,7 +121,8 @@ export const useNotas = create<EstadoNotas>()(
           // Subnotas ficam sempre no mesmo livro da nota pai.
           livroId: pai ? pai.livroId : (dados.livroId ?? null),
           paiId: pai ? pai.id : null,
-          icone: dados.icone ?? "arquivo",
+          icone: dados.icone ?? (dados.tipo === "quadro" ? "quadro" : "arquivo"),
+          ...(dados.tipo ? { tipo: dados.tipo } : {}),
           criadoEm: momento,
           atualizadoEm: momento,
         }

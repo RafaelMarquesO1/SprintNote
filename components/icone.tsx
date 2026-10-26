@@ -35,6 +35,7 @@ import {
   StarIcon,
   TargetIcon,
   WalletIcon,
+  WorkflowIcon,
   type LucideIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -44,6 +45,8 @@ import { cn } from "@/lib/utils"
 // Os dados guardam só o nome (ex.: "ideia"); aqui ele vira o ícone.
 export const icones: Record<string, LucideIcon> = {
   arquivo: FileTextIcon,
+  // Rafael Marques - 23/10/2026: arquivo de quadro.
+  quadro: WorkflowIcon,
   caderno: NotebookPenIcon,
   ideia: LightbulbIcon,
   alvo: TargetIcon,

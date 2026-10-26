@@ -38,8 +38,9 @@ Ele junta em um só app aquilo que eu usava espalhado em várias ferramentas: um
 |---|---|
 | **Início** | Painel com widgets personalizáveis do seu dia |
 | **Kanban** | Quadros, colunas e cartões com arrastar e soltar |
-| **Notas** | Editor em blocos com Markdown, links entre notas (`[[nota]]`), capas e tags |
-| **Livros** | Agrupa notas em cadernos |
+| **Notas** | Editor ao estilo Notion (texto formatado ao digitar, menu `/`, imagens, tabelas, destaques), links entre notas (`[[nota]]`), capas e tags; por baixo continuam sendo Markdown |
+| **Quadros** | Tela infinita ao estilo Canvas do Obsidian: formas, notas e grupos ligados por setas, tudo com o mouse ou o dedo |
+| **Livros** | Árvore de livros e notas na barra lateral, com arrastar e soltar; a página do livro abre ao lado |
 | **Tarefas** | Lista de tarefas com prazos, unificada com as tarefas das notas |
 | **Hábitos e Rotina** | Acompanhamento de hábitos e rotina semanal |
 | **Grafo** | Mapa visual das conexões entre as notas |
@@ -73,7 +74,8 @@ sprintnote/
 ├── components/             # Componentes React
 │   ├── ui/                 # Componentes base (shadcn/ui)
 │   ├── kanban/             # Quadro, colunas, cartões e diálogos
-│   ├── notas/              # Editor em blocos, Markdown, tags, conexões
+│   ├── notas/              # Editor (TipTap), tags, conexões
+│   ├── quadro/             # Quadro interativo de formas e setas (xyflow)
 │   ├── conta/              # Login, cadastro e documentos legais
 │   └── ...                 # Início, tarefas, hábitos, rotina, grafo, livros
 │
@@ -100,6 +102,7 @@ sprintnote/
 | **Estado** | [Zustand](https://zustand-demo.pmnd.rs) |
 | **Banco de dados** | [Neon](https://neon.tech) (Postgres serverless, região São Paulo) |
 | **Arrastar e soltar** | [dnd-kit](https://dndkit.com) |
+| **Editor de notas** | [TipTap](https://tiptap.dev) (ProseMirror); a conversão Markdown ↔ documento fica em `lib/editor/` (testes: `npm run teste:notas`) |
 | **Markdown** | [react-markdown](https://github.com/remarkjs/react-markdown) + [remark-gfm](https://github.com/remarkjs/remark-gfm) + [highlight.js](https://highlightjs.org) |
 | **Busca** | [cmdk](https://cmdk.paco.me) |
 | **Ícones** | [Lucide](https://lucide.dev) |

@@ -18,7 +18,8 @@ import { cn } from "@/lib/utils"
 import { Icone, iconesNota } from "@/components/icone"
 import { CapaNota, DialogoCapa } from "@/components/notas/capa-nota"
 import { DialogoExcluirNota } from "@/components/notas/dialogo-excluir-nota"
-import { EditorBlocos } from "@/components/notas/editor-blocos"
+import { EditorNotas } from "@/components/notas/editor/editor-notas"
+import { QuadroEditor } from "@/components/quadro/quadro-editor"
 import { LinhaTags } from "@/components/notas/linha-tags"
 import { PainelConexoes, useTotalConexoes } from "@/components/notas/painel-conexoes"
 import { Interruptor, MiniaturasOpcoes, OpcoesLadoALado, PainelPersonalizar, SecaoPersonalizar, SeletorCores } from "@/components/painel-personalizar"
@@ -180,6 +181,8 @@ export function EditorNota({ id }: { id: string }) {
     )
   }
 
+  // Rafael Marques - 23/10/2026: quadros interativos têm tela própria.
+  if (nota.tipo === "quadro") return <TelaQuadro key={nota.id} nota={nota} />
   return <TelaNota nota={nota} notas={biblioteca.notas} />
 }
 
@@ -434,7 +437,8 @@ function TelaNota({ nota, notas }: { nota: Nota; notas: Nota[] }) {
         </div>
 
         <div className="mt-5 md:-ml-14">
-          <EditorBlocos key={nota.id} nota={nota} pedidoFocoInicio={pedidoFocoTexto} />
+          {/* Rafael Marques - 23/10/2026: editor novo (texto formatado ao digitar, estilo Notion) */}
+          <EditorNotas key={nota.id} nota={nota} pedidoFocoInicio={pedidoFocoTexto} />
         </div>
       </div>
 
@@ -451,6 +455,81 @@ function TelaNota({ nota, notas }: { nota: Nota; notas: Nota[] }) {
       </Sheet>
 
       <DialogoCapa nota={nota} aberto={escolhendoCapa} aoMudarAberto={setEscolhendoCapa} />
+      <DialogoExcluirNota nota={excluindo ? nota : null} aoMudarAberto={setExcluindo} />
+    </div>
+  )
+}
+
+// Rafael Marques - 23/10/2026
+// Tela de um quadro (como o Canvas do Obsidian): título no topo e o quadro ocupando o resto.
+function TelaQuadro({ nota }: { nota: Nota }) {
+  const livros = useNotas((estado) => estado.livros)
+  const renomearNota = useNotas((estado) => estado.renomearNota)
+  const atualizarNota = useNotas((estado) => estado.atualizarNota)
+  const moverNota = useNotas((estado) => estado.moverNota)
+  const [excluindo, setExcluindo] = useState(false)
+  const [titulo, setTitulo] = useState(nota.titulo === "Sem título" ? "" : nota.titulo)
+  const livro = livros.find((item) => item.id === nota.livroId)
+
+  return (
+    <div className="-mx-4 -mt-4 flex h-[calc(100svh-3rem)] min-h-[28rem] flex-col md:-mx-6 md:-mt-6">
+      <div className="flex h-12 shrink-0 items-center gap-2 px-4 text-sm md:px-6">
+        <nav aria-label="Caminho" className="flex min-w-0 items-center gap-1 text-muted-foreground max-sm:hidden">
+          {livro ? (
+            <Link href={`/livros/${livro.id}`} className="flex max-w-40 min-w-0 items-center gap-1 rounded px-1 hover:bg-muted hover:text-foreground">
+              <Icone nome={livro.icone} className="size-3.5 shrink-0" /> <span className="truncate">{livro.titulo}</span>
+            </Link>
+          ) : (
+            <Link href="/notas" className="shrink-0 rounded px-1 hover:bg-muted hover:text-foreground">Notas soltas</Link>
+          )}
+          <ChevronRightIcon className="size-3.5 shrink-0" />
+        </nav>
+        <Icone nome={nota.icone} className="size-5 text-muted-foreground" />
+        <input
+          value={titulo}
+          placeholder="Quadro sem título"
+          aria-label="Título do quadro"
+          onChange={(evento) => {
+            setTitulo(evento.target.value)
+            if (evento.target.value.trim()) renomearNota(nota.id, evento.target.value)
+          }}
+          onBlur={() => !titulo.trim() && renomearNota(nota.id, "Sem título")}
+          className="min-w-0 flex-1 bg-transparent text-lg font-semibold outline-none placeholder:text-muted-foreground/50"
+        />
+        <DropdownMenu>
+          <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Mais opções" className="text-muted-foreground" />}>
+            <MoreHorizontalIcon />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger><BookIcon /> Mover para o livro</DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="w-52">
+                {livros.map((item) => (
+                  <DropdownMenuItem key={item.id} onClick={() => moverNota(nota.id, item.id, null)}>
+                    <Icone nome={item.icone} /> {item.titulo}
+                    {item.id === nota.livroId && <CheckIcon className="ml-auto" />}
+                  </DropdownMenuItem>
+                ))}
+                {livros.length > 0 && <DropdownMenuSeparator />}
+                <DropdownMenuItem onClick={() => moverNota(nota.id, null, null)}>
+                  Notas soltas {nota.livroId === null && <CheckIcon className="ml-auto" />}
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem variant="destructive" onClick={() => setExcluindo(true)}>
+              <Trash2Icon /> Excluir quadro
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <p className="px-2 py-1 text-xs text-muted-foreground" suppressHydrationWarning>
+              Editado em {new Date(nota.atualizadoEm).toLocaleString("pt-BR")}
+            </p>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      <div className="min-h-0 flex-1 px-2 pb-2 md:px-4 md:pb-4">
+        <QuadroEditor conteudo={nota.conteudo} notaId={nota.id} aoMudar={(conteudo) => atualizarNota(nota.id, { conteudo })} />
+      </div>
       <DialogoExcluirNota nota={excluindo ? nota : null} aoMudarAberto={setExcluindo} />
     </div>
   )

@@ -11,7 +11,6 @@ import {
   CheckIcon,
   ExternalLinkIcon,
   EyeIcon,
-  FilePlusIcon,
   FileTextIcon,
   ImageIcon,
   LayoutGridIcon,
@@ -567,9 +566,6 @@ export function ListaNotas() {
           <>
           <Button variant="outline" nativeButton={false} render={<Link href="/grafo" />}>
             <NetworkIcon /> Grafo
-          </Button>
-          <Button variant="outline" onClick={() => router.push(`/notas/${criarNota().id}`)}>
-            <FilePlusIcon /> Nota solta
           </Button>
           <Button onClick={() => router.push(`/livros/${criarLivro().id}`)}>
             <BookPlusIcon /> Novo livro

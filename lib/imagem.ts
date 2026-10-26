@@ -21,16 +21,18 @@ export function tamanhoEmKb(texto: string) {
 }
 
 // Rafael Marques - 23/10/2026
-// Foto de perfil: recorta o centro em quadrado e reduz (fica com poucos KB).
-export async function comprimirAvatar(arquivo: File, lado = 256, qualidade = 0.85): Promise<string> {
+// Foto de perfil: recorta o quadrado escolhido pela pessoa (x, y, lado, em pixels
+// da imagem original) e reduz (fica com poucos KB).
+export type CorteAvatar = { x: number; y: number; lado: number }
+
+export async function recortarAvatar(arquivo: File, corte: CorteAvatar, tamanho = 256, qualidade = 0.85): Promise<string> {
   const bitmap = await createImageBitmap(arquivo)
-  const corte = Math.min(bitmap.width, bitmap.height)
   const canvas = document.createElement("canvas")
-  canvas.width = lado
-  canvas.height = lado
+  canvas.width = tamanho
+  canvas.height = tamanho
   const contexto = canvas.getContext("2d")
   if (!contexto) throw new Error("Não foi possível processar a imagem.")
-  contexto.drawImage(bitmap, (bitmap.width - corte) / 2, (bitmap.height - corte) / 2, corte, corte, 0, 0, lado, lado)
+  contexto.drawImage(bitmap, corte.x, corte.y, corte.lado, corte.lado, 0, 0, tamanho, tamanho)
   bitmap.close()
   return canvas.toDataURL("image/jpeg", qualidade)
 }

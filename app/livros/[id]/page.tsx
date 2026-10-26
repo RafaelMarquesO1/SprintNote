@@ -1,16 +1,9 @@
-import { Suspense } from "react"
+import { redirect } from "next/navigation"
 
-import { PaginaLivro } from "@/components/livros/pagina-livro"
-import { Skeleton } from "@/components/ui/skeleton"
-
-// Rafael Marques - 20/10/2026
-// Os livros ficam no navegador: o id é lido aqui e o resto acontece no cliente.
-export default function RotaLivro({ params }: PageProps<"/livros/[id]">) {
-  return (
-    <Suspense fallback={<Skeleton className="mx-auto h-64 max-w-4xl" />}>
-      {params.then(({ id }) => (
-        <PaginaLivro key={id} id={id} />
-      ))}
-    </Suspense>
-  )
+// Rafael Marques - 26/10/2026
+// A página do livro agora abre dentro da Biblioteca (/notas?livro=ID); este endereço antigo
+// só leva para lá, para links e favoritos continuarem funcionando.
+export default async function RotaLivro({ params }: PageProps<"/livros/[id]">) {
+  const { id } = await params
+  redirect(`/notas?livro=${encodeURIComponent(id)}`)
 }

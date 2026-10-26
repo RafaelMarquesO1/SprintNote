@@ -62,6 +62,9 @@ export type Nota = {
   aparencia?: AparenciaNota
   // Tags adicionadas pelo botão "+" (as #tags escritas no texto ficam no conteúdo).
   tags?: string[]
+  // Rafael Marques - 23/10/2026: "quadro" = quadro interativo (formas e setas, como o Canvas do Obsidian).
+  // O conteúdo é o JSON do quadro (veja lib/quadro/modelo.ts).
+  tipo?: "quadro"
 }
 
 // ---------- Kanban ----------
