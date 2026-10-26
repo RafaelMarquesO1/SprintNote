@@ -10,6 +10,7 @@ import { ArrowDownIcon, ArrowUpIcon, CalendarIcon, FlagIcon, LockIcon, Paperclip
 import { estilosPrioridade } from "@/components/kanban/cartao-kanban"
 import { useHoje } from "@/hooks/use-hoje"
 import { useKanban } from "@/lib/estado/kanban"
+import { complexidadeDe, rotuloComplexidade } from "@/lib/kanban/complexidade"
 import { rotuloPrazo } from "@/lib/tarefas-notas"
 import type { CartaoKanban, ColunaKanban, EtiquetaKanban, Prioridade } from "@/lib/tipos"
 import { cn } from "@/lib/utils"
@@ -49,8 +50,10 @@ export function VisaoLista({
           return cartao.prioridade ? pesoPrioridade[cartao.prioridade] : 0
         case "prazo":
           return cartao.prazo ?? "9999-99-99"
-        case "estimativa":
-          return cartao.estimativa ?? -1
+        case "estimativa": {
+          const nivel = complexidadeDe(cartao.estimativa)
+          return nivel === "alta" ? 3 : nivel === "media" ? 2 : nivel === "baixa" ? 1 : 0
+        }
       }
     }
     return lista.sort((a, b) => {
@@ -84,7 +87,7 @@ export function VisaoLista({
               {cabecalho("coluna", "Coluna")}
               {cabecalho("prioridade", "Prioridade")}
               {cabecalho("prazo", "Prazo")}
-              {cabecalho("estimativa", "Pontos")}
+              {cabecalho("estimativa", "Complexidade")}
             </tr>
           </thead>
           <tbody>
@@ -153,7 +156,7 @@ export function VisaoLista({
                       <span className="text-xs text-muted-foreground">—</span>
                     )}
                   </td>
-                  <td className="px-3 py-2 text-xs text-muted-foreground tabular-nums">{cartao.estimativa ?? "—"}</td>
+                  <td className="px-3 py-2 text-xs text-muted-foreground">{rotuloComplexidade(cartao.estimativa) ?? "—"}</td>
                 </tr>
               )
             })}

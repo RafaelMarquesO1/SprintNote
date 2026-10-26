@@ -2,7 +2,7 @@
 
 // Rafael Marques - 26/10/2026
 // Resumo do quadro (relatório da sprint): andamento, o que está atrasado ou vence logo,
-// distribuição por coluna, prioridade, etiqueta e pessoa, e pontos de estimativa.
+// distribuição por coluna, prioridade, etiqueta, pessoa e complexidade.
 // "Copiar resumo" gera um texto pronto para colar em e-mail ou nota.
 
 import { useState } from "react"
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { useHoje } from "@/hooks/use-hoje"
 import { somarDias } from "@/lib/datas"
+import { complexidadeDe, complexidades } from "@/lib/kanban/complexidade"
 import type { MembroEquipe } from "@/lib/tipos-equipe"
 import type { CartaoKanban, ColunaKanban, EtiquetaKanban, QuadroKanban } from "@/lib/tipos"
 import { cn } from "@/lib/utils"
@@ -61,7 +62,12 @@ export function DialogoResumo({
   const venceLogo = abertos.filter((cartao) => hoje && cartao.prazo && cartao.prazo >= hoje && cartao.prazo <= somarDias(hoje, 7)).sort((a, b) => (a.prazo! < b.prazo! ? -1 : 1))
   const semPrazo = abertos.filter((cartao) => !cartao.prazo).length
   const percentual = cartoes.length ? Math.round((feitos.length / cartoes.length) * 100) : 0
-  const pontos = (lista: CartaoKanban[]) => lista.reduce((soma, cartao) => soma + (cartao.estimativa ?? 0), 0)
+  const porComplexidade = complexidades.map((opcao) => ({
+    ...opcao,
+    abertos: abertos.filter((cartao) => complexidadeDe(cartao.estimativa) === opcao.id).length,
+    feitos: feitos.filter((cartao) => complexidadeDe(cartao.estimativa) === opcao.id).length,
+  }))
+  const temComplexidade = porComplexidade.some((item) => item.abertos + item.feitos > 0)
   const bloqueados = abertos.filter((cartao) =>
     cartao.bloqueadoPor.some((id) => {
       const outro = cartoes.find((item) => item.id === id)
@@ -84,7 +90,7 @@ export function DialogoResumo({
     const linhas = [
       `Resumo do quadro “${quadro.titulo}”${hoje ? ` — ${hoje.split("-").reverse().join("/")}` : ""}`,
       `${cartoes.length} cartões · ${feitos.length} concluídos (${percentual}%) · ${abertos.length} em aberto`,
-      ...(pontos(cartoes) > 0 ? [`Pontos: ${pontos(feitos)} de ${pontos(cartoes)} concluídos`] : []),
+      ...(temComplexidade ? [`Em aberto por complexidade: ${porComplexidade.map((item) => `${item.rotulo.toLowerCase()} ${item.abertos}`).join(" · ")}`] : []),
       "",
       "Por coluna:",
       ...colunas.map((coluna) => `- ${coluna.titulo}: ${cartoes.filter((cartao) => cartao.colunaId === coluna.id).length}`),
@@ -118,13 +124,21 @@ export function DialogoResumo({
           </div>
           <Barra valor={feitos.length} total={cartoes.length} />
 
-          {pontos(cartoes) > 0 && (
-            <Bloco titulo="Pontos de estimativa">
-              <p className="text-sm">
-                <strong className="tabular-nums">{pontos(feitos)}</strong> de <strong className="tabular-nums">{pontos(cartoes)}</strong> pontos concluídos
-                <span className="text-muted-foreground"> · faltam {pontos(abertos)}</span>
-              </p>
-              <Barra valor={pontos(feitos)} total={pontos(cartoes)} />
+          {temComplexidade && (
+            <Bloco titulo="Por complexidade">
+              <ul className="space-y-1.5">
+                {porComplexidade.map((item) => (
+                  <li key={item.id} className="space-y-1">
+                    <div className="flex items-center justify-between text-sm">
+                      <span>{item.rotulo}</span>
+                      <span className="text-xs text-muted-foreground tabular-nums">
+                        {item.feitos} de {item.feitos + item.abertos} concluídos
+                      </span>
+                    </div>
+                    <Barra valor={item.feitos} total={Math.max(1, item.feitos + item.abertos)} />
+                  </li>
+                ))}
+              </ul>
             </Bloco>
           )}
 

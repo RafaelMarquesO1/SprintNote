@@ -1,7 +1,7 @@
 {
   "name": "sprintnote",
-  "version": "1.2.1",
-  "versaoExibida": "1.2a",
+  "version": "1.2.2",
+  "versaoExibida": "1.2b",
   "private": true,
   "scripts": {
     "dev": "next dev",

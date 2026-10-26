@@ -32,6 +32,8 @@ import { membroPorId, useEquipes } from "@/lib/estado/equipes"
 import { alternarFiltroPorResponsavel, useFiltroAtribuidos } from "@/lib/estado/filtro-atribuidos"
 import { exibicaoPadrao, useKanban } from "@/lib/estado/kanban"
 import { useNotas } from "@/lib/estado/notas"
+import { BarrasComplexidade } from "@/components/kanban/extras-cartao"
+import { complexidadeDe, rotuloComplexidade } from "@/lib/kanban/complexidade"
 import { descreverRecorrencia } from "@/lib/kanban/recorrencia"
 import { rotuloPrazo } from "@/lib/tarefas-notas"
 import type { CartaoKanban, EtiquetaKanban, ExibicaoCartao, Prioridade } from "@/lib/tipos"
@@ -103,7 +105,7 @@ export function ConteudoCartao({
   const doCartao = exibicao.etiquetas ? etiquetas.filter((etiqueta) => cartao.etiquetas.includes(etiqueta.id)) : []
   const feitos = cartao.checklist.filter((item) => item.feito).length
   const atrasado = Boolean(hoje && cartao.prazo && cartao.prazo < hoje && !concluido)
-  // Rafael Marques - 26/10/2026: vence hoje, bloqueado por outro cartão, anexos, repetição e estimativa.
+  // Rafael Marques - 26/10/2026: vence hoje, bloqueado por outro cartão, anexos, repetição e complexidade.
   const venceHoje = Boolean(hoje && cartao.prazo === hoje && !concluido)
   const bloqueado = useKanban((estado) =>
     cartao.bloqueadoPor.some((id) => {
@@ -118,6 +120,7 @@ export function ConteudoCartao({
   const mostrarNota = exibicao.nota && nota
   const mostrarPrioridade = exibicao.prioridade && cartao.prioridade
   const mostrarComentarios = exibicao.comentarios && cartao.comentarios.length > 0
+  const complexidades = { baixa: 1, media: 2, alta: 3 } as const
   const temRodape = mostrarPrazo || mostrarProgresso || mostrarNota || mostrarPrioridade || mostrarComentarios || Boolean(responsavel) || mostrarExtras || cartao.anexos.length > 0 || cartao.recorrencia !== null || cartao.estimativa !== null
 
   return (
@@ -218,9 +221,11 @@ export function ConteudoCartao({
                 <RepeatIcon className="size-3" />
               </span>
             )}
-            {cartao.estimativa !== null && (
-              <span className="rounded-full bg-muted px-1.5 text-[11px] leading-4 font-medium tabular-nums" title="Estimativa em pontos">
-                {cartao.estimativa} pt
+            {/* Complexidade: só as barrinhas (o texto "Alta/Média/Baixa" já é usado pela prioridade). */}
+            {complexidadeDe(cartao.estimativa) && (
+              <span className="flex items-center gap-1" title={`Complexidade ${rotuloComplexidade(cartao.estimativa)?.toLowerCase()}`}>
+                <BarrasComplexidade nivel={complexidades[complexidadeDe(cartao.estimativa)!]} />
+                <span className="sr-only">Complexidade {rotuloComplexidade(cartao.estimativa)?.toLowerCase()}</span>
               </span>
             )}
             {mostrarComentarios && (

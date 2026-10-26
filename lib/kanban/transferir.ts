@@ -42,7 +42,7 @@ const aspas = (valor: string) => `"${valor.replace(/"/g, '""')}"`
 
 // Planilha para abrir no Excel/Sheets: uma linha por cartão (com BOM para os acentos aparecerem certos).
 export function quadroParaCsv(colunas: ColunaKanban[], cartoes: CartaoKanban[], etiquetas: EtiquetaKanban[]) {
-  const cabecalho = ["Título", "Coluna", "Prioridade", "Prazo", "Etiquetas", "Estimativa", "Checklist", "Descrição", "Arquivado"]
+  const cabecalho = ["Título", "Coluna", "Prioridade", "Prazo", "Etiquetas", "Complexidade", "Checklist", "Descrição", "Arquivado"]
   const linhas = cartoes.map((cartao) => {
     const coluna = colunas.find((item) => item.id === cartao.colunaId)?.titulo ?? ""
     const nomes = cartao.etiquetas.map((id) => etiquetas.find((etiqueta) => etiqueta.id === id)?.nome).filter(Boolean).join("; ")
@@ -53,7 +53,8 @@ export function quadroParaCsv(colunas: ColunaKanban[], cartoes: CartaoKanban[], 
       cartao.prioridade ?? "",
       cartao.prazo ?? "",
       nomes,
-      cartao.estimativa === null || cartao.estimativa === undefined ? "" : String(cartao.estimativa),
+      // Complexidade guardada como 1, 2 ou 3 (valores antigos maiores contam como alta).
+      cartao.estimativa === null || cartao.estimativa === undefined || cartao.estimativa <= 0 ? "" : cartao.estimativa <= 1 ? "baixa" : cartao.estimativa <= 2 ? "média" : "alta",
       cartao.checklist.length ? `${feitos}/${cartao.checklist.length}` : "",
       cartao.descricao,
       cartao.arquivado ? "sim" : "não",

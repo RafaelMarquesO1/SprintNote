@@ -35,6 +35,17 @@ export const ordemTipos: TipoNovidade[] = ["novo", "melhorado", "corrigido"]
 export const NOVIDADES: Novidade[] = [
   // Rafael Marques - 26/10/2026
   {
+    id: "2026-10-26-c",
+    versao: "1.2b",
+    data: "26/10/2026",
+    titulo: "Complexidade nos cartões",
+    resumo: "Marque cada cartão do Kanban como de complexidade baixa, média ou alta.",
+    itens: [
+      { tipo: "novo", titulo: "Complexidade", texto: "Baixa, média ou alta em cada cartão, com barrinhas na frente do cartão, coluna na lista e progresso no resumo do quadro." },
+    ],
+  },
+  // Rafael Marques - 26/10/2026
+  {
     id: "2026-10-26-b",
     versao: "1.2a",
     data: "26/10/2026",
@@ -42,7 +53,7 @@ export const NOVIDADES: Novidade[] = [
     resumo: "Novas formas de ver e organizar o Kanban, cartões mais completos e fundo com a sua foto.",
     itens: [
       { tipo: "novo", titulo: "Kanban em lista e calendário", texto: "Veja o quadro como lista ou calendário e agrupe em raias por pessoa, prioridade ou etiqueta." },
-      { tipo: "novo", titulo: "Mais nos cartões", texto: "Anexos, repetição, bloqueios e pontos de estimativa, também nos quadros de equipe, além de um resumo do quadro." },
+      { tipo: "novo", titulo: "Mais nos cartões", texto: "Anexos, repetição e bloqueios, também nos quadros de equipe, além de um resumo do quadro." },
       { tipo: "novo", titulo: "Modelos e importação", texto: "Crie quadros prontos (Sprint, Estudos, Atendimento…) e exporte ou importe quadros." },
       { tipo: "melhorado", titulo: "Fundo com a sua foto", texto: "Use uma foto como fundo do quadro e enquadre direto no quadro. Brilho, transparência e a cor das letras se ajustam sozinhos ao tema; você escolhe zoom e desfoque." },
     ],

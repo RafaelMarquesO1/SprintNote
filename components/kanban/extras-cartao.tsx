@@ -1,7 +1,7 @@
 "use client"
 
 // Rafael Marques - 26/10/2026
-// Partes novas do cartão: anexos (imagens e links), repetição, estimativa e bloqueios.
+// Partes novas do cartão: anexos (imagens e links), repetição, complexidade e bloqueios.
 // Valem para quadros pessoais e de equipe.
 
 import { useRef, useState } from "react"
@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Input } from "@/components/ui/input"
 import { gerarId } from "@/lib/gerar-id"
 import { comprimirImagem } from "@/lib/imagem"
+import { complexidadeDe, complexidades } from "@/lib/kanban/complexidade"
 import { descreverRecorrencia, nomesFrequencia, type FrequenciaRecorrencia } from "@/lib/kanban/recorrencia"
 import type { AnexoCartao, CartaoKanban } from "@/lib/tipos"
 import { cn } from "@/lib/utils"
@@ -173,7 +174,16 @@ export function SecaoAnexos({ cartao, atualizar }: { cartao: CartaoKanban; atual
   )
 }
 
-const pontosSugeridos = [1, 2, 3, 5, 8, 13]
+// Três barrinhas que enchem conforme a complexidade (como um sinal de rede).
+export function BarrasComplexidade({ nivel, className }: { nivel: number; className?: string }) {
+  return (
+    <span aria-hidden className={cn("inline-flex items-end gap-px", className)}>
+      {[1, 2, 3].map((barra) => (
+        <span key={barra} className={cn("w-[3px] rounded-[1px] bg-current", barra > nivel && "opacity-25")} style={{ height: 3 + barra * 2.5 }} />
+      ))}
+    </span>
+  )
+}
 
 export function PropriedadesExtras({ cartao, atualizar, cartoesDoQuadro, concluidas }: { cartao: CartaoKanban; atualizar: Atualizar; cartoesDoQuadro: CartaoKanban[]; concluidas: Set<string> }) {
   const outros = cartoesDoQuadro.filter((item) => item.id !== cartao.id && !item.arquivado)
@@ -183,35 +193,25 @@ export function PropriedadesExtras({ cartao, atualizar, cartoesDoQuadro, conclui
 
   return (
     <>
-      <Propriedade titulo="Estimativa (pontos)">
-        <div className="flex flex-wrap gap-1">
-          {pontosSugeridos.map((ponto) => (
-            <button
-              key={ponto}
-              type="button"
-              aria-pressed={cartao.estimativa === ponto}
-              onClick={() => atualizar({ estimativa: cartao.estimativa === ponto ? null : ponto })}
-              className={cn("flex size-7 items-center justify-center rounded-md border text-xs tabular-nums", cartao.estimativa === ponto ? "border-foreground bg-foreground text-background" : "hover:bg-muted")}
-            >
-              {ponto}
-            </button>
-          ))}
+      <Propriedade titulo="Complexidade">
+        <div className="grid grid-cols-3 gap-1" role="radiogroup" aria-label="Complexidade">
+          {complexidades.map((opcao) => {
+            const ativa = complexidadeDe(cartao.estimativa) === opcao.id
+            return (
+              <button
+                key={opcao.id}
+                type="button"
+                role="radio"
+                aria-checked={ativa}
+                title={ativa ? "Clique de novo para tirar" : undefined}
+                onClick={() => atualizar({ estimativa: ativa ? null : opcao.valor }, ativa ? "Complexidade removida" : `Complexidade ${opcao.rotulo.toLowerCase()}`)}
+                className={cn("flex h-8 items-center justify-center gap-1.5 rounded-md border text-xs", ativa ? "border-foreground bg-foreground text-background" : "hover:bg-muted")}
+              >
+                <BarrasComplexidade nivel={opcao.valor} /> {opcao.rotulo}
+              </button>
+            )
+          })}
         </div>
-        <Input
-          type="number"
-          min={0}
-          max={999}
-          step={0.5}
-          inputMode="decimal"
-          value={cartao.estimativa ?? ""}
-          placeholder="Outro valor"
-          aria-label="Estimativa em pontos"
-          className="h-8"
-          onChange={(evento) => {
-            const numero = evento.target.value === "" ? null : Number(evento.target.value)
-            atualizar({ estimativa: numero !== null && Number.isFinite(numero) && numero >= 0 && numero < 1000 ? numero : null })
-          }}
-        />
       </Propriedade>
 
       <Propriedade titulo="Repetir">
