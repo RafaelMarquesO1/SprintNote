@@ -12,6 +12,9 @@ const cabecalhosSeguranca = [
 
 const nextConfig: NextConfig = {
   /* config options here */
+  // Rafael Marques - 27/10/2026: libera o servidor de desenvolvimento para quem abre pelo IP da rede local
+  // (ex.: testar pelo celular). Só vale no "next dev"; não muda nada em produção.
+  allowedDevOrigins: ["172.18.100.103"],
   experimental: {
     agentFeedback: true,
   },

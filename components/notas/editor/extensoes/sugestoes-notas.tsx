@@ -1,7 +1,8 @@
 // Rafael Marques - 23/10/2026
-// Menus de sugestão do editor: "/" (blocos), "[[" (notas e livros) e "#" (tags já usadas).
+// Menus de sugestão do editor: "/" (blocos), "[[" (notas e livros), "#" (tags já usadas) e "@" (prazos).
 
-import { FilePlusIcon, HashIcon } from "lucide-react"
+import type { Editor, Range } from "@tiptap/core"
+import { CalendarIcon, CalendarSearchIcon, FilePlusIcon, HashIcon } from "lucide-react"
 
 import { Icone } from "@/components/icone"
 import { itensDeComando } from "@/components/notas/editor/comandos-barra"
@@ -10,6 +11,8 @@ import { criarSugestao } from "@/components/notas/editor/sugestao"
 import { useNotas } from "@/lib/estado/notas"
 import { dadosNovaNota, sugerirLinks } from "@/lib/links-wiki"
 import { contarTags } from "@/lib/tags"
+import { chaveHoje } from "@/lib/datas"
+import { interpretarPrazo, rotuloPrazo } from "@/lib/tarefas-notas"
 
 export const SugestaoBarra = criarSugestao({
   nome: "barra",
@@ -65,5 +68,69 @@ export const SugestaoTags = criarSugestao({
           editor.chain().focus().deleteRange(range).insertContent(`#${tag} `).run()
         },
       }))
+  },
+})
+
+// Rafael Marques - 27/10/2026
+// "@": sugere prazos (hoje, amanhã, dias da semana), entende datas digitadas (@25/11) e abre o
+// calendário em "Escolher data…". Só depois de espaço ou no começo, então e-mails não disparam.
+const prazosRapidos = [
+  { token: "hoje", rotulo: "Hoje" },
+  { token: "amanhã", rotulo: "Amanhã" },
+  { token: "seg", rotulo: "Segunda" },
+  { token: "ter", rotulo: "Terça" },
+  { token: "qua", rotulo: "Quarta" },
+  { token: "qui", rotulo: "Quinta" },
+  { token: "sex", rotulo: "Sexta" },
+  { token: "sáb", rotulo: "Sábado" },
+  { token: "dom", rotulo: "Domingo" },
+]
+const semAcentos = (texto: string) => texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+
+export const SugestaoPrazos = criarSugestao({
+  nome: "prazos",
+  char: "@",
+  titulo: "Prazo",
+  itens: (consulta) => {
+    const hoje = chaveHoje()
+    const procurado = semAcentos(consulta.trim())
+    const itens = prazosRapidos
+      .filter((prazo) => !procurado || semAcentos(prazo.rotulo).startsWith(procurado) || semAcentos(prazo.token).startsWith(procurado))
+      .map((prazo) => {
+        const data = interpretarPrazo(prazo.token, hoje)
+        return {
+          chave: `prazo-${prazo.token}`,
+          rotulo: prazo.rotulo,
+          descricao: data ? rotuloPrazo(data, hoje) : undefined,
+          icone: <CalendarIcon className="size-4" />,
+          executar: (editorAtual: Editor, range: Range) => {
+            editorAtual.chain().focus().deleteRange(range).insertContent(`@${prazo.token} `).run()
+          },
+        }
+      })
+    // Data digitada à mão (ex.: @25/11 ou @25/11/2026).
+    const digitada = /^\d{1,2}\/\d{1,2}(?:\/\d{2,4})?$/.test(consulta.trim()) ? interpretarPrazo(consulta.trim(), hoje) : null
+    if (digitada) {
+      itens.unshift({
+        chave: "prazo-digitado",
+        rotulo: `@${consulta.trim()}`,
+        descricao: rotuloPrazo(digitada, hoje),
+        icone: <CalendarIcon className="size-4" />,
+        executar: (editorAtual, range) => {
+          editorAtual.chain().focus().deleteRange(range).insertContent(`@${consulta.trim()} `).run()
+        },
+      })
+    }
+    itens.push({
+      chave: "prazo-escolher",
+      rotulo: "Escolher data…",
+      descricao: "Abre o calendário",
+      icone: <CalendarSearchIcon className="size-4" />,
+      executar: (editorAtual, range) => {
+        editorAtual.chain().focus().deleteRange(range).run()
+        ganchosDo(editorAtual).abrirPrazo?.()
+      },
+    })
+    return itens
   },
 })

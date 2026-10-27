@@ -8,6 +8,8 @@ import { Extension, type Editor } from "@tiptap/core"
 export type GanchosNotas = {
   abrirImagem: (() => void) | null
   abrirLink: (() => void) | null
+  // Rafael Marques - 27/10/2026: janela "Escolher data" (prazo personalizado).
+  abrirPrazo: (() => void) | null
   navegar: ((endereco: string) => void) | null
   notaId: string | null
   livroId: string | null
@@ -16,7 +18,7 @@ export type GanchosNotas = {
 export const ExtensaoGanchos = Extension.create<Record<string, never>, GanchosNotas>({
   name: "ganchosNotas",
   addStorage() {
-    return { abrirImagem: null, abrirLink: null, navegar: null, notaId: null, livroId: null }
+    return { abrirImagem: null, abrirLink: null, abrirPrazo: null, navegar: null, notaId: null, livroId: null }
   },
 })
 

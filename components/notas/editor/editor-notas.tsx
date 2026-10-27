@@ -21,6 +21,7 @@ import { AlcaBloco } from "@/components/notas/editor/alca-bloco"
 import { BarraMobile } from "@/components/notas/editor/barra-mobile"
 import { BarraFlutuante } from "@/components/notas/editor/barra-flutuante"
 import { ControlesTabela } from "@/components/notas/editor/controles-tabela"
+import { DialogoPrazo } from "@/components/notas/editor/dialogo-prazo"
 import { DialogoImagem } from "@/components/notas/editor/dialogo-imagem"
 import { Atalhos } from "@/components/notas/editor/extensoes/atalhos"
 import { CodigoNota } from "@/components/notas/editor/extensoes/codigo"
@@ -28,7 +29,7 @@ import { ColarMarkdown } from "@/components/notas/editor/extensoes/colar"
 import { Destaque } from "@/components/notas/editor/extensoes/destaque"
 import { Etiquetas } from "@/components/notas/editor/extensoes/etiquetas"
 import { LinkNota } from "@/components/notas/editor/extensoes/link-nota"
-import { SugestaoBarra, SugestaoLinks, SugestaoTags } from "@/components/notas/editor/extensoes/sugestoes-notas"
+import { SugestaoBarra, SugestaoLinks, SugestaoPrazos, SugestaoTags } from "@/components/notas/editor/extensoes/sugestoes-notas"
 import { ExtensaoGanchos, ganchosDo } from "@/components/notas/editor/ganchos"
 import { documentoParaMarkdown, markdownParaDocumento, type NoDoc } from "@/lib/editor/markdown-documento"
 import { useNotas } from "@/lib/estado/notas"
@@ -61,6 +62,7 @@ function criarExtensoes() {
     SugestaoBarra,
     SugestaoLinks,
     SugestaoTags,
+    SugestaoPrazos,
     Placeholder.configure({
       showOnlyCurrent: false,
       includeChildren: true,
@@ -82,6 +84,7 @@ export function EditorNotas({ nota, pedidoFocoInicio = 0 }: { nota: Nota; pedido
   const router = useRouter()
   const extensoes = useMemo(() => criarExtensoes(), [])
   const [imagemAberta, setImagemAberta] = useState(false)
+  const [prazoAberto, setPrazoAberto] = useState(false)
   // Último Markdown que o próprio editor gravou: se a nota mudar por outro caminho
   // (renomear links, marcar tarefa na lista de tarefas...), o editor recarrega.
   const ultimoMarkdown = useRef(nota.conteudo)
@@ -109,6 +112,7 @@ export function EditorNotas({ nota, pedidoFocoInicio = 0 }: { nota: Nota; pedido
     ganchos.notaId = nota.id
     ganchos.livroId = nota.livroId
     ganchos.abrirImagem = () => setImagemAberta(true)
+    ganchos.abrirPrazo = () => setPrazoAberto(true)
     ganchos.navegar = (endereco) => router.push(endereco)
   }, [editor, nota.id, nota.livroId, router])
 
@@ -158,6 +162,7 @@ export function EditorNotas({ nota, pedidoFocoInicio = 0 }: { nota: Nota; pedido
       <ControlesTabela editor={editor} />
       <BarraMobile editor={editor} />
       <button type="button" aria-label="Continuar escrevendo no fim da nota" onClick={continuarNoFim} className="block h-32 w-full cursor-text" />
+      <DialogoPrazo aberto={prazoAberto} aoMudarAberto={setPrazoAberto} aoInserir={(token) => editor.chain().focus().insertContent(`${token} `).run()} />
       <DialogoImagem
         aberto={imagemAberta}
         aoMudarAberto={setImagemAberta}

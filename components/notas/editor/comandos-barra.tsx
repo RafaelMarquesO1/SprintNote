@@ -6,6 +6,7 @@ import type { ChainedCommands, Editor, Range } from "@tiptap/core"
 import {
   CalendarIcon,
   CalendarPlusIcon,
+  CalendarSearchIcon,
   CodeIcon,
   Heading1Icon,
   Heading2Icon,
@@ -94,6 +95,8 @@ export const comandosBarra: ComandoBarra[] = [
   { id: "tag", rotulo: "Tag", descricao: "Organize com #assunto", grupo: "Links e datas", palavras: ["tag", "etiqueta", "hashtag", "assunto"], atalho: "#", icone: HashIcon, aplicar: (c) => c.insertContent("#") },
   { id: "data-hoje", rotulo: "Data de hoje", descricao: "Insere a data de hoje no texto", grupo: "Links e datas", palavras: ["data", "hoje", "dia", "calendario"], icone: CalendarIcon, aplicar: (c) => c.insertContent(`${dataDeHoje()} `) },
   { id: "prazo-hoje", rotulo: "Prazo: hoje", descricao: "@hoje — aparece na lista de tarefas", grupo: "Links e datas", palavras: ["prazo", "hoje", "vencimento", "tarefa"], atalho: "@hoje", icone: CalendarPlusIcon, aplicar: (c) => c.insertContent("@hoje ") },
+  // Rafael Marques - 27/10/2026: prazo com data escolhida no calendário.
+  { id: "prazo-data", rotulo: "Prazo: escolher data…", descricao: "Calendário para qualquer dia (também ao digitar @)", grupo: "Links e datas", palavras: ["prazo", "data", "dia", "calendario", "vencimento", "tarefa", "personalizada"], icone: CalendarSearchIcon, aplicar: (c, editor) => { ganchosDo(editor).abrirPrazo?.() ; return c } },
   { id: "prazo-amanha", rotulo: "Prazo: amanhã", descricao: "@amanhã — aparece na lista de tarefas", grupo: "Links e datas", palavras: ["prazo", "amanha", "vencimento", "tarefa"], atalho: "@amanhã", icone: CalendarPlusIcon, aplicar: (c) => c.insertContent("@amanhã ") },
 ]
 

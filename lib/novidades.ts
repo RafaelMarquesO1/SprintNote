@@ -33,6 +33,18 @@ export const ordemTipos: TipoNovidade[] = ["novo", "melhorado", "corrigido"]
 
 // Mais recente primeiro.
 export const NOVIDADES: Novidade[] = [
+  // Rafael Marques - 27/10/2026
+  {
+    id: "2026-10-27",
+    versao: "1.2c",
+    data: "27/10/2026",
+    titulo: "Prazo com a data que você quiser",
+    resumo: "Além de @hoje e @amanhã, agora dá para escolher qualquer dia no calendário.",
+    itens: [
+      { tipo: "novo", titulo: "Escolher data", texto: "Digite “@” e escolha “Escolher data…”, ou use o comando “/” Prazo: escolher data. O calendário tem atalhos como próxima segunda e fim do mês." },
+      { tipo: "melhorado", titulo: "Sugestões ao digitar @", texto: "Hoje, amanhã e os dias da semana aparecem na hora, e datas digitadas (como @25/11) mostram o dia certo antes de inserir." },
+    ],
+  },
   // Rafael Marques - 26/10/2026
   {
     id: "2026-10-26-c",
