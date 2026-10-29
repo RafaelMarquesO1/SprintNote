@@ -31,6 +31,11 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: cabecalhosSeguranca }];
   },
+  // Rafael Marques - 29/10/2026: o endereço antigo do livro (/livros/ID) leva para a Biblioteca.
+  // Antes era uma página que lia o id fora de <Suspense> e quebrava o build na Vercel (Cache Components).
+  async redirects() {
+    return [{ source: "/livros/:id", destination: "/notas?livro=:id", permanent: false }];
+  },
 };
 
 export default nextConfig;
