@@ -25,6 +25,7 @@ import {
   QuoteIcon,
   StickyNoteIcon,
   TableIcon,
+  WorkflowIcon,
   TriangleAlertIcon,
   type LucideIcon,
 } from "lucide-react"
@@ -90,6 +91,8 @@ export const comandosBarra: ComandoBarra[] = [
   { id: "imagem", rotulo: "Imagem", descricao: "Envie um arquivo ou use um endereço", grupo: "Mídia e dados", palavras: ["imagem", "foto", "figura", "image", "upload"], icone: ImageIcon, bloco: true, aplicar: (c, editor) => { ganchosDo(editor).abrirImagem?.() ; return c } },
   { id: "tabela", rotulo: "Tabela", descricao: "Tabela 3×3 para editar na hora", grupo: "Mídia e dados", palavras: ["tabela", "table", "grade", "planilha"], icone: TableIcon, bloco: true, aplicar: (c) => c.insertTable({ rows: 3, cols: 3, withHeaderRow: true }) },
   { id: "codigo", rotulo: "Bloco de código", descricao: "Código com cores (a linguagem é detectada)", grupo: "Mídia e dados", palavras: ["codigo", "code", "programacao"], atalho: "```", icone: CodeIcon, bloco: true, aplicar: (c) => c.setCodeBlock() },
+  // Rafael Marques - 29/10/2026: diagrama Mermaid (desenhado na nota, com tela cheia).
+  { id: "mermaid", rotulo: "Diagrama Mermaid", descricao: "Fluxograma escrito em texto, desenhado na hora", grupo: "Mídia e dados", palavras: ["mermaid", "diagrama", "fluxograma", "grafico", "sequencia"], icone: WorkflowIcon, bloco: true, aplicar: (c) => c.setCodeBlock({ language: "mermaid" }).insertContent("graph TD\n  A[Início] --> B[Fim]") },
 
   { id: "link-nota", rotulo: "Link para nota ou livro", descricao: "Conecta esta nota com outra", grupo: "Links e datas", palavras: ["link", "nota", "livro", "wiki", "conectar", "mencionar"], atalho: "[[", icone: LinkIcon, aplicar: (c) => c.insertContent("[[") },
   { id: "tag", rotulo: "Tag", descricao: "Organize com #assunto", grupo: "Links e datas", palavras: ["tag", "etiqueta", "hashtag", "assunto"], atalho: "#", icone: HashIcon, aplicar: (c) => c.insertContent("#") },

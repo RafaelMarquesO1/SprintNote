@@ -1,7 +1,7 @@
 {
   "name": "sprintnote",
-  "version": "1.2.3",
-  "versaoExibida": "1.2c",
+  "version": "1.2.4",
+  "versaoExibida": "1.2d",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -34,6 +34,7 @@
     "cn": "^0.5.0",
     "highlight.js": "^11.11.1",
     "lucide-react": "^1.60.0",
+    "mermaid": "^11.17.2",
     "next": "16.4.2",
     "react": "19.3.0",
     "react-dom": "19.3.0",

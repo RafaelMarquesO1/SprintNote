@@ -31,6 +31,26 @@ const SIDEBAR_WIDTH = "16rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
+// Rafael Marques - 29/10/2026 (sugestão do Kaíke): largura do menu lateral ajustável no PC (arrastando a borda).
+const SIDEBAR_LARGURA_CHAVE = "sprintnote-largura-menu"
+const SIDEBAR_LARGURA_MIN = 208
+const SIDEBAR_LARGURA_MAX = 480
+
+const ouvintesLargura = new Set<() => void>()
+function assinarLargura(avisar: () => void) {
+  ouvintesLargura.add(avisar)
+  return () => {
+    ouvintesLargura.delete(avisar)
+  }
+}
+function lerLarguraSalva() {
+  try {
+    const salva = Number(localStorage.getItem(SIDEBAR_LARGURA_CHAVE))
+    return salva >= SIDEBAR_LARGURA_MIN && salva <= SIDEBAR_LARGURA_MAX ? salva : null
+  } catch {
+    return null
+  }
+}
 
 type SidebarContextProps = {
   state: "expanded" | "collapsed"
@@ -40,6 +60,11 @@ type SidebarContextProps = {
   setOpenMobile: (open: boolean) => void
   isMobile: boolean
   toggleSidebar: () => void
+  // Rafael Marques - 29/10/2026: largura em px escolhida pela pessoa (null = padrão).
+  largura: number | null
+  definirLargura: (px: number | null, salvar?: boolean) => void
+  redimensionando: boolean
+  setRedimensionando: (valor: boolean) => void
 }
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null)
@@ -113,6 +138,26 @@ function SidebarProvider({
   // This makes it easier to style the sidebar with Tailwind classes.
   const state = open ? "expanded" : "collapsed"
 
+  // Rafael Marques - 29/10/2026: largura salva no navegador (no servidor vale o padrão) e, durante o arrasto,
+  // a largura de agora (só é salva ao soltar).
+  const larguraSalva = React.useSyncExternalStore(assinarLargura, lerLarguraSalva, () => null)
+  const [larguraArrasto, setLarguraArrasto] = React.useState<number | null | undefined>(undefined)
+  const largura = larguraArrasto !== undefined ? larguraArrasto : larguraSalva
+  const [redimensionando, setRedimensionando] = React.useState(false)
+  const definirLargura = React.useCallback((px: number | null, salvar = false) => {
+    const valor = px === null ? null : Math.round(Math.min(SIDEBAR_LARGURA_MAX, Math.max(SIDEBAR_LARGURA_MIN, px)))
+    if (!salvar) {
+      setLarguraArrasto(valor)
+      return
+    }
+    try {
+      if (valor === null) localStorage.removeItem(SIDEBAR_LARGURA_CHAVE)
+      else localStorage.setItem(SIDEBAR_LARGURA_CHAVE, String(valor))
+    } catch {}
+    ouvintesLargura.forEach((avisar) => avisar())
+    setLarguraArrasto(undefined)
+  }, [])
+
   const contextValue = React.useMemo<SidebarContextProps>(
     () => ({
       state,
@@ -122,8 +167,12 @@ function SidebarProvider({
       openMobile,
       setOpenMobile,
       toggleSidebar,
+      largura,
+      definirLargura,
+      redimensionando,
+      setRedimensionando,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, largura, definirLargura, redimensionando]
   )
 
   return (
@@ -132,7 +181,7 @@ function SidebarProvider({
         data-slot="sidebar-wrapper"
         style={
           {
-            "--sidebar-width": SIDEBAR_WIDTH,
+            "--sidebar-width": largura ? `${largura}px` : SIDEBAR_WIDTH,
             "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
             ...style,
           } as React.CSSProperties
@@ -162,7 +211,7 @@ function Sidebar({
   variant?: "sidebar" | "floating" | "inset"
   collapsible?: "offcanvas" | "icon" | "none"
 }) {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+  const { isMobile, state, openMobile, setOpenMobile, redimensionando } = useSidebar()
 
   if (collapsible === "none") {
     return (
@@ -213,12 +262,13 @@ function Sidebar({
       data-variant={variant}
       data-side={side}
       data-slot="sidebar"
+      data-redimensionando={redimensionando ? "" : undefined}
     >
       {/* This is what handles the sidebar gap on desktop */}
       <div
         data-slot="sidebar-gap"
         className={cn(
-          "relative w-(--sidebar-width) bg-transparent transition-[width] duration-200 ease-linear",
+          "relative w-(--sidebar-width) bg-transparent transition-[width] duration-200 ease-linear group-data-[redimensionando]:transition-none",
           "group-data-[collapsible=offcanvas]:w-0",
           "group-data-[side=right]:rotate-180",
           variant === "floating" || variant === "inset"
@@ -230,7 +280,7 @@ function Sidebar({
         data-slot="sidebar-container"
         data-side={side}
         className={cn(
-          "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear data-[side=left]:left-0 data-[side=left]:group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)] data-[side=right]:right-0 data-[side=right]:group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)] md:flex",
+          "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear group-data-[redimensionando]:transition-none data-[side=left]:left-0 data-[side=left]:group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)] data-[side=right]:right-0 data-[side=right]:group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)] md:flex",
           // Adjust the padding for floating and inset variants.
           variant === "floating" || variant === "inset"
             ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
@@ -278,7 +328,47 @@ function SidebarTrigger({
 }
 
 function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
-  const { toggleSidebar } = useSidebar()
+  const { toggleSidebar, state, definirLargura, setRedimensionando } = useSidebar()
+  // Rafael Marques - 29/10/2026: arrastar a borda muda a largura; um clique simples recolhe/abre como antes.
+  const arrastou = React.useRef(false)
+
+  function comecarArrasto(evento: React.PointerEvent<HTMLButtonElement>) {
+    if (evento.button !== 0 || state === "collapsed") return
+    const lado = evento.currentTarget.closest<HTMLElement>("[data-side]")?.getAttribute("data-side")
+    const caixa = evento.currentTarget.closest<HTMLElement>("[data-slot=sidebar-container]")
+    if (!caixa) return
+    const inicioX = evento.clientX
+    const larguraInicial = caixa.getBoundingClientRect().width
+    let atual = larguraInicial
+    arrastou.current = false
+
+    function mover(movimento: PointerEvent) {
+      const deslocamento = (movimento.clientX - inicioX) * (lado === "right" ? -1 : 1)
+      if (!arrastou.current && Math.abs(deslocamento) < 4) return
+      if (!arrastou.current) {
+        arrastou.current = true
+        setRedimensionando(true)
+        document.body.style.cursor = "col-resize"
+        document.body.style.userSelect = "none"
+      }
+      atual = larguraInicial + deslocamento
+      definirLargura(atual)
+    }
+    function soltar() {
+      window.removeEventListener("pointermove", mover)
+      window.removeEventListener("pointerup", soltar)
+      window.removeEventListener("pointercancel", soltar)
+      if (arrastou.current) {
+        definirLargura(atual, true)
+        setRedimensionando(false)
+        document.body.style.cursor = ""
+        document.body.style.userSelect = ""
+      }
+    }
+    window.addEventListener("pointermove", mover)
+    window.addEventListener("pointerup", soltar)
+    window.addEventListener("pointercancel", soltar)
+  }
 
   return (
     <button
@@ -286,8 +376,17 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
       data-slot="sidebar-rail"
       aria-label="Toggle Sidebar"
       tabIndex={-1}
-      onClick={toggleSidebar}
-      title="Toggle Sidebar"
+      onPointerDown={comecarArrasto}
+      onClick={() => {
+        // O clique que termina um arrasto não deve recolher o menu.
+        if (arrastou.current) {
+          arrastou.current = false
+          return
+        }
+        toggleSidebar()
+      }}
+      onDoubleClick={() => definirLargura(null, true)}
+      title="Arraste para ajustar a largura · clique para recolher · duplo clique volta ao padrão"
       className={cn(
         "absolute inset-y-0 z-20 hidden w-4 transition-all ease-linear group-data-[side=left]:-right-4 group-data-[side=right]:left-0 after:absolute after:inset-y-0 after:start-1/2 after:w-[2px] hover:after:bg-sidebar-border sm:flex ltr:-translate-x-1/2 rtl:-translate-x-1/2",
         "in-data-[side=left]:cursor-w-resize in-data-[side=right]:cursor-e-resize",

@@ -9,8 +9,9 @@ import CodeBlock from "@tiptap/extension-code-block"
 import { Plugin, PluginKey } from "@tiptap/pm/state"
 import { Decoration, DecorationSet } from "@tiptap/pm/view"
 import { NodeViewContent, NodeViewWrapper, ReactNodeViewRenderer, type NodeViewProps } from "@tiptap/react"
-import { CheckIcon, CopyIcon } from "lucide-react"
+import { CheckIcon, ChevronDownIcon, ChevronRightIcon, CopyIcon } from "lucide-react"
 
+import { DiagramaMermaid } from "@/components/notas/diagrama-mermaid"
 import { linguagensSugeridas, nomeLinguagem, realcarCodigo } from "@/lib/realce-codigo"
 
 const entidades: Record<string, string> = { "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"', "&#x27;": "'", "&#39;": "'" }
@@ -41,8 +42,29 @@ function VisaoCodigo({ node, updateAttributes, editor }: NodeViewProps) {
   const linguagem = String(node.attrs.language ?? "")
   const codigo = node.textContent
   const realce = realcarCodigo(codigo, linguagem)
+  // Rafael Marques - 29/10/2026: bloco "mermaid" mostra o diagrama; o código fica escondido até pedir para editar.
+  const ehMermaid = linguagem.toLowerCase() === "mermaid"
+  const [verCodigo, setVerCodigo] = useState(() => !codigo.trim())
+  const codigoOculto = ehMermaid && !verCodigo
   return (
     <NodeViewWrapper className="relative my-1 rounded-lg bg-muted/60 px-4 pt-8 pb-3" data-codigo>
+      {ehMermaid && (
+        <div contentEditable={false} className="mb-2 rounded-md bg-background p-2">
+          <DiagramaMermaid codigo={codigo} compacto />
+        </div>
+      )}
+      {ehMermaid && (
+        <button
+          type="button"
+          contentEditable={false}
+          onMouseDown={(evento) => evento.preventDefault()}
+          onClick={() => setVerCodigo((atual) => !atual)}
+          className="mb-1 flex items-center gap-1 rounded px-1.5 py-0.5 font-mono text-xs text-muted-foreground select-none hover:bg-foreground/10 hover:text-foreground"
+        >
+          {verCodigo ? <ChevronDownIcon className="size-3.5" /> : <ChevronRightIcon className="size-3.5" />}
+          {verCodigo ? "Esconder código" : "Editar código do diagrama"}
+        </button>
+      )}
       <div contentEditable={false} className="absolute top-1.5 right-2 left-4 flex items-center justify-between gap-2 font-mono text-xs text-muted-foreground select-none">
         <input
           value={linguagem}
@@ -73,7 +95,7 @@ function VisaoCodigo({ node, updateAttributes, editor }: NodeViewProps) {
           {copiado ? <CheckIcon className="size-3.5" /> : <CopyIcon className="size-3.5" />} {copiado ? "Copiado" : "Copiar"}
         </button>
       </div>
-      <pre className="codigo-realce m-0 font-mono text-[0.85em] leading-6 break-words whitespace-pre-wrap">
+      <pre className={`codigo-realce m-0 ${codigoOculto ? "hidden " : ""}font-mono text-[0.85em] leading-6 break-words whitespace-pre-wrap`}>
         <NodeViewContent as={"code" as "div"} spellCheck={false} />
       </pre>
     </NodeViewWrapper>

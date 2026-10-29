@@ -94,7 +94,9 @@ export function extrairTarefasDaNota(nota: Nota, livros: Livro[], hoje: string):
 }
 
 export function extrairTarefasDasNotas(notas: Nota[], livros: Livro[], hoje: string) {
-  return notas.flatMap((nota) => extrairTarefasDaNota(nota, livros, hoje))
+  // Rafael Marques - 29/10/2026: livros com "vincular às tarefas" desligado ficam de fora.
+  const sem = new Set(livros.filter((livro) => livro.vincularTarefas === false).map((livro) => livro.id))
+  return notas.filter((nota) => !nota.livroId || !sem.has(nota.livroId)).flatMap((nota) => extrairTarefasDaNota(nota, livros, hoje))
 }
 
 // Marca/desmarca a tarefa número "indice" no Markdown da nota.

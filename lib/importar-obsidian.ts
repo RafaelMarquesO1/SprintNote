@@ -1,4 +1,4 @@
-// Rafael Marques - 23/10/2026
+// Rafael Marques - 23/10/2026 (importação mais fiel ao Obsidian em 29/10/2026)
 // Importa um cofre (vault) do Obsidian: pasta, .zip ou arquivos .md soltos.
 //   • pasta de 1º nível  → livro; pastas mais fundas → nota-pasta com subnotas
 //   • .md na raiz         → nota solta
@@ -55,15 +55,90 @@ function lerFrontmatter(texto: string) {
   return { corpo: texto.slice(achado[0].length), tags: [...new Set(limpas)] }
 }
 
+// Rafael Marques - 29/10/2026 (sugestão do Kaíke: importação do Obsidian nem sempre ficava formatada)
+// Ajustes linha a linha, fora dos blocos de código:
+//   • caixinhas com estado do Obsidian (- [/], - [>], - [-]) viram caixinhas comuns
+//   • "^id-do-bloco" no fim da linha some;  $$ fórmula $$ vira bloco de código
+//   • tabela sem barra nas pontas ("a | b") ganha as barras
+function ajustarLinhas(corpo: string) {
+  const linhas = corpo.split("\n")
+  const saida: string[] = []
+  let cerca = false
+  let formula = false
+  for (const original of linhas) {
+    if (formula) {
+      if (/^\s*\$\$\s*$/.test(original)) {
+        formula = false
+        saida.push("```")
+      } else saida.push(original)
+      continue
+    }
+    if (/^\s*(```|~~~)/.test(original)) {
+      cerca = !cerca
+      saida.push(original)
+      continue
+    }
+    if (cerca) {
+      saida.push(original)
+      continue
+    }
+    if (/^\s*\$\$\s*$/.test(original)) {
+      formula = true
+      saida.push("```latex")
+      continue
+    }
+    const unica = /^\s*\$\$(.+)\$\$\s*$/.exec(original)
+    if (unica) {
+      saida.push("```latex", unica[1].trim(), "```")
+      continue
+    }
+    saida.push(
+      original
+        .replace(/^(\s*[-*+] \[)([/\-><?!*])(\])/, (_, antes: string, estado: string, depois: string) => `${antes}${estado === "-" ? "x" : " "}${depois}`)
+        .replace(/(^|\s)\^[A-Za-z0-9-]+\s*$/, "")
+    )
+  }
+  if (formula) saida.push("```")
+
+  // Tabela sem barra nas pontas: a linha seguinte é o separador "--|--".
+  const REGEX_SEPARADOR = /^\s*:?-{1,}:?\s*(?:\|\s*:?-{1,}:?\s*)+\|?\s*$/
+  let dentro = false
+  for (let i = 0; i < saida.length - 1; i++) {
+    if (/^\s*(```|~~~)/.test(saida[i])) dentro = !dentro
+    if (dentro || !saida[i].includes("|") || /^\s*\|/.test(saida[i]) || !REGEX_SEPARADOR.test(saida[i + 1])) continue
+    for (let j = i; j < saida.length && saida[j].trim() && saida[j].includes("|"); j++) {
+      saida[j] = `| ${saida[j].trim().replace(/^\|/, "").replace(/\|$/, "").trim()} |`
+      i = j
+    }
+  }
+  return saida.join("\n")
+}
+
 // Converte a sintaxe do Obsidian para a que o SprintNote entende.
-function converterConteudo(corpo: string) {
+function converterConteudo(corpoOriginal: string) {
   let anexos = 0
+  const corpo = ajustarLinhas(corpoOriginal)
   const convertido = corpo
-    .split(/(```[\s\S]*?```|`[^`\n]*`)/g)
+    .split(/(```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]*`)/g)
     .map((trecho, indice) => {
       if (indice % 2 === 1) return trecho
       return trecho
         .replace(/%%[\s\S]*?%%/g, "")
+        // HTML simples que o SprintNote não mostra: troca pelo equivalente ou tira a etiqueta.
+        .replace(/<!--[\s\S]*?-->/g, "")
+        .replace(/<mark>([\s\S]*?)<\/mark>/gi, "==$1==")
+        .replace(/<kbd>([\s\S]*?)<\/kbd>/gi, "`$1`")
+        .replace(/<summary[^>]*>([\s\S]*?)<\/summary>/gi, "**$1**\n\n")
+        .replace(/<\/?(?:details|div|span|center|font|section|article|u|ins|p)(?:\s[^>]*)?>/gi, "")
+        // [texto](Outra%20Nota.md#seção) → [[Outra Nota|texto]]
+        .replace(/(?<!!)\[([^\]]+)\]\(<?((?!https?:|mailto:)[^)>]*?\.md)(?:#[^)>]*)?>?\)/gi, (_, rotulo: string, alvo: string) => {
+          let titulo = alvo
+          try {
+            titulo = decodeURIComponent(alvo)
+          } catch {}
+          titulo = (titulo.split("/").pop() as string).replace(/\.md$/i, "").trim()
+          return !titulo ? rotulo : rotulo.trim() === titulo ? `[[${titulo}]]` : `[[${titulo}|${rotulo}]]`
+        })
         .replace(REGEX_EMBUTIDO, (_, alvo: string) => {
           const nome = alvo.trim()
           if (/\.[a-z0-9]{2,5}$/i.test(nome) && !ehMarkdown(nome)) {
@@ -78,8 +153,9 @@ function converterConteudo(corpo: string) {
         })
         .replace(REGEX_LINK, (_, alvo: string, rotulo?: string) => {
           // Tira "#Seção" e "^bloco"; a pasta some: o SprintNote acha a nota pelo título.
-          const limpo = alvo.split(/[#^]/)[0].trim().replace(/\.md$/i, "")
-          if (!limpo) return rotulo ?? alvo
+          // Rafael Marques - 29/10/2026: "\|" (alias dentro de tabela) deixa uma barra sobrando; "[[#Seção]]" não vira #tag.
+          const limpo = alvo.replace(/\\$/, "").split(/[#^]/)[0].trim().replace(/\.md$/i, "")
+          if (!limpo) return rotulo ?? alvo.replace(/^[#^]+/, "")
           const titulo = limpo.split("/").pop() as string
           return rotulo ? `[[${titulo}|${rotulo}]]` : `[[${titulo}]]`
         })

@@ -9,6 +9,8 @@ export const linguagensSugeridas = [
   "javascript", "typescript", "jsx", "tsx", "python", "java", "c", "cpp", "csharp", "go", "rust",
   "php", "ruby", "kotlin", "swift", "sql", "html", "css", "scss", "json", "yaml", "xml", "bash",
   "powershell", "markdown", "diff", "plaintext",
+  // Rafael Marques - 29/10/2026: "mermaid" desenha o diagrama no lugar do código.
+  "mermaid",
 ]
 
 const nomesBonitos: Record<string, string> = {

@@ -147,7 +147,8 @@ function CampoTitulo({ nota, centralizado, aoConfirmar }: { nota: Nota; centrali
       placeholder="Sem título"
       aria-label="Título da nota"
       className={cn(
-        "field-sizing-content block w-full resize-none overflow-hidden bg-transparent text-[2.5em] leading-tight font-bold tracking-tight outline-none placeholder:text-muted-foreground/40",
+        // Rafael Marques - 29/10/2026: título comprido (ou palavra enorme) quebra de linha em vez de cortar.
+        "field-sizing-content block w-full max-w-full min-w-0 resize-none overflow-hidden bg-transparent [overflow-wrap:anywhere] break-words whitespace-pre-wrap text-[2.5em] leading-tight font-bold tracking-tight outline-none placeholder:text-muted-foreground/40",
         centralizado && "text-center"
       )}
     />
@@ -391,7 +392,7 @@ function TelaNota({ nota, notas }: { nota: Nota; notas: Nota[] }) {
 
       {/* Documento */}
       <div
-        className={cn("documento px-4 pb-24 md:px-6", classeLargura[visual.largura], classeFonte[visual.fonte])}
+        className={cn("documento min-w-0 px-4 pb-24 md:px-6", classeLargura[visual.largura], classeFonte[visual.fonte])}
         data-destaque={visual.corDestaque ? "" : undefined}
         data-espacamento={visual.espacamento}
         style={{ fontSize: `${tamanho}px`, ...(visual.corDestaque ? ({ "--destaque": visual.corDestaque } as React.CSSProperties) : {}) }}

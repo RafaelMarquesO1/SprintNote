@@ -8,6 +8,7 @@ import ReactMarkdown, { type Components } from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { BookIcon, CalendarIcon } from "lucide-react"
 
+import { DiagramaMermaid } from "@/components/notas/diagrama-mermaid"
 import { useHoje } from "@/hooks/use-hoje"
 import { useNotas } from "@/lib/estado/notas"
 import { PREFIXO_LINK_WIKI, PREFIXO_MARCA, PREFIXO_PRAZO, PREFIXO_TAG, dadosNovaNota, linksWikiParaMarkdown, resolverLink } from "@/lib/links-wiki"
@@ -107,6 +108,16 @@ const componentes: Components = {
         {children}
       </a>
     )
+  },
+  // Rafael Marques - 29/10/2026: bloco ```mermaid vira diagrama (com tela cheia).
+  pre({ children, node }) {
+    const filho = node?.children?.[0]
+    const classes = filho && "properties" in filho ? filho.properties?.className : undefined
+    if (Array.isArray(classes) && classes.includes("language-mermaid")) {
+      const texto = filho && "children" in filho ? filho.children.map((parte) => ("value" in parte ? parte.value : "")).join("") : ""
+      return <DiagramaMermaid codigo={String(texto).replace(/\n$/, "")} />
+    }
+    return <pre>{children}</pre>
   },
   // Rafael Marques - 22/10/2026: caixa que rola de lado quando a tabela não cabe (celular).
   table: ({ children }) => (

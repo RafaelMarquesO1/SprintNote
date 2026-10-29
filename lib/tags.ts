@@ -35,11 +35,63 @@ export function tagsDaNota(nota: Nota): string[] {
   return [...new Set([...(nota.tags ?? []), ...extrairTags(nota.conteudo)])]
 }
 
+// Rafael Marques - 29/10/2026 (sugestão do Kaíke: consertar as tags)
+// "projeto/fase-1/revisao" → ["projeto", "projeto/fase-1"]
+export function tagsPais(tag: string) {
+  const partes = tag.split("/").filter(Boolean)
+  return partes.slice(0, -1).map((_, indice) => partes.slice(0, indice + 1).join("/"))
+}
+
+// Limpa o que a pessoa digitou no "+": sem "#", espaços viram "-" e só ficam letras, números, "_", "-" e "/".
+export function limparTagDigitada(tag: string) {
+  return normalizarTag(
+    tag
+      .trim()
+      .replace(/^#+/, "")
+      .replace(/[^\p{L}\p{N}_\-/\s]/gu, "")
+      .replace(/\s+/g, "-")
+      .replace(/\/{2,}/g, "/")
+      .replace(/-{2,}/g, "-")
+      .replace(/^[-/]+|-+$/g, "")
+  )
+}
+
+// Tira "#tag" do texto da nota (sem mexer em código, [[links]] e endereços).
+export function removerTagDoConteudo(conteudo: string, tag: string) {
+  const alvo = normalizarTag(tag)
+  let dentroDeCodigo = false
+  return conteudo
+    .split("\n")
+    .map((linha) => {
+      if (/^\s*(```|~~~)/.test(linha)) {
+        dentroDeCodigo = !dentroDeCodigo
+        return linha
+      }
+      if (dentroDeCodigo) return linha
+      const partes = linha.split(/(`[^`\n]*`|\[\[[^\]]*\]\]|\]\([^)]*\))/g)
+      const nova = partes
+        .map((parte, indice) =>
+          indice % 2 === 1
+            ? parte
+            : parte.replace(new RegExp(REGEX_TAG.source, "gu"), (todo, antes: string, nome: string) => (normalizarTag(nome) === alvo ? antes : todo))
+        )
+        .join("")
+      return nova === linha ? linha : nova.replace(/(\S) {2,}(?=\S)/g, "$1 ")
+    })
+    .join("\n")
+}
+
 // Todas as tags da biblioteca com quantas notas usam cada uma.
+// "#projeto/fase-1" também conta para "#projeto" (e "#projeto" aparece na lista mesmo sem ser escrita sozinha).
 export function contarTags(notas: Nota[]) {
   const contagem = new Map<string, number>()
   for (const nota of notas) {
-    for (const tag of tagsDaNota(nota)) contagem.set(tag, (contagem.get(tag) ?? 0) + 1)
+    const daNota = new Set<string>()
+    for (const tag of tagsDaNota(nota)) {
+      daNota.add(tag)
+      for (const pai of tagsPais(tag)) daNota.add(pai)
+    }
+    for (const tag of daNota) contagem.set(tag, (contagem.get(tag) ?? 0) + 1)
   }
   return [...contagem.entries()]
     .map(([tag, total]) => ({ tag, total }))

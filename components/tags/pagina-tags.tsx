@@ -11,15 +11,18 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { CabecalhoPagina, Pagina } from "@/components/pagina"
 import { useHidratado } from "@/hooks/use-hidratado"
 import { useNotas } from "@/lib/estado/notas"
-import { contarTags, notasComTag } from "@/lib/tags"
+import { contarTags, normalizarTag, notasComTag } from "@/lib/tags"
 
 // Trecho da nota em volta da primeira menção à tag.
+// Rafael Marques - 29/10/2026: acha a tag inteira (#aula não pega #aulas) e, se ela só estiver no botão "+",
+// mostra o começo da nota em vez de deixar o trecho em branco.
 function trechoComTag(conteudo: string, tag: string) {
-  const indice = conteudo.toLowerCase().indexOf(`#${tag}`)
-  if (indice === -1) return ""
-  const inicio = Math.max(0, indice - 60)
+  const escapada = tag.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  const achada = new RegExp(`(^|\\s)#${escapada}(?=$|[^\\p{L}\\p{N}_\\-])`, "iu").exec(conteudo)
+  const indice = achada ? achada.index + achada[1].length : -1
+  const inicio = indice === -1 ? 0 : Math.max(0, indice - 60)
   const texto = conteudo
-    .slice(inicio, indice + tag.length + 80)
+    .slice(inicio, indice === -1 ? 140 : indice + tag.length + 80)
     .replace(/\[\[([^\]|]+)(\|[^\]]+)?\]\]/g, "$1")
     .replace(/^\s*[-*+] (\[[ xX]\] )?/gm, "")
     .replace(/^#{1,6} /gm, "")
@@ -36,7 +39,7 @@ export function PaginaTags() {
   const caminho = usePathname()
   const parametros = useSearchParams()
   const { notas, livros } = useNotas(useShallow((estado) => ({ notas: estado.notas, livros: estado.livros })))
-  const tagAtiva = parametros.get("tag")?.toLowerCase() ?? null
+  const tagAtiva = parametros.get("tag") ? normalizarTag(parametros.get("tag")!.replace(/^#+/, "")) : null
 
   if (!hidratado) return <Skeleton className="mx-auto h-64 max-w-5xl" />
 

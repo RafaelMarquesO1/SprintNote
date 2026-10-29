@@ -6,7 +6,7 @@ import { persist } from "zustand/middleware"
 
 import { gerarId } from "@/lib/gerar-id"
 import { alvoDaNota, reescreverLinks, resolverLink } from "@/lib/links-wiki"
-import { normalizarTag } from "@/lib/tags"
+import { limparTagDigitada, removerTagDoConteudo } from "@/lib/tags"
 import type { AparenciaNota, Livro, Nota } from "@/lib/tipos"
 
 type DadosNota = {
@@ -24,7 +24,7 @@ type EstadoNotas = {
   notas: Nota[]
 
   criarLivro: (dados?: { titulo?: string; descricao?: string }) => Livro
-  atualizarLivro: (id: string, mudancas: Partial<Pick<Livro, "descricao" | "icone" | "cor" | "capa" | "fixado">>) => void
+  atualizarLivro: (id: string, mudancas: Partial<Pick<Livro, "descricao" | "icone" | "cor" | "capa" | "fixado" | "vincularTarefas">>) => void
   renomearLivro: (id: string, titulo: string) => void
   // manterNotas = true: as notas viram notas soltas; false: são excluídas junto.
   excluirLivro: (id: string, manterNotas: boolean) => string[]
@@ -35,6 +35,7 @@ type EstadoNotas = {
   renomearNota: (id: string, titulo: string) => void
   adicionarTag: (id: string, tag: string) => void
   removerTag: (id: string, tag: string) => void
+  removerTagDoTexto: (id: string, tag: string) => void
   moverNota: (id: string, livroId: string | null, paiId?: string | null) => void
   excluirNota: (id: string) => string[]
 }
@@ -171,7 +172,8 @@ export const useNotas = create<EstadoNotas>()(
       },
 
       adicionarTag: (id, tag) => {
-        const limpa = normalizarTag(tag.trim().replace(/^#+/, "").replace(/\s+/g, "-"))
+        // Rafael Marques - 29/10/2026: tag digitada é limpa (sem símbolos) para casar com as #tags do texto.
+        const limpa = limparTagDigitada(tag)
         if (!limpa) return
         set({
           notas: get().notas.map((nota) =>
@@ -187,6 +189,16 @@ export const useNotas = create<EstadoNotas>()(
           notas: get().notas.map((nota) =>
             nota.id === id ? { ...nota, tags: (nota.tags ?? []).filter((item) => item !== tag), atualizadoEm: Date.now() } : nota
           ),
+        }),
+
+      // Rafael Marques - 29/10/2026: tira a #tag escrita no texto (o "x" da etiqueta pontilhada).
+      removerTagDoTexto: (id, tag) =>
+        set({
+          notas: get().notas.map((nota) => {
+            if (nota.id !== id) return nota
+            const conteudo = removerTagDoConteudo(nota.conteudo, tag)
+            return conteudo === nota.conteudo ? nota : { ...nota, conteudo, atualizadoEm: Date.now() }
+          }),
         }),
 
       // Move a nota (com as subnotas) para outro livro ou para dentro de outra nota.

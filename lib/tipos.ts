@@ -14,6 +14,9 @@ export type Livro = {
   cor?: string | null
   capa?: string | null
   fixado?: boolean
+  // Rafael Marques - 29/10/2026 (sugestão do Kaíke): false = as "- [ ] tarefas" das notas deste livro não
+  // aparecem na página de Tarefas, no Início nem nos avisos. Sem o campo, o livro vincula (como sempre foi).
+  vincularTarefas?: boolean
 }
 
 // Capa (banner) no topo da nota, no estilo do Notion.

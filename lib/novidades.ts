@@ -33,6 +33,22 @@ export const ordemTipos: TipoNovidade[] = ["novo", "melhorado", "corrigido"]
 
 // Mais recente primeiro.
 export const NOVIDADES: Novidade[] = [
+  // Rafael Marques - 29/10/2026
+  {
+    id: "2026-10-29",
+    versao: "1.2d",
+    data: "29/10/2026",
+    titulo: "Sugestões do Kaíke",
+    resumo: "Diagramas Mermaid nas notas, tags consertadas e importação do Obsidian mais fiel — ideias do Kaíke. Valeu, Kaíke!",
+    itens: [
+      { tipo: "novo", titulo: "Diagramas Mermaid", texto: "Blocos ```mermaid viram desenho dentro da nota (use “/” Diagrama Mermaid) e abrem em tela cheia, com zoom e arrastar." },
+      { tipo: "novo", titulo: "Livro e tarefas", texto: "Na página do livro, escolha se as caixinhas das notas dele aparecem em Tarefas ou ficam só nas notas." },
+      { tipo: "novo", titulo: "Menu lateral do tamanho certo", texto: "No computador, arraste a borda do menu para alargar ou estreitar; duplo clique volta ao padrão." },
+      { tipo: "corrigido", titulo: "Tags", texto: "#projeto agora aparece na lista quando você usa #projeto/fase-1, tags digitadas no “+” ficam limpas e as tags do texto também podem ser tiradas pelo “x”." },
+      { tipo: "corrigido", titulo: "Importação do Obsidian", texto: "Caixinhas como [/] e [-], links para arquivos .md, tabelas sem barras, fórmulas $$ e HTML simples agora entram formatados." },
+      { tipo: "corrigido", titulo: "Quebra de texto", texto: "Títulos, endereços e códigos compridos quebram de linha em vez de vazar para o lado." },
+    ],
+  },
   // Rafael Marques - 27/10/2026
   {
     id: "2026-10-27",

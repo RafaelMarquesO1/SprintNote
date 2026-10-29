@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Switch } from "@/components/ui/switch"
 import { useHidratado } from "@/hooks/use-hidratado"
 import { tempoRelativo, useAgora } from "@/hooks/use-hoje"
 import { useNotas } from "@/lib/estado/notas"
@@ -235,6 +236,23 @@ export function PaginaLivro({ id }: { id: string }) {
           ))}
           {notasDoLivro.length > 0 && <span>· editado {tempoRelativo(ultimaEdicao, agora)}</span>}
         </p>
+        {/* Rafael Marques - 29/10/2026 (sugestão do Kaíke): escolher se as tarefas das notas deste livro entram em Tarefas */}
+        <label className="flex w-fit max-w-full cursor-pointer items-center gap-2.5 rounded-lg border px-3 py-2 text-sm">
+          <Switch
+            size="sm"
+            checked={livro.vincularTarefas !== false}
+            onCheckedChange={(valor) => atualizarLivro(livro.id, { vincularTarefas: valor })}
+            aria-label="Vincular as tarefas deste livro à página de Tarefas"
+          />
+          <span className="min-w-0">
+            <span className="font-medium">Vincular às tarefas</span>
+            <span className="block text-xs text-muted-foreground">
+              {livro.vincularTarefas !== false
+                ? "As caixinhas “- [ ]” das notas deste livro aparecem em Tarefas, no Início e nos avisos de prazo."
+                : "As caixinhas das notas deste livro ficam só nas notas, fora de Tarefas."}
+            </span>
+          </span>
+        </label>
       </header>
 
       {/* minmax(0,1fr): sem isso a coluna cresce até o tamanho do texto mais longo e a página vaza no celular */}

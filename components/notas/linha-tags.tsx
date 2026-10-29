@@ -6,7 +6,7 @@ import { HashIcon, PlusIcon, XIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 import { useNotas } from "@/lib/estado/notas"
-import { contarTags, extrairTags } from "@/lib/tags"
+import { contarTags, extrairTags, limparTagDigitada } from "@/lib/tags"
 import type { Nota } from "@/lib/tipos"
 
 // Rafael Marques - 21/10/2026
@@ -16,6 +16,7 @@ export function LinhaTags({ nota }: { nota: Nota }) {
   const notas = useNotas((estado) => estado.notas)
   const adicionarTag = useNotas((estado) => estado.adicionarTag)
   const removerTag = useNotas((estado) => estado.removerTag)
+  const removerTagDoTexto = useNotas((estado) => estado.removerTagDoTexto)
   const [editando, setEditando] = useState(false)
   const [texto, setTexto] = useState("")
   const [indiceAtivo, setIndiceAtivo] = useState(0)
@@ -23,7 +24,7 @@ export function LinhaTags({ nota }: { nota: Nota }) {
   const daPropriedade = nota.tags ?? []
   const doTexto = extrairTags(nota.conteudo).filter((tag) => !daPropriedade.includes(tag))
   const atuais = new Set([...daPropriedade, ...doTexto])
-  const procurada = texto.trim().replace(/^#+/, "").toLowerCase()
+  const procurada = limparTagDigitada(texto)
   const sugestoes = contarTags(notas)
     .filter(({ tag }) => !atuais.has(tag) && tag.includes(procurada))
     .slice(0, 6)
@@ -56,16 +57,22 @@ export function LinhaTags({ nota }: { nota: Nota }) {
           </button>
         </span>
       ))}
+      {/* Rafael Marques - 29/10/2026: o "x" tira a #tag do texto da nota */}
       {doTexto.map((tag) => (
-        <Link
-          key={tag}
-          href={`/tags?tag=${encodeURIComponent(tag)}`}
-          title="Tag escrita no texto da nota"
-          className={cn(classeEtiqueta, "bg-transparent ring-1 ring-border ring-inset")}
-        >
-          <HashIcon className="size-3" />
-          {tag}
-        </Link>
+        <span key={tag} title="Tag escrita no texto da nota" className={cn(classeEtiqueta, "bg-transparent ring-1 ring-border ring-inset")}>
+          <Link href={`/tags?tag=${encodeURIComponent(tag)}`} className="flex items-center gap-0.5">
+            <HashIcon className="size-3" />
+            {tag}
+          </Link>
+          <button
+            type="button"
+            aria-label={`Tirar #${tag} do texto da nota`}
+            onClick={() => removerTagDoTexto(nota.id, tag)}
+            className="-mr-1 ml-0.5 rounded p-0.5 opacity-60 hover:bg-foreground/10 hover:opacity-100"
+          >
+            <XIcon className="size-3" />
+          </button>
+        </span>
       ))}
 
       {editando ? (

@@ -486,6 +486,16 @@ select optgroup {
   .drag-handle { z-index: 20; display: flex; }
 }
 
+/* Rafael Marques - 29/10/2026 (sugestão do Kaíke)
+   Diagrama Mermaid: cabe na largura da nota; em tela cheia ocupa a tela toda (o zoom é feito por transform).
+   Quebra de texto da nota: palavras e endereços longos quebram em vez de vazar para o lado. */
+.diagrama-mermaid svg { display: block; max-width: 100%; height: auto; margin-inline: auto; }
+.diagrama-mermaid-cheio { width: calc(100vw - 3rem); height: calc(100dvh - 7rem); transform-origin: center; }
+.diagrama-mermaid-cheio svg { width: 100%; height: 100%; max-width: none !important; }
+.markdown { overflow-wrap: anywhere; }
+.markdown pre, .editor-notas pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.editor-notas :is(th, td), .markdown :is(th, td) { overflow-wrap: break-word; word-break: normal; }
+
 
 /* Rafael Marques - 26/10/2026: animações do Kanban (colunas entram em cascata, cartões logo depois,
    o fundo esmaece ao trocar). Quem pede menos movimento no sistema não vê nenhuma. */
