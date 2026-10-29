@@ -62,3 +62,37 @@ export const CitacaoCartao = Extension.create({
     ]
   },
 })
+
+// Rafael Marques - 29/10/2026: caminho inverso — notas que citam um cartão. Uma nota que tem notas
+// dentro é uma seção: a citação nela vale para a seção inteira; nas outras, só para aquela nota.
+export type CitacaoDoCartao = {
+  notaId: string
+  titulo: string
+  icone: string
+  ehSecao: boolean
+  // Seção onde a nota está (null = nota fora de seção).
+  secao: { id: string; titulo: string } | null
+}
+
+export function notasQueCitamCartao(
+  notas: { id: string; titulo: string; icone: string; conteudo: string; paiId: string | null }[],
+  quadroId: string,
+  numero: number
+): CitacaoDoCartao[] {
+  const escapar = (texto: string) => texto.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  const procura = new RegExp(`/kanban\\?quadro=${escapar(encodeURIComponent(quadroId))}&cartao=${numero}(?!\\d)`)
+  const comFilhas = new Set(notas.map((nota) => nota.paiId).filter((id): id is string => Boolean(id)))
+  return notas
+    .filter((nota) => procura.test(nota.conteudo))
+    .map((nota) => {
+      const pai = nota.paiId ? notas.find((item) => item.id === nota.paiId) : undefined
+      return {
+        notaId: nota.id,
+        titulo: nota.titulo,
+        icone: nota.icone,
+        ehSecao: comFilhas.has(nota.id),
+        secao: pai ? { id: pai.id, titulo: pai.titulo } : null,
+      }
+    })
+    .sort((a, b) => Number(b.ehSecao) - Number(a.ehSecao) || a.titulo.localeCompare(b.titulo, "pt-BR"))
+}

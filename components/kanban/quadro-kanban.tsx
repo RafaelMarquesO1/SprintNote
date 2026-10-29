@@ -210,39 +210,45 @@ export function QuadroKanban() {
   )
 
   // Rafael Marques - 29/10/2026: o cartão aberto fica na URL (/kanban?quadro=…&cartao=12), para
-  // compartilhar o link ou seguir a numeração. Ao chegar por um link, abre o quadro e o cartão.
-  const [linkInicial] = useState(() => {
-    if (typeof window === "undefined") return null
-    const busca = new URLSearchParams(window.location.search)
-    const numero = Number(busca.get("cartao"))
-    const quadroDoLink = busca.get("quadro")
-    const numeroDoLink = Number.isInteger(numero) && numero > 0 ? numero : null
-    return quadroDoLink || numeroDoLink ? { quadro: quadroDoLink, numero: numeroDoLink } : null
-  })
-  const linkResolvido = useRef(linkInicial === null)
+  // compartilhar o link ou seguir a numeração. Ao chegar por um link (ou por uma citação numa nota),
+  // abre o quadro e o cartão. O endereço é lido depois de montar: numa navegação dentro do app, na
+  // hora da montagem o navegador ainda mostra o endereço da página anterior.
+  // undefined = ainda não leu; null = nada pendente.
+  const linkPendente = useRef<{ quadro: string | null; numero: number | null } | null | undefined>(undefined)
   const numeroAberto = useKanban((estado) => (idAberto ? numeroDoCartao(estado, idAberto) : null))
   const cartoesTodos = useKanban((estado) => estado.cartoes)
 
   useEffect(() => {
-    if (!hidratado || linkResolvido.current || !linkInicial) return
+    if (!hidratado) return
+    if (linkPendente.current === undefined) {
+      const busca = new URLSearchParams(window.location.search)
+      const numero = Number(busca.get("cartao"))
+      const quadroDoLink = busca.get("quadro")
+      const numeroDoLink = Number.isInteger(numero) && numero > 0 ? numero : null
+      linkPendente.current = quadroDoLink || numeroDoLink ? { quadro: quadroDoLink, numero: numeroDoLink } : null
+    }
+    const link = linkPendente.current
+    if (!link) return
     // Quadros de equipe chegam depois do servidor: espera até o quadro existir.
-    if (linkInicial.quadro && !quadros.some((item) => item.id === linkInicial.quadro)) return
-    if (linkInicial.quadro && linkInicial.quadro !== quadroAtivoId) {
-      definirQuadroAtivo(linkInicial.quadro)
+    if (link.quadro && !quadros.some((item) => item.id === link.quadro)) return
+    if (link.quadro && link.quadro !== quadroAtivoId) {
+      definirQuadroAtivo(link.quadro)
       return
     }
-    const quadroId = linkInicial.quadro ?? quadroDaVez?.id
-    if (linkInicial.numero && quadroId) {
-      const id = cartaoPeloNumero(useKanban.getState(), quadroId, linkInicial.numero)
+    const quadroId = link.quadro ?? quadroDaVez?.id
+    if (link.numero && quadroId) {
+      const id = cartaoPeloNumero(useKanban.getState(), quadroId, link.numero)
       if (!id) return
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- o cartão do link só existe depois que os dados chegam.
       setIdAberto(id)
     }
-    linkResolvido.current = true
-  }, [hidratado, linkInicial, quadros, cartoesTodos, quadroAtivoId, quadroDaVez?.id, definirQuadroAtivo])
+    linkPendente.current = null
+  }, [hidratado, quadros, cartoesTodos, quadroAtivoId, quadroDaVez?.id, definirQuadroAtivo])
 
   useEffect(() => {
-    if (!hidratado || !linkResolvido.current || !quadroDaVez) return
+    // Enquanto o link de chegada não foi resolvido, não reescreve o endereço (perderia o cartão pedido).
+    if (!hidratado || linkPendente.current !== null || !quadroDaVez) return
+    // Rafael Marques - 29/10/2026: só mexe no endereço enquanto está no Kanban (não atrapalha a ida para outra página).
+    if (!window.location.pathname.startsWith("/kanban")) return
     const url = new URL(window.location.href)
     url.searchParams.set("quadro", quadroDaVez.id)
     if (idAberto && numeroAberto) url.searchParams.set("cartao", String(numeroAberto))

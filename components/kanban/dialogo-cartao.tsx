@@ -19,11 +19,13 @@ import {
   FilePlusIcon,
   FileTextIcon,
   FlagIcon,
+  FolderIcon,
   GaugeIcon,
   HistoryIcon,
   LayoutTemplateIcon,
   ListChecksIcon,
   MessageSquareIcon,
+  NotebookPenIcon,
   PaintBucketIcon,
   PaperclipIcon,
   PlusIcon,
@@ -50,6 +52,8 @@ import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ConteudoMarkdown } from "@/components/notas/visualizacao-markdown"
 import { EditorCartao } from "@/components/kanban/editor-cartao"
+import { Icone } from "@/components/icone"
+import { notasQueCitamCartao } from "@/components/notas/editor/extensoes/citacao-cartao"
 import { useAgora, tempoRelativo } from "@/hooks/use-hoje"
 import { paletaCores } from "@/lib/cores"
 import { gerarId } from "@/lib/gerar-id"
@@ -294,6 +298,47 @@ function Historico({ cartao }: { cartao: CartaoKanban }) {
   )
 }
 
+// Rafael Marques - 29/10/2026: notas que citam este cartão (caminho inverso da citação "[[").
+// Seção = a citação está na própria seção (vale para ela inteira); nota = só naquela nota.
+function CitadoEm({ cartao }: { cartao: CartaoKanban }) {
+  const router = useRouter()
+  const notas = useNotas((estado) => estado.notas)
+  const numero = useNumeroDoCartao(cartao.id)
+  const quadroId = useKanban((estado) => estado.colunas.find((coluna) => coluna.id === cartao.colunaId)?.quadroId)
+  if (!numero || !quadroId) return null
+  const citacoes = notasQueCitamCartao(notas, quadroId, numero)
+  if (citacoes.length === 0) return null
+  // Não fecha o cartão antes: fechar reescreve a URL do Kanban e cancelaria a navegação.
+  // Ao sair do Kanban o cartão fecha sozinho.
+  const abrir = (notaId: string) => router.push(`/notas/${notaId}`)
+  return (
+    <Secao titulo="Citado em" icone={NotebookPenIcon} extra={citacoes.length}>
+      <ul className="divide-y rounded-lg border">
+        {citacoes.map((citacao) => (
+          <li key={citacao.notaId}>
+            <button type="button" onClick={() => abrir(citacao.notaId)} className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm hover:bg-muted/50">
+              {citacao.ehSecao && (!citacao.icone || citacao.icone === "arquivo") ? (
+                <FolderIcon className="size-4 shrink-0 text-muted-foreground" />
+              ) : (
+                <Icone nome={citacao.icone} className="text-muted-foreground" />
+              )}
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-medium">{citacao.titulo}</span>
+                <span className="block truncate text-xs text-muted-foreground">
+                  {citacao.ehSecao ? "Citado na seção (vale para as notas dela)" : citacao.secao ? `Nota da seção “${citacao.secao.titulo}”` : "Nota individual"}
+                </span>
+              </span>
+              <span className={cn("shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium", citacao.ehSecao ? "bg-foreground text-background" : "bg-muted text-muted-foreground")}>
+                {citacao.ehSecao ? "Seção" : "Nota"}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </Secao>
+  )
+}
+
 // Formulário interno: tudo é salvo na hora, enquanto se edita.
 function FormularioCartao({ cartao, aoFechar }: { cartao: CartaoKanban; aoFechar: () => void }) {
   const router = useRouter()
@@ -334,7 +379,7 @@ function FormularioCartao({ cartao, aoFechar }: { cartao: CartaoKanban; aoFechar
   function criarNotaDoCartao() {
     const nota = criarNota({ titulo: cartao.titulo, conteudo: cartao.descricao })
     atualizar({ notaId: nota.id })
-    aoFechar()
+    // Rafael Marques - 29/10/2026: sem fechar antes (veja CitadoEm).
     router.push(`/notas/${nota.id}`)
   }
 
@@ -506,6 +551,8 @@ function FormularioCartao({ cartao, aoFechar }: { cartao: CartaoKanban; aoFechar
             </Secao>
           )}
 
+          <CitadoEm cartao={cartao} />
+
           <Comentarios cartao={cartao} />
 
           <Historico cartao={cartao} />
@@ -594,7 +641,7 @@ function FormularioCartao({ cartao, aoFechar }: { cartao: CartaoKanban; aoFechar
                   ))}
                 </select>
                 {notaVinculada ? (
-                  <Link href={`/notas/${notaVinculada.id}`} onClick={aoFechar} className="block text-xs text-primary hover:underline">
+                  <Link href={`/notas/${notaVinculada.id}`} className="block text-xs text-primary hover:underline">
                     Abrir “{notaVinculada.titulo}”
                   </Link>
                 ) : (

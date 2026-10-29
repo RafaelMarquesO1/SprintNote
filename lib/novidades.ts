@@ -33,6 +33,18 @@ export const ordemTipos: TipoNovidade[] = ["novo", "melhorado", "corrigido"]
 
 // Mais recente primeiro.
 export const NOVIDADES: Novidade[] = [
+  // Rafael Marques - 29/10/2026
+  {
+    id: "2026-10-29-c",
+    versao: "1.3a",
+    data: "29/10/2026",
+    titulo: "Cartão sabe onde foi citado",
+    resumo: "Agora o cartão mostra as notas e seções que o citam, e os créditos listam as tecnologias de verdade.",
+    itens: [
+      { tipo: "novo", titulo: "Citado em", texto: "O cartão lista as notas que o citam, separando quando a citação está numa seção (vale para ela inteira) ou numa nota individual." },
+      { tipo: "melhorado", titulo: "Créditos", texto: "A página de créditos traz todas as tecnologias usadas, organizadas por área." },
+    ],
+  },
   // Rafael Marques - 29/10/2026: versão 1.3.
   {
     id: "2026-10-29-b",
