@@ -33,6 +33,29 @@ export const ordemTipos: TipoNovidade[] = ["novo", "melhorado", "corrigido"]
 
 // Mais recente primeiro.
 export const NOVIDADES: Novidade[] = [
+  // Rafael Marques - 29/10/2026: versão 1.3.
+  {
+    id: "2026-10-29-b",
+    versao: "1.3",
+    data: "29/10/2026",
+    titulo: "SprintNote 1.3: Kanban no estilo Trello",
+    resumo: "Cartões repaginados, com número, modelos, texto formatado e histórico de quem mudou — e cartões citados dentro das notas.",
+    itens: [
+      { tipo: "novo", titulo: "Cartão repaginado", texto: "Resumo no topo, “Adicionar ao cartão” e “Ações” na lateral, como no Trello." },
+      { tipo: "novo", titulo: "Texto formatado nos cartões", texto: "Descrição e comentários com editor visual: negrito, listas, tarefas e blocos de código coloridos (o trecho selecionado vira código)." },
+      { tipo: "novo", titulo: "Número do cartão", texto: "Cada cartão tem um número no quadro (#12), que aparece no cartão e no endereço — também nos quadros de equipe." },
+      { tipo: "novo", titulo: "Citar cartão na nota", texto: "Digite “[[” ou use “/” Citar cartão: o cartão aparece como etiqueta “#12 Título” e abre ao clicar." },
+      { tipo: "novo", titulo: "Modelos de cartão", texto: "Salve um cartão como modelo e crie outros iguais pelo ícone ao lado de “Adicionar cartão”." },
+      { tipo: "novo", titulo: "Quem fez", texto: "O histórico do cartão mostra quem fez cada mudança, numa linha do tempo separada dos comentários." },
+      { tipo: "novo", titulo: "Minimizar código", texto: "Blocos de código nas notas podem ser minimizados e copiados, no editor e na leitura, agora com cores também na leitura." },
+      { tipo: "novo", titulo: "Mais ícones e cores", texto: "Mais de cem ícones novos, paleta com 16 cores e a opção de escolher qualquer cor." },
+      { tipo: "melhorado", titulo: "Seções", texto: "Nota com outras notas dentro aparece como seção na biblioteca (com o ícone que você escolher) e como quadrado no grafo." },
+      { tipo: "melhorado", titulo: "Calendário mais fácil", texto: "No calendário do Kanban, o “+” de cada dia cria um cartão com aquela data ou agenda um que está sem prazo." },
+      { tipo: "melhorado", titulo: "Comentários", texto: "Comentários em cartões próprios, mais fáceis de ler." },
+      { tipo: "melhorado", titulo: "Etiquetas e equipes", texto: "As telas de etiquetas do quadro e de equipes ficaram mais organizadas." },
+      { tipo: "melhorado", titulo: "Sem “Bloqueado por”", texto: "A opção de bloquear um cartão por outro foi retirada para simplificar." },
+    ],
+  },
   // Rafael Marques - 29/10/2026
   {
     id: "2026-10-29",
@@ -44,7 +67,7 @@ export const NOVIDADES: Novidade[] = [
       { tipo: "novo", titulo: "Diagramas Mermaid", texto: "Blocos ```mermaid viram desenho dentro da nota (use “/” Diagrama Mermaid) e abrem em tela cheia, com zoom e arrastar." },
       { tipo: "novo", titulo: "Livro e tarefas", texto: "Na página do livro, escolha se as caixinhas das notas dele aparecem em Tarefas ou ficam só nas notas." },
       { tipo: "novo", titulo: "Menu lateral do tamanho certo", texto: "No computador, arraste a borda do menu para alargar ou estreitar; duplo clique volta ao padrão." },
-      { tipo: "corrigido", titulo: "Tags", texto: "#projeto agora aparece na lista quando você usa #projeto/fase-1, tags digitadas no “+” ficam limpas e as tags do texto também podem ser tiradas pelo “x”." },
+      { tipo: "corrigido", titulo: "Tags",texto: "#projeto agora aparece na lista quando você usa #projeto/fase-1, tags digitadas no “+” ficam limpas e as tags do texto também podem ser tiradas pelo “x”." },
       { tipo: "corrigido", titulo: "Importação do Obsidian", texto: "Caixinhas como [/] e [-], links para arquivos .md, tabelas sem barras, fórmulas $$ e HTML simples agora entram formatados." },
       { tipo: "corrigido", titulo: "Quebra de texto", texto: "Títulos, endereços e códigos compridos quebram de linha em vez de vazar para o lado." },
     ],

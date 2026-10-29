@@ -411,7 +411,7 @@ function TelaNota({ nota, notas }: { nota: Nota; notas: Nota[] }) {
                 <Icone nome={nota.icone} className="size-10" />
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-auto">
-                <div className="grid grid-cols-8 gap-0.5">
+                <div className="grid max-h-72 grid-cols-8 gap-0.5 overflow-y-auto">
                   {iconesNota.map((icone) => (
                     <DropdownMenuItem key={icone} onClick={() => atualizarNota(nota.id, { icone })} className="justify-center" aria-label={icone}>
                       <Icone nome={icone} />

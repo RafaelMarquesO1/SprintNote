@@ -19,6 +19,7 @@ import {
 
 import { AvatarPessoa } from "@/components/equipes/avatar-pessoa"
 import { Icone } from "@/components/icone"
+import { cn } from "@/lib/utils"
 import { classeSelect } from "@/components/tarefas/dialogo-tarefa"
 import {
   AlertDialog,
@@ -41,6 +42,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { chamarApi, mensagemDoErro } from "@/lib/equipes/api"
 import { useKanban } from "@/lib/estado/kanban"
 import { fecharPainelKanban } from "@/lib/estado/paineis-kanban"
@@ -120,15 +122,15 @@ function Convites({ equipe }: { equipe: Equipe }) {
 
   return (
     <section className="space-y-3">
-      <h3 className="flex items-center gap-2 text-sm font-semibold">
-        <LinkIcon className="size-4 text-muted-foreground" /> Convidar por link
-      </h3>
-      <p className="text-xs text-muted-foreground">
+      <p className="flex gap-2 text-xs text-muted-foreground">
+        <LinkIcon className="mt-0.5 size-3.5 shrink-0" />
+        <span>
         O link vale por 7 dias e só pode ser usado uma vez. Quem abrir precisa entrar (ou criar conta) para aceitar. Se você digitar um e-mail, só
         essa conta consegue aceitar.
+        </span>
       </p>
       <div className="flex flex-wrap gap-2">
-        <select value={papel} onChange={(evento) => setPapel(evento.target.value as PapelConvite)} className={`${classeSelect} w-32`} aria-label="Papel do convidado">
+        <select value={papel} onChange={(evento) => setPapel(evento.target.value as PapelConvite)} className={cn(classeSelect, "w-32")} aria-label="Papel do convidado">
           <option value="editor">Editor</option>
           <option value="leitor">Leitor</option>
         </select>
@@ -154,9 +156,9 @@ function Convites({ equipe }: { equipe: Equipe }) {
       )}
       {erro && <p role="alert" className="text-xs text-destructive">{erro}</p>}
       {convites && convites.length > 0 && (
-        <ul className="space-y-1">
+        <ul className="divide-y rounded-lg border">
           {convites.map((convite) => (
-            <li key={convite.id} className="flex items-center gap-2 rounded-md border px-2 py-1 text-xs">
+            <li key={convite.id} className="flex items-center gap-2 px-3 py-1.5 text-xs">
               <Badge variant="secondary">{rotulosPapel[convite.papel]}</Badge>
               <span className="min-w-0 flex-1 truncate text-muted-foreground">
                 {convite.email ?? "Qualquer pessoa com o link"} · expira em {dataCurta(convite.expiraEm)}
@@ -267,83 +269,100 @@ export function CartaoEquipe({ equipe, meuId }: { equipe: Equipe; meuId: string 
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-6">
-        {erro && <p role="alert" className="text-sm text-destructive">{erro}</p>}
+      {/* Rafael Marques - 29/10/2026: conteúdo em abas, para a janela não virar uma coluna comprida. */}
+      <CardContent>
+        {erro && <p role="alert" className="mb-3 text-sm text-destructive">{erro}</p>}
+        <Tabs defaultValue="quadros">
+          <TabsList variant="line" className="mb-3 w-full justify-start border-b">
+            <TabsTrigger value="quadros" className="flex-none">Quadros <span className="text-xs text-muted-foreground">{equipe.quadros.length}</span></TabsTrigger>
+            <TabsTrigger value="membros" className="flex-none">Membros <span className="text-xs text-muted-foreground">{equipe.membros.length}</span></TabsTrigger>
+            {souDono && <TabsTrigger value="convites" className="flex-none">Convites</TabsTrigger>}
+          </TabsList>
 
-        <section className="space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="text-sm font-semibold">Quadros</h3>
+          <TabsContent value="quadros" className="space-y-2">
+            {equipe.quadros.length === 0 ? (
+              <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
+                Nenhum quadro ainda.{podeEditar ? " Crie um aqui, ou use “Compartilhar com equipe” no menu de um quadro seu." : ""}
+              </p>
+            ) : (
+              <ul className="grid gap-1.5 sm:grid-cols-2">
+                {equipe.quadros.map((quadro) => (
+                  <li key={quadro.id}>
+                    <button
+                      type="button"
+                      onClick={() => abrirQuadro(quadro.id)}
+                      className="flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-colors hover:bg-muted/50"
+                    >
+                      <Icone nome={quadro.icone} className="size-4 shrink-0 text-muted-foreground" />
+                      <span className="min-w-0 flex-1 truncate">{quadro.titulo}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
             {podeEditar && (
-              <Button size="xs" variant="outline" disabled={ocupado} onClick={() => executar(async () => abrirQuadro(await criarQuadroDeEquipe(equipe.id)))}>
+              <Button size="sm" variant="ghost" className="text-muted-foreground" disabled={ocupado} onClick={() => executar(async () => abrirQuadro(await criarQuadroDeEquipe(equipe.id)))}>
                 <PlusIcon /> Novo quadro
               </Button>
             )}
-          </div>
-          {equipe.quadros.length === 0 ? (
-            <p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
-              Nenhum quadro ainda. {podeEditar ? "Crie um, ou use “Compartilhar com equipe” no menu de um quadro seu no Kanban." : ""}
-            </p>
-          ) : (
-            <ul className="grid gap-1.5 sm:grid-cols-2">
-              {equipe.quadros.map((quadro) => (
-                <li key={quadro.id}>
-                  <button
-                    type="button"
-                    onClick={() => abrirQuadro(quadro.id)}
-                    className="flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm hover:bg-muted/50"
-                  >
-                    <Icone nome={quadro.icone} className="size-4 shrink-0 text-muted-foreground" />
-                    <span className="min-w-0 flex-1 truncate">{quadro.titulo}</span>
-                  </button>
+          </TabsContent>
+
+          <TabsContent value="membros" className="space-y-3">
+            <ul className="divide-y rounded-lg border">
+              {equipe.membros.map((membro) => (
+                <li key={membro.id} className="flex items-center gap-2.5 px-3 py-2">
+                  <AvatarPessoa nome={membro.nome} foto={membro.foto} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">
+                      {membro.nome} {membro.id === meuId && <span className="font-normal text-muted-foreground">(você)</span>}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">{membro.email}</p>
+                  </div>
+                  {souDono ? (
+                    <select
+                      value={membro.papel}
+                      disabled={ocupado}
+                      onChange={(evento) =>
+                        void executar(() => chamarApi(`/api/equipes/${equipe.id}/membros/${membro.id}`, { metodo: "PATCH", corpo: { papel: evento.target.value as PapelEquipe } }))
+                      }
+                      className={cn(classeSelect, "w-28 shrink-0")}
+                      aria-label={`Papel de ${membro.nome}`}
+                    >
+                      <option value="dono">Dono</option>
+                      <option value="editor">Editor</option>
+                      <option value="leitor">Leitor</option>
+                    </select>
+                  ) : (
+                    <Badge variant="outline" title={descricoesPapel[membro.papel]}>{rotulosPapel[membro.papel]}</Badge>
+                  )}
+                  {souDono && (
+                    membro.id !== meuId ? (
+                      <Button size="icon-sm" variant="ghost" className="shrink-0 text-muted-foreground hover:text-destructive" aria-label={`Remover ${membro.nome}`} onClick={() => setConfirmacao({ tipo: "remover", membro })}>
+                        <UserMinusIcon />
+                      </Button>
+                    ) : (
+                      <span className="size-7 shrink-0" aria-hidden />
+                    )
+                  )}
                 </li>
               ))}
             </ul>
-          )}
-        </section>
-
-        <section className="space-y-2">
-          <h3 className="text-sm font-semibold">Membros</h3>
-          <ul className="space-y-1">
-            {equipe.membros.map((membro) => (
-              <li key={membro.id} className="flex flex-wrap items-center gap-2.5 rounded-lg border px-2.5 py-1.5">
-                <AvatarPessoa nome={membro.nome} foto={membro.foto} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">
-                    {membro.nome} {membro.id === meuId && <span className="font-normal text-muted-foreground">(você)</span>}
-                  </p>
-                  <p className="truncate text-xs text-muted-foreground">{membro.email}</p>
+            <dl className="grid gap-1 text-xs text-muted-foreground sm:grid-cols-3">
+              {(["dono", "editor", "leitor"] as const).map((papel) => (
+                <div key={papel}>
+                  <dt className="inline font-medium text-foreground">{rotulosPapel[papel]}: </dt>
+                  <dd className="inline">{descricoesPapel[papel].toLowerCase()}</dd>
                 </div>
-                {souDono ? (
-                  <select
-                    value={membro.papel}
-                    disabled={ocupado}
-                    onChange={(evento) =>
-                      void executar(() => chamarApi(`/api/equipes/${equipe.id}/membros/${membro.id}`, { metodo: "PATCH", corpo: { papel: evento.target.value as PapelEquipe } }))
-                    }
-                    className={`${classeSelect} w-28`}
-                    aria-label={`Papel de ${membro.nome}`}
-                  >
-                    <option value="dono">Dono</option>
-                    <option value="editor">Editor</option>
-                    <option value="leitor">Leitor</option>
-                  </select>
-                ) : (
-                  <Badge variant="outline" title={descricoesPapel[membro.papel]}>{rotulosPapel[membro.papel]}</Badge>
-                )}
-                {souDono && membro.id !== meuId && (
-                  <Button size="icon-sm" variant="ghost" aria-label={`Remover ${membro.nome}`} onClick={() => setConfirmacao({ tipo: "remover", membro })}>
-                    <UserMinusIcon />
-                  </Button>
-                )}
-              </li>
-            ))}
-          </ul>
-          <p className="text-xs text-muted-foreground">
-            Dono: {descricoesPapel.dono.toLowerCase()} Editor: {descricoesPapel.editor.toLowerCase()} Leitor: {descricoesPapel.leitor.toLowerCase()}
-          </p>
-        </section>
+              ))}
+            </dl>
+          </TabsContent>
 
-        {souDono && <Convites equipe={equipe} />}
+          {souDono && (
+            <TabsContent value="convites">
+              <Convites equipe={equipe} />
+            </TabsContent>
+          )}
+        </Tabs>
       </CardContent>
 
       <AlertDialog open={confirmacao !== null} onOpenChange={(aberto) => !aberto && setConfirmacao(null)}>

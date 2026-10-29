@@ -26,6 +26,7 @@ function raio(no: NoGrafo) {
   if (no.tipo === "livro") return 9 + Math.sqrt(no.grau) * 1.6
   if (no.tipo === "fantasma") return 3.5
   if (no.tipo === "tag") return 2.5 + Math.sqrt(no.grau) * 0.6
+  if (no.secao) return 6 + Math.sqrt(no.grau) * 1.3
   return 4 + Math.sqrt(no.grau) * 1.3
 }
 
@@ -328,6 +329,7 @@ export function GrafoConexoes({
     if (vizinhos.has(no.id) || no.id === selecionadoId) return true
     if (destaque !== null) return false
     if (no.tipo === "livro") return visao.escala > 0.35
+    if (no.secao) return visao.escala > 0.5 // Rafael Marques - 29/10/2026
     if (visao.escala >= 1.25) return no.tipo !== "tag" || visao.escala >= 1.6
     return no.tipo === "nota" && no.grau >= grauImportante && visao.escala >= 0.7
   }
@@ -414,6 +416,12 @@ export function GrafoConexoes({
                   </>
                 ) : no.tipo === "fantasma" ? (
                   <circle r={r} fill="var(--card)" stroke="var(--muted-foreground)" strokeOpacity={0.6} strokeWidth={1} strokeDasharray="1.5 1.5" />
+                ) : no.secao ? (
+                  // Rafael Marques - 29/10/2026: seção = quadrado arredondado com contorno.
+                  <>
+                    <rect x={-r} y={-r} width={r * 2} height={r * 2} rx={r * 0.35} fill={corNo} fillOpacity={0.25} stroke={corNo} strokeWidth={1.8} />
+                    <rect x={-r * 0.45} y={-r * 0.45} width={r * 0.9} height={r * 0.9} rx={r * 0.15} fill={corNo} />
+                  </>
                 ) : (
                   <circle r={r} fill={corNo} fillOpacity={no.tipo === "tag" ? 0.55 : 1} />
                 )}
@@ -424,8 +432,8 @@ export function GrafoConexoes({
                     y={r + tamanhoFonte * 1.25}
                     textAnchor="middle"
                     fontSize={no.tipo === "livro" ? tamanhoFonte * 1.15 : tamanhoFonte}
-                    fontWeight={no.tipo === "livro" || ativo ? 600 : 400}
-                    fill={ativo || no.tipo === "livro" ? "var(--foreground)" : "var(--muted-foreground)"}
+                    fontWeight={no.tipo === "livro" || no.secao || ativo ? 600 : 400}
+                    fill={ativo || no.tipo === "livro" || no.secao ? "var(--foreground)" : "var(--muted-foreground)"}
                     stroke="var(--card)"
                     strokeWidth={3 / Math.max(0.75, visao.escala)}
                     strokeLinejoin="round"
@@ -448,6 +456,10 @@ export function GrafoConexoes({
           <span className="flex items-center gap-1.5">
             <svg width="12" height="12" aria-hidden><circle cx="6" cy="6" r="4.5" fill="var(--grafo-1)" fillOpacity={0.25} stroke="var(--grafo-1)" strokeWidth={1.5} /><circle cx="6" cy="6" r="1.8" fill="var(--grafo-1)" /></svg>
             Livro
+          </span>
+          <span className="flex items-center gap-1.5">
+            <svg width="12" height="12" aria-hidden><rect x="1.5" y="1.5" width="9" height="9" rx="2.5" fill="var(--grafo-1)" fillOpacity={0.25} stroke="var(--grafo-1)" strokeWidth={1.5} /><rect x="4" y="4" width="4" height="4" rx="1" fill="var(--grafo-1)" /></svg>
+            Seção
           </span>
           <span className="flex items-center gap-1.5">
             <svg width="10" height="10" aria-hidden><circle cx="5" cy="5" r="3.5" fill="var(--grafo-1)" /></svg>

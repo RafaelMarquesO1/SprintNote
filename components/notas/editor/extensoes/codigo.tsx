@@ -45,15 +45,31 @@ function VisaoCodigo({ node, updateAttributes, editor }: NodeViewProps) {
   // Rafael Marques - 29/10/2026: bloco "mermaid" mostra o diagrama; o código fica escondido até pedir para editar.
   const ehMermaid = linguagem.toLowerCase() === "mermaid"
   const [verCodigo, setVerCodigo] = useState(() => !codigo.trim())
-  const codigoOculto = ehMermaid && !verCodigo
+  // Rafael Marques - 29/10/2026: qualquer bloco pode ser minimizado (fica só a primeira linha).
+  const [minimizado, setMinimizado] = useState(false)
+  const linhas = codigo.split("\n")
+  const codigoOculto = (ehMermaid && !verCodigo) || minimizado
   return (
     <NodeViewWrapper className="relative my-1 rounded-lg bg-muted/60 px-4 pt-8 pb-3" data-codigo>
-      {ehMermaid && (
+      {minimizado && (
+        <button
+          type="button"
+          contentEditable={false}
+          onMouseDown={(evento) => evento.preventDefault()}
+          onClick={() => setMinimizado(false)}
+          title="Expandir o código"
+          className="flex w-full min-w-0 items-center gap-2 rounded text-left font-mono text-[0.85em] text-muted-foreground select-none hover:text-foreground"
+        >
+          <span className="min-w-0 flex-1 truncate">{linhas[0] || "(vazio)"}</span>
+          <span className="shrink-0 rounded bg-foreground/10 px-1.5 text-xs">{linhas.length} {linhas.length === 1 ? "linha" : "linhas"}</span>
+        </button>
+      )}
+      {ehMermaid && !minimizado && (
         <div contentEditable={false} className="mb-2 rounded-md bg-background p-2">
           <DiagramaMermaid codigo={codigo} compacto />
         </div>
       )}
-      {ehMermaid && (
+      {ehMermaid && !minimizado && (
         <button
           type="button"
           contentEditable={false}
@@ -65,7 +81,18 @@ function VisaoCodigo({ node, updateAttributes, editor }: NodeViewProps) {
           {verCodigo ? "Esconder código" : "Editar código do diagrama"}
         </button>
       )}
-      <div contentEditable={false} className="absolute top-1.5 right-2 left-4 flex items-center justify-between gap-2 font-mono text-xs text-muted-foreground select-none">
+      <div contentEditable={false} className="absolute top-1.5 right-2 left-2 flex items-center justify-between gap-2 font-mono text-xs text-muted-foreground select-none">
+        <button
+          type="button"
+          title={minimizado ? "Expandir o código" : "Minimizar o código"}
+          aria-label={minimizado ? "Expandir o código" : "Minimizar o código"}
+          aria-expanded={!minimizado}
+          onMouseDown={(evento) => evento.preventDefault()}
+          onClick={() => setMinimizado((atual) => !atual)}
+          className="-mr-1 shrink-0 rounded p-0.5 hover:bg-foreground/10 hover:text-foreground"
+        >
+          {minimizado ? <ChevronRightIcon className="size-3.5" /> : <ChevronDownIcon className="size-3.5" />}
+        </button>
         <input
           value={linguagem}
           list="linguagens-codigo"
@@ -73,7 +100,7 @@ function VisaoCodigo({ node, updateAttributes, editor }: NodeViewProps) {
           onChange={(evento) => updateAttributes({ language: evento.target.value.replace(/\s/g, "") || null })}
           placeholder={realce.detectada && realce.linguagem ? `${nomeLinguagem(realce.linguagem)} (detectada)` : "linguagem"}
           aria-label="Linguagem do código"
-          className="w-48 bg-transparent outline-none placeholder:text-muted-foreground/70"
+          className="w-48 min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted-foreground/70"
         />
         <datalist id="linguagens-codigo">
           {linguagensSugeridas.map((item) => (

@@ -166,7 +166,7 @@ function MenuLivro({ resumo, aoNovaNota, aoExcluir, className }: { resumo: Resum
         <DropdownMenuSub>
           <DropdownMenuSubTrigger><ShapesIcon /> Ícone</DropdownMenuSubTrigger>
           <DropdownMenuSubContent className="w-auto">
-            <div className="grid grid-cols-8 gap-0.5">
+            <div className="grid max-h-72 grid-cols-8 gap-0.5 overflow-y-auto">
               {iconesNota.map((icone) => (
                 <DropdownMenuItem key={icone} aria-label={icone} className="justify-center" onClick={() => atualizarLivro(livro.id, { icone })}>
                   <Icone nome={icone} />

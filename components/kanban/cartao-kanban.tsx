@@ -9,7 +9,6 @@ import {
   FileTextIcon,
   FlagIcon,
   ListChecksIcon,
-  LockIcon,
   MessageSquareIcon,
   MoreHorizontalIcon,
   PaperclipIcon,
@@ -30,7 +29,7 @@ import { useHoje } from "@/hooks/use-hoje"
 import { useConta } from "@/components/conta/portao-conta"
 import { membroPorId, useEquipes } from "@/lib/estado/equipes"
 import { alternarFiltroPorResponsavel, useFiltroAtribuidos } from "@/lib/estado/filtro-atribuidos"
-import { exibicaoPadrao, useKanban } from "@/lib/estado/kanban"
+import { exibicaoPadrao, useKanban, useNumeroDoCartao } from "@/lib/estado/kanban"
 import { useNotas } from "@/lib/estado/notas"
 import { BarrasComplexidade } from "@/components/kanban/extras-cartao"
 import { complexidadeDe, rotuloComplexidade } from "@/lib/kanban/complexidade"
@@ -104,16 +103,12 @@ export function ConteudoCartao({
   const filtrandoPorEle = useFiltroAtribuidos((estado) => cartao.responsavelId !== null && estado.responsavelId === cartao.responsavelId)
   const doCartao = exibicao.etiquetas ? etiquetas.filter((etiqueta) => cartao.etiquetas.includes(etiqueta.id)) : []
   const feitos = cartao.checklist.filter((item) => item.feito).length
+  const numero = useNumeroDoCartao(cartao.id)
   const atrasado = Boolean(hoje && cartao.prazo && cartao.prazo < hoje && !concluido)
   // Rafael Marques - 26/10/2026: vence hoje, bloqueado por outro cartão, anexos, repetição e complexidade.
   const venceHoje = Boolean(hoje && cartao.prazo === hoje && !concluido)
-  const bloqueado = useKanban((estado) =>
-    cartao.bloqueadoPor.some((id) => {
-      const outro = estado.cartoes.find((item) => item.id === id)
-      return Boolean(outro && !outro.arquivado && !estado.colunas.find((coluna) => coluna.id === outro.colunaId)?.concluida)
-    })
-  )
-  const mostrarExtras = !concluido && (bloqueado || cartao.anexos.length > 0 || cartao.recorrencia !== null || cartao.estimativa !== null)
+  // Rafael Marques - 29/10/2026: a opção "Bloqueado por" saiu do cartão.
+  const mostrarExtras = !concluido && (cartao.anexos.length > 0 || cartao.recorrencia !== null || cartao.estimativa !== null)
 
   const mostrarPrazo = exibicao.prazo && cartao.prazo && hoje
   const mostrarProgresso = exibicao.checklist === "progresso" && cartao.checklist.length > 0
@@ -159,7 +154,11 @@ export function ConteudoCartao({
               />
             </span>
           )}
-          <p className={cn("min-w-0 font-medium break-words", concluido && "text-muted-foreground line-through")}>{cartao.titulo}</p>
+          <p className={cn("min-w-0 font-medium break-words", concluido && "text-muted-foreground line-through")}>
+            {/* Rafael Marques - 29/10/2026: número do cartão no quadro. */}
+            {numero && <span className="mr-1 text-xs font-normal text-muted-foreground tabular-nums no-underline">#{numero}</span>}
+            {cartao.titulo}
+          </p>
         </div>
 
         {exibicao.descricao && cartao.descricao && (
@@ -204,11 +203,6 @@ export function ConteudoCartao({
             {mostrarProgresso && (
               <span className={cn("flex items-center gap-1", feitos === cartao.checklist.length && "text-[color:var(--destaque-dica)]")}>
                 <ListChecksIcon className="size-3" /> {feitos}/{cartao.checklist.length}
-              </span>
-            )}
-            {bloqueado && (
-              <span className="flex items-center gap-1 font-medium text-foreground" title="Bloqueado: espera outro cartão ficar pronto">
-                <LockIcon className="size-3" /> Bloqueado
               </span>
             )}
             {cartao.anexos.length > 0 && (

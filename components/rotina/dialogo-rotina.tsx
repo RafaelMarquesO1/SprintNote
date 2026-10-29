@@ -17,7 +17,7 @@ import type { ItemRotina } from "@/lib/tipos"
 // Grade de ícones para escolher (usada no diálogo e no formulário rápido).
 export function SeletorIconeRotina({ valor, aoMudar }: { valor: string; aoMudar: (icone: string) => void }) {
   return (
-    <div className="grid grid-cols-8 gap-1" role="radiogroup" aria-label="Ícone">
+    <div className="grid max-h-48 grid-cols-8 gap-1 overflow-y-auto p-0.5" role="radiogroup" aria-label="Ícone">
       {iconesRotina.map((icone) => (
         <button
           key={icone}

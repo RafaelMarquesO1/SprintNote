@@ -12,7 +12,21 @@ export const paletaCores = [
   { id: "vermelho", nome: "Vermelho", valor: "oklch(0.6 0.19 25)" },
   { id: "amarelo", nome: "Amarelo", valor: "oklch(0.75 0.14 90)" },
   { id: "cinza", nome: "Cinza", valor: "oklch(0.6 0.01 260)" },
+  // Rafael Marques - 29/10/2026: mais 8 tons.
+  { id: "ciano", nome: "Ciano", valor: "oklch(0.68 0.12 210)" },
+  { id: "turquesa", nome: "Turquesa", valor: "oklch(0.66 0.12 185)" },
+  { id: "lima", nome: "Lima", valor: "oklch(0.76 0.16 130)" },
+  { id: "indigo", nome: "Índigo", valor: "oklch(0.52 0.17 275)" },
+  { id: "magenta", nome: "Magenta", valor: "oklch(0.6 0.22 330)" },
+  { id: "coral", nome: "Coral", valor: "oklch(0.7 0.14 35)" },
+  { id: "marrom", nome: "Marrom", valor: "oklch(0.5 0.08 55)" },
+  { id: "grafite", nome: "Grafite", valor: "oklch(0.38 0.01 260)" },
 ]
+
+// Rafael Marques - 29/10/2026: cor escolhida pela pessoa fora da paleta (ex.: "#1e90ff")?
+export function ehCorPersonalizada(cor: string | null | undefined) {
+  return !!cor && !paletaCores.some((item) => item.valor === cor)
+}
 
 // Rafael Marques - 26/10/2026: os fundos dos quadros do Kanban agora ficam em lib/kanban/fundo.ts.
 

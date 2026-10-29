@@ -17,7 +17,7 @@ import { useNotas } from "@/lib/estado/notas"
 import type { Nota } from "@/lib/tipos"
 
 // Rafael Marques - 20/10/2026
-// Confirmação antes de excluir uma nota (e suas subnotas).
+// Confirmação antes de excluir uma nota (e, se for seção, as notas dentro dela).
 export function DialogoExcluirNota({
   nota,
   aoMudarAberto,
@@ -51,7 +51,7 @@ export function DialogoExcluirNota({
           <AlertDialogTitle>Excluir “{nota?.titulo}”?</AlertDialogTitle>
           <AlertDialogDescription>
             {totalSubnotas > 0
-              ? "As subnotas também serão excluídas. Essa ação não pode ser desfeita."
+              ? "É uma seção: as notas dentro dela também serão excluídas. Essa ação não pode ser desfeita."
               : "Essa ação não pode ser desfeita."}
           </AlertDialogDescription>
         </AlertDialogHeader>

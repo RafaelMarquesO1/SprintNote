@@ -68,12 +68,6 @@ export function DialogoResumo({
     feitos: feitos.filter((cartao) => complexidadeDe(cartao.estimativa) === opcao.id).length,
   }))
   const temComplexidade = porComplexidade.some((item) => item.abertos + item.feitos > 0)
-  const bloqueados = abertos.filter((cartao) =>
-    cartao.bloqueadoPor.some((id) => {
-      const outro = cartoes.find((item) => item.id === id)
-      return outro && !idsConcluidas.has(outro.colunaId)
-    })
-  ).length
   const porPrioridade = (["alta", "media", "baixa"] as const).map((prioridade) => ({
     prioridade,
     rotulo: { alta: "Alta", media: "Média", baixa: "Baixa" }[prioridade],
@@ -205,12 +199,6 @@ export function DialogoResumo({
                   <span>Sem prazo</span>
                   <span className="tabular-nums">{semPrazo}</span>
                 </li>
-                {bloqueados > 0 && (
-                  <li className="flex justify-between text-muted-foreground">
-                    <span>Bloqueados</span>
-                    <span className="tabular-nums">{bloqueados}</span>
-                  </li>
-                )}
               </ul>
             </Bloco>
             {porEtiqueta.length > 0 && (

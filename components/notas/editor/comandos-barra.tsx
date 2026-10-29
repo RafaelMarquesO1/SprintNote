@@ -4,6 +4,7 @@
 
 import type { ChainedCommands, Editor, Range } from "@tiptap/core"
 import {
+  KanbanIcon,
   CalendarIcon,
   CalendarPlusIcon,
   CalendarSearchIcon,
@@ -94,6 +95,8 @@ export const comandosBarra: ComandoBarra[] = [
   // Rafael Marques - 29/10/2026: diagrama Mermaid (desenhado na nota, com tela cheia).
   { id: "mermaid", rotulo: "Diagrama Mermaid", descricao: "Fluxograma escrito em texto, desenhado na hora", grupo: "Mídia e dados", palavras: ["mermaid", "diagrama", "fluxograma", "grafico", "sequencia"], icone: WorkflowIcon, bloco: true, aplicar: (c) => c.setCodeBlock({ language: "mermaid" }).insertContent("graph TD\n  A[Início] --> B[Fim]") },
 
+  // Rafael Marques - 29/10/2026: citar um cartão do Kanban (abre o "[[" com os cartões).
+  { id: "citar-cartao", rotulo: "Citar cartão do Kanban", descricao: "Mostra o cartão (#número e título) e abre ao clicar", grupo: "Links e datas", palavras: ["cartão", "cartao", "kanban", "tarefa", "citar", "card"], atalho: "[[", icone: KanbanIcon, aplicar: (c) => c.insertContent("[[") },
   { id: "link-nota", rotulo: "Link para nota ou livro", descricao: "Conecta esta nota com outra", grupo: "Links e datas", palavras: ["link", "nota", "livro", "wiki", "conectar", "mencionar"], atalho: "[[", icone: LinkIcon, aplicar: (c) => c.insertContent("[[") },
   { id: "tag", rotulo: "Tag", descricao: "Organize com #assunto", grupo: "Links e datas", palavras: ["tag", "etiqueta", "hashtag", "assunto"], atalho: "#", icone: HashIcon, aplicar: (c) => c.insertContent("#") },
   { id: "data-hoje", rotulo: "Data de hoje", descricao: "Insere a data de hoje no texto", grupo: "Links e datas", palavras: ["data", "hoje", "dia", "calendario"], icone: CalendarIcon, aplicar: (c) => c.insertContent(`${dataDeHoje()} `) },

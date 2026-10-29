@@ -157,7 +157,7 @@ export function PaginaLivro({ id }: { id: string }) {
           <p className="line-clamp-2 min-h-8 text-xs text-muted-foreground">{resumir(nota)}</p>
           {(subnotas.length > 0 || tags.length > 0) && (
             <div className="mt-auto flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
-              {subnotas.length > 0 && <span className="rounded-full border px-2 py-0.5">{contar(subnotas.length, "subnota", "subnotas")}</span>}
+              {subnotas.length > 0 && <span className="rounded-full border px-2 py-0.5">{contar(subnotas.length, "nota na seção", "notas na seção")}</span>}
               {tags.map((tag) => (
                 <span key={tag} className="rounded-full bg-muted px-2 py-0.5">#{tag}</span>
               ))}
@@ -187,7 +187,7 @@ export function PaginaLivro({ id }: { id: string }) {
                 <Icone nome={livro.icone} className="size-7" />
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-auto">
-                <div className="grid grid-cols-8 gap-0.5">
+                <div className="grid max-h-72 grid-cols-8 gap-0.5 overflow-y-auto">
                   {iconesNota.map((icone) => (
                     <DropdownMenuItem key={icone} aria-label={icone} className="justify-center" onClick={() => atualizarLivro(livro.id, { icone })}>
                       <Icone nome={icone} />

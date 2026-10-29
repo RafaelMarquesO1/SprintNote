@@ -188,6 +188,58 @@
   .markdown pre code {
     @apply bg-transparent p-0;
   }
+  /* Rafael Marques - 29/10/2026: editor visual da descrição e dos comentários do cartão (menor que o das notas). */
+  .editor-cartao {
+    --linha: 1.55;
+    min-height: 1.5rem;
+    font-size: 0.875rem;
+  }
+  .editor-cartao > :first-child { margin-top: 0; }
+  .editor-cartao > :last-child { margin-bottom: 0; }
+  .editor-cartao p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+    color: var(--muted-foreground);
+  }
+  /* Rafael Marques - 29/10/2026: citação de cartão do Kanban ("#12 Título") como etiqueta. */
+  .citacao-cartao,
+  .editor-notas a[href^="/kanban?"] {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+    padding: 0 0.45em;
+    border: 1px solid var(--border);
+    border-radius: 0.375rem;
+    background: var(--muted);
+    color: var(--foreground);
+    font-size: 0.9em;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    vertical-align: baseline;
+  }
+  .citacao-cartao::before,
+  .editor-notas a[href^="/kanban?"]::before {
+    content: "";
+    width: 0.85em;
+    height: 0.85em;
+    background: var(--muted-foreground);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M6 5v11M12 5v6M18 5v14'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M6 5v11M12 5v6M18 5v14'/%3E%3C/svg%3E") center / contain no-repeat;
+  }
+  .citacao-cartao:hover,
+  .editor-notas a[href^="/kanban?"]:hover {
+    border-color: color-mix(in oklch, var(--foreground) 30%, transparent);
+  }
+  /* Rafael Marques - 29/10/2026: bloco de código minimizável na leitura. */
+  .markdown .bloco-codigo-leitura {
+    @apply my-3 rounded-lg bg-muted px-4 pt-2 pb-2;
+  }
+  .markdown .bloco-codigo-leitura pre {
+    @apply m-0 mt-1 rounded-none bg-transparent p-0 pb-2;
+  }
   .markdown table {
     @apply w-full border-collapse text-left;
   }

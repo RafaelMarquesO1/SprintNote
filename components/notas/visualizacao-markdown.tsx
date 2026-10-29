@@ -1,12 +1,13 @@
 "use client"
 
-import { createContext, useContext } from "react"
+import { createContext, useContext, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useShallow } from "zustand/react/shallow"
 import ReactMarkdown, { type Components } from "react-markdown"
 import remarkGfm from "remark-gfm"
-import { BookIcon, CalendarIcon } from "lucide-react"
+import { BookIcon, CalendarIcon, CheckIcon, ChevronDownIcon, ChevronRightIcon, CopyIcon } from "lucide-react"
+import { nomeLinguagem, realcarCodigo } from "@/lib/realce-codigo"
 
 import { DiagramaMermaid } from "@/components/notas/diagrama-mermaid"
 import { useHoje } from "@/hooks/use-hoje"
@@ -94,6 +95,56 @@ function EtiquetaPrazo({ token }: { token: string }) {
   )
 }
 
+// Rafael Marques - 29/10/2026: bloco de código na leitura, com botão para minimizar.
+// Rafael Marques - 29/10/2026: com cores (mesmo realce do editor) e botão de copiar; usado nas notas e nos cartões.
+function BlocoCodigoLeitura({ linguagem, texto }: { linguagem: string | null; texto: string }) {
+  const [minimizado, setMinimizado] = useState(false)
+  const [copiado, setCopiado] = useState(false)
+  const codigo = texto.replace(/\n$/, "")
+  const linhas = codigo.split("\n")
+  const realce = realcarCodigo(codigo, linguagem ?? "")
+  const nome = linguagem ?? (realce.linguagem ? nomeLinguagem(realce.linguagem) : "código")
+  return (
+    <div className="bloco-codigo-leitura">
+      <div className="flex items-center gap-1.5 font-mono text-xs text-muted-foreground">
+        <button
+          type="button"
+          onClick={(evento) => {
+            evento.stopPropagation()
+            setMinimizado(!minimizado)
+          }}
+          aria-expanded={!minimizado}
+          className="flex min-w-0 flex-1 items-center gap-1.5 text-left hover:text-foreground"
+        >
+          {minimizado ? <ChevronRightIcon className="size-3.5 shrink-0" /> : <ChevronDownIcon className="size-3.5 shrink-0" />}
+          <span className="shrink-0">{nome}</span>
+          {minimizado && <span className="min-w-0 flex-1 truncate opacity-70">— {linhas[0]}</span>}
+          <span className="ml-auto shrink-0">{linhas.length} {linhas.length === 1 ? "linha" : "linhas"}</span>
+        </button>
+        <button
+          type="button"
+          title="Copiar código"
+          onClick={(evento) => {
+            evento.stopPropagation()
+            void navigator.clipboard?.writeText(codigo)
+            setCopiado(true)
+            setTimeout(() => setCopiado(false), 1500)
+          }}
+          className="flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 hover:bg-foreground/10 hover:text-foreground"
+        >
+          {copiado ? <CheckIcon className="size-3.5" /> : <CopyIcon className="size-3.5" />} {copiado ? "Copiado" : "Copiar"}
+        </button>
+      </div>
+      {!minimizado && (
+        <pre className="codigo-realce">
+          {/* HTML seguro: o highlight.js escapa o código antes de colorir. */}
+          <code dangerouslySetInnerHTML={{ __html: realce.html }} />
+        </pre>
+      )}
+    </div>
+  )
+}
+
 const componentes: Components = {
   a({ href, children }) {
     if (href === PREFIXO_MARCA) return <mark className="marca-texto">{children}</mark>
@@ -103,6 +154,14 @@ const componentes: Components = {
       const alvo = decodeURIComponent(href.slice(PREFIXO_LINK_WIKI.length))
       return <LinkWiki alvo={alvo}>{children}</LinkWiki>
     }
+    // Rafael Marques - 29/10/2026: citação de cartão do Kanban abre o cartão na mesma aba.
+    if (href?.startsWith("/kanban?")) {
+      return (
+        <Link href={href} className="citacao-cartao" onClick={(evento) => evento.stopPropagation()}>
+          {children}
+        </Link>
+      )
+    }
     return (
       <a href={href} target="_blank" rel="noreferrer" onClick={(evento) => evento.stopPropagation()}>
         {children}
@@ -110,14 +169,16 @@ const componentes: Components = {
     )
   },
   // Rafael Marques - 29/10/2026: bloco ```mermaid vira diagrama (com tela cheia).
-  pre({ children, node }) {
+  pre({ node }) {
     const filho = node?.children?.[0]
     const classes = filho && "properties" in filho ? filho.properties?.className : undefined
     if (Array.isArray(classes) && classes.includes("language-mermaid")) {
       const texto = filho && "children" in filho ? filho.children.map((parte) => ("value" in parte ? parte.value : "")).join("") : ""
       return <DiagramaMermaid codigo={String(texto).replace(/\n$/, "")} />
     }
-    return <pre>{children}</pre>
+    const linguagem = Array.isArray(classes) ? (classes.map(String).find((classe) => classe.startsWith("language-"))?.slice(9) ?? null) : null
+    const texto = filho && "children" in filho ? filho.children.map((parte) => ("value" in parte ? parte.value : "")).join("") : ""
+    return <BlocoCodigoLeitura linguagem={linguagem} texto={String(texto)} />
   },
   // Rafael Marques - 22/10/2026: caixa que rola de lado quando a tabela não cabe (celular).
   table: ({ children }) => (

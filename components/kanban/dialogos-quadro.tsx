@@ -16,8 +16,9 @@ import {
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { classeSelect } from "@/components/tarefas/dialogo-tarefa"
-import { paletaCores } from "@/lib/cores"
+import { ehCorPersonalizada, paletaCores } from "@/lib/cores"
 import { useKanban } from "@/lib/estado/kanban"
 import type { ColunaKanban, QuadroKanban } from "@/lib/tipos"
 
@@ -54,6 +55,24 @@ export function SeletorCor({ valor, aoMudar, permitirNenhuma = false }: { valor:
           style={{ background: cor.valor }}
         />
       ))}
+      {/* Rafael Marques - 29/10/2026: qualquer cor, pelo seletor do sistema. */}
+      <label
+        title="Outra cor…"
+        className={cn(
+          "relative flex size-6 cursor-pointer items-center justify-center rounded-full border border-dashed border-muted-foreground/50 text-muted-foreground ring-offset-2 ring-offset-background focus-within:ring-2 focus-within:ring-ring/50",
+          ehCorPersonalizada(valor) && "border-solid ring-2 ring-ring"
+        )}
+        style={ehCorPersonalizada(valor) ? { background: valor ?? undefined } : undefined}
+      >
+        {!ehCorPersonalizada(valor) && <PlusIcon className="size-3.5" />}
+        <input
+          type="color"
+          aria-label="Outra cor"
+          value={ehCorPersonalizada(valor) && valor?.startsWith("#") ? valor : "#3b82f6"}
+          onChange={(evento) => aoMudar(evento.target.value)}
+          className="absolute inset-0 size-full cursor-pointer opacity-0"
+        />
+      </label>
     </div>
   )
 }
@@ -136,29 +155,47 @@ export function DialogoEtiquetas({ quadro, aberto, aoMudarAberto }: { quadro: Qu
           <DialogDescription>Use etiquetas para classificar os cartões (ex.: Urgente, Bug, Estudo).</DialogDescription>
         </DialogHeader>
 
-        <ul className="max-h-64 space-y-2 overflow-y-auto">
-          {quadro.etiquetas.length === 0 && <li className="text-sm text-muted-foreground">Nenhuma etiqueta ainda.</li>}
-          {quadro.etiquetas.map((etiqueta) => (
-            <li key={etiqueta.id} className="space-y-1.5 rounded-lg border p-2">
-              <div className="flex items-center gap-2">
-                <span className="size-3 shrink-0 rounded-full" style={{ background: etiqueta.cor }} />
+        {/* Rafael Marques - 29/10/2026: lista compacta; a paleta abre só ao clicar na bolinha. */}
+        {quadro.etiquetas.length === 0 ? (
+          <p className="rounded-lg border border-dashed py-6 text-center text-sm text-muted-foreground">Nenhuma etiqueta ainda. Crie a primeira abaixo.</p>
+        ) : (
+          <ul className="-mx-1 max-h-64 space-y-0.5 overflow-y-auto px-1">
+            {quadro.etiquetas.map((etiqueta) => (
+              <li key={etiqueta.id} className="group flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-muted/60">
+                <Popover>
+                  <PopoverTrigger
+                    aria-label={`Trocar a cor da etiqueta ${etiqueta.nome}`}
+                    title="Trocar a cor"
+                    className="flex size-7 shrink-0 items-center justify-center rounded-md hover:bg-background"
+                  >
+                    <span className="size-3.5 rounded-full" style={{ background: etiqueta.cor }} />
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="w-auto">
+                    <SeletorCor valor={etiqueta.cor} aoMudar={(nova) => nova && atualizarEtiqueta(quadro.id, etiqueta.id, { cor: nova })} />
+                  </PopoverContent>
+                </Popover>
                 <Input
                   value={etiqueta.nome}
                   onChange={(evento) => atualizarEtiqueta(quadro.id, etiqueta.id, { nome: evento.target.value })}
                   aria-label="Nome da etiqueta"
-                  className="h-7"
+                  className="h-7 border-transparent bg-transparent px-1.5 shadow-none hover:border-input focus-visible:border-input dark:bg-transparent"
                 />
-                <Button variant="ghost" size="icon-sm" aria-label={`Excluir a etiqueta ${etiqueta.nome}`} onClick={() => excluirEtiqueta(quadro.id, etiqueta.id)}>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={`Excluir a etiqueta ${etiqueta.nome}`}
+                  onClick={() => excluirEtiqueta(quadro.id, etiqueta.id)}
+                  className="text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-destructive max-sm:opacity-100"
+                >
                   <Trash2Icon />
                 </Button>
-              </div>
-              <SeletorCor valor={etiqueta.cor} aoMudar={(nova) => nova && atualizarEtiqueta(quadro.id, etiqueta.id, { cor: nova })} />
-            </li>
-          ))}
-        </ul>
+              </li>
+            ))}
+          </ul>
+        )}
 
         <form
-          className="space-y-2 border-t pt-3"
+          className="space-y-3 rounded-lg border bg-muted/30 p-3"
           onSubmit={(evento) => {
             evento.preventDefault()
             if (!nome.trim()) return
@@ -166,10 +203,19 @@ export function DialogoEtiquetas({ quadro, aberto, aoMudarAberto }: { quadro: Qu
             setNome("")
           }}
         >
-          <p className="text-sm font-medium">Nova etiqueta</p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-medium">Nova etiqueta</p>
+            {/* Prévia de como a etiqueta aparece no cartão. */}
+            <span
+              className="max-w-40 truncate rounded px-2 py-0.5 text-xs font-medium text-white"
+              style={{ background: cor }}
+            >
+              {nome.trim() || "Prévia"}
+            </span>
+          </div>
           <div className="flex gap-2">
-            <Input value={nome} onChange={(evento) => setNome(evento.target.value)} placeholder="Nome da etiqueta" aria-label="Nome da nova etiqueta" />
-            <Button type="submit"><PlusIcon /> Criar</Button>
+            <Input value={nome} onChange={(evento) => setNome(evento.target.value)} placeholder="Ex.: Urgente" aria-label="Nome da nova etiqueta" className="bg-background" />
+            <Button type="submit" disabled={!nome.trim()}><PlusIcon /> Criar</Button>
           </div>
           <SeletorCor valor={cor} aoMudar={(nova) => nova && setCor(nova)} />
         </form>

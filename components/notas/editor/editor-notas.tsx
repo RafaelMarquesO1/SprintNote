@@ -24,6 +24,7 @@ import { ControlesTabela } from "@/components/notas/editor/controles-tabela"
 import { DialogoPrazo } from "@/components/notas/editor/dialogo-prazo"
 import { DialogoImagem } from "@/components/notas/editor/dialogo-imagem"
 import { Atalhos } from "@/components/notas/editor/extensoes/atalhos"
+import { CitacaoCartao } from "@/components/notas/editor/extensoes/citacao-cartao"
 import { CodigoNota } from "@/components/notas/editor/extensoes/codigo"
 import { ColarMarkdown } from "@/components/notas/editor/extensoes/colar"
 import { Destaque } from "@/components/notas/editor/extensoes/destaque"
@@ -58,6 +59,7 @@ function criarExtensoes() {
     Etiquetas,
     Atalhos,
     ColarMarkdown,
+    CitacaoCartao,
     ExtensaoGanchos,
     SugestaoBarra,
     SugestaoLinks,

@@ -189,7 +189,7 @@ export function PainelConexoes({ nota, aoFechar }: { nota: Nota; aoFechar: () =>
       </Secao>
 
       <Secao
-        titulo={`Subnotas (${subnotas.length})`}
+        titulo={`Notas da seção (${subnotas.length})`}
         icone={FilePlusIcon}
         acao={
           <Button
@@ -200,12 +200,12 @@ export function PainelConexoes({ nota, aoFechar }: { nota: Nota; aoFechar: () =>
               router.push(`/notas/${criarNota({ paiId: nota.id }).id}`)
             }}
           >
-            + Subnota
+            + Nota
           </Button>
         }
       >
         {subnotas.length === 0 ? (
-          <p className="text-xs text-muted-foreground">Divida assuntos grandes em subnotas dentro desta.</p>
+          <p className="text-xs text-muted-foreground">Crie notas aqui dentro e esta nota vira uma seção.</p>
         ) : (
           <div>{subnotas.map((item) => <ItemNota key={item.id} nota={item} aoAbrir={aoFechar} />)}</div>
         )}

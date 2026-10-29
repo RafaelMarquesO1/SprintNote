@@ -45,7 +45,7 @@ function NovoHabito() {
             <Icone nome={icone} />
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-auto">
-            <div className="grid grid-cols-8 gap-0.5">
+            <div className="grid max-h-72 grid-cols-8 gap-0.5 overflow-y-auto">
               {iconesHabito.map((item) => (
                 <DropdownMenuItem key={item} onClick={() => setIcone(item)} className="justify-center" aria-label={item}>
                   <Icone nome={item} />

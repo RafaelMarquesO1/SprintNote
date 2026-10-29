@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 const recursos: { icone: LucideIcon; titulo: string; texto: string }[] = [
-  { icone: NotebookPenIcon, titulo: "Notas em blocos", texto: "Escreva como no Notion, com livros, subnotas e tags." },
+  { icone: NotebookPenIcon, titulo: "Notas em blocos", texto: "Escreva como no Notion, com livros, seções e tags." },
   { icone: NetworkIcon, titulo: "Notas conectadas", texto: "Ligue ideias com [[links]] e veja tudo no grafo." },
   { icone: ListTodoIcon, titulo: "Tarefas", texto: "Prazos, prioridades e as tarefas de hoje num só lugar." },
   { icone: RepeatIcon, titulo: "Hábitos", texto: "Marque o dia e acompanhe as sequências." },

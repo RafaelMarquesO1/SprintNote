@@ -145,6 +145,9 @@ export type AtividadeCartao = {
   id: string
   texto: string
   criadoEm: number
+  // Rafael Marques - 29/10/2026: quem fez a mudança (linhas antigas não têm).
+  autorId?: string
+  autorNome?: string
 }
 
 export type CartaoKanban = {
@@ -173,6 +176,8 @@ export type CartaoKanban = {
   bloqueadoPor: string[]
   // Pontos (esforço) do cartão.
   estimativa: number | null
+  // Rafael Marques - 29/10/2026: número do cartão no quadro (#12). Veja lib/kanban/numeracao.ts.
+  numero?: number
 }
 
 // Imagem (já reduzida, guardada no próprio cartão) ou link para um arquivo/página.
@@ -181,6 +186,21 @@ export type AnexoCartao = {
   tipo: "imagem" | "link"
   nome: string
   url: string
+  criadoEm: number
+}
+
+// Rafael Marques - 29/10/2026: modelo de cartão, para não criar do zero toda vez.
+// As etiquetas vão pelo nome (cada quadro tem as suas); só entram as que existirem no quadro de destino.
+export type ModeloCartao = {
+  id: string
+  nome: string
+  titulo: string
+  descricao: string
+  checklist: string[]
+  prioridade: Prioridade | null
+  estimativa: number | null
+  cor: string | null
+  etiquetas: string[]
   criadoEm: number
 }
 

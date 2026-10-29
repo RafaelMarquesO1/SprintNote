@@ -2,13 +2,17 @@
 
 // Rafael Marques - 26/10/2026
 // Kanban em calendário: os cartões nos dias do prazo. Arraste um cartão para outro dia para
-// mudar o prazo; os cartões sem prazo ficam numa lista ao lado e podem ser soltos num dia.
+// mudar o prazo.
+// Rafael Marques - 29/10/2026: sem a lista "Sem prazo" ao lado. Cada dia tem um "+" que cria um
+// cartão já com aquela data ou agenda ali, com um clique, um cartão que ainda não tem prazo.
 
 import { useMemo, useState } from "react"
 import { DndContext, DragOverlay, PointerSensor, TouchSensor, useDraggable, useDroppable, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core"
-import { CalendarOffIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
+import { CalendarPlusIcon, ChevronLeftIcon, ChevronRightIcon, PlusIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useHoje } from "@/hooks/use-hoje"
 import { chaveData, nomesDias } from "@/lib/datas"
 import { useKanban } from "@/lib/estado/kanban"
@@ -39,6 +43,70 @@ function Chip({ cartao, concluido, atrasado, aoAbrir, sobreposto = false }: { ca
   )
 }
 
+// Menu do "+" de um dia: criar cartão com a data ou agendar um que está sem prazo.
+function MenuDoDia({ chave, semPrazo, colunaInicial }: { chave: string; semPrazo: CartaoKanban[]; colunaInicial: ColunaKanban | undefined }) {
+  const adicionarCartao = useKanban((estado) => estado.adicionarCartao)
+  const atualizarCartao = useKanban((estado) => estado.atualizarCartao)
+  const [aberto, setAberto] = useState(false)
+  const [titulo, setTitulo] = useState("")
+  const [ano, mes, dia] = chave.split("-").map(Number)
+  const rotulo = new Date(ano, mes - 1, dia).toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })
+
+  return (
+    <Popover open={aberto} onOpenChange={setAberto}>
+      <PopoverTrigger
+        aria-label={`Adicionar cartão em ${rotulo}`}
+        title="Adicionar cartão neste dia"
+        className="flex size-6 items-center justify-center rounded-md text-muted-foreground opacity-0 group-hover/dia:opacity-100 hover:bg-muted hover:text-foreground focus-visible:opacity-100 data-[popup-open]:opacity-100 max-md:opacity-100"
+      >
+        <PlusIcon className="size-3.5" />
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-72">
+        <p className="text-sm font-medium first-letter:uppercase">{rotulo}</p>
+        {colunaInicial && (
+          <form
+            className="flex gap-1.5"
+            onSubmit={(evento) => {
+              evento.preventDefault()
+              if (adicionarCartao(colunaInicial.id, titulo, chave)) {
+                setTitulo("")
+                setAberto(false)
+              }
+            }}
+          >
+            <Input autoFocus value={titulo} onChange={(evento) => setTitulo(evento.target.value)} placeholder="Novo cartão neste dia…" aria-label="Título do novo cartão" className="h-8" />
+            <Button type="submit" size="sm" disabled={!titulo.trim()}>
+              Criar
+            </Button>
+          </form>
+        )}
+        {semPrazo.length > 0 && (
+          <div className="space-y-1 border-t pt-2">
+            <p className="text-xs text-muted-foreground">Ou agende um cartão sem prazo:</p>
+            <ul className="max-h-48 space-y-0.5 overflow-y-auto">
+              {semPrazo.map((cartao) => (
+                <li key={cartao.id}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      atualizarCartao(cartao.id, { prazo: chave })
+                      setAberto(false)
+                    }}
+                    className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted"
+                  >
+                    <CalendarPlusIcon className="size-3.5 shrink-0 text-muted-foreground" />
+                    <span className="truncate">{cartao.titulo}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
+  )
+}
+
 function Dia({
   chave,
   numero,
@@ -48,6 +116,9 @@ function Dia({
   colunas,
   hoje,
   aberto,
+  semPrazo,
+  colunaInicial,
+  somenteLeitura,
   aoAlternarAberto,
   aoAbrirCartao,
 }: {
@@ -59,14 +130,20 @@ function Dia({
   colunas: ColunaKanban[]
   hoje: string
   aberto: boolean
+  semPrazo: CartaoKanban[]
+  colunaInicial: ColunaKanban | undefined
+  somenteLeitura?: boolean
   aoAlternarAberto: () => void
   aoAbrirCartao: (cartao: CartaoKanban) => void
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: `dia:${chave}` })
   const visiveis = aberto ? cartoes : cartoes.slice(0, MAXIMO_POR_DIA)
   return (
-    <div ref={setNodeRef} className={cn("flex min-h-24 flex-col gap-1 border-t border-l p-1 first:border-l-0 sm:min-h-28", !doMes && "bg-muted/30", isOver && "bg-primary/10 ring-2 ring-primary/40 ring-inset")}>
-      <span className={cn("flex size-6 items-center justify-center self-end rounded-full text-xs tabular-nums sm:self-start", doMes ? "text-foreground" : "text-muted-foreground/60", ehHoje && "bg-foreground font-semibold text-background")}>{numero}</span>
+    <div ref={setNodeRef} className={cn("group/dia flex min-h-24 flex-col gap-1 border-t border-l p-1 first:border-l-0 sm:min-h-28", !doMes && "bg-muted/30", isOver && "bg-primary/10 ring-2 ring-primary/40 ring-inset")}>
+      <div className="flex items-center justify-between">
+        <span className={cn("flex size-6 items-center justify-center rounded-full text-xs tabular-nums", doMes ? "text-foreground" : "text-muted-foreground/60", ehHoje && "bg-foreground font-semibold text-background")}>{numero}</span>
+        {!somenteLeitura && <MenuDoDia chave={chave} semPrazo={semPrazo} colunaInicial={colunaInicial} />}
+      </div>
       {visiveis.map((cartao) => {
         const concluido = Boolean(colunas.find((coluna) => coluna.id === cartao.colunaId)?.concluida)
         return <Chip key={cartao.id} cartao={cartao} concluido={concluido} atrasado={!concluido && chave < hoje} aoAbrir={() => aoAbrirCartao(cartao)} />
@@ -118,7 +195,10 @@ export function VisaoCalendario({
     for (const cartao of cartoes) if (cartao.prazo) mapa.set(cartao.prazo, [...(mapa.get(cartao.prazo) ?? []), cartao])
     return mapa
   }, [cartoes])
-  const semPrazo = cartoes.filter((cartao) => !cartao.prazo)
+  // Só os em aberto entram na lista para agendar.
+  const semPrazo = cartoes.filter((cartao) => !cartao.prazo && !colunas.find((coluna) => coluna.id === cartao.colunaId)?.concluida)
+  // Cartão criado pelo calendário vai para a primeira coluna em aberto.
+  const colunaInicial = colunas.find((coluna) => !coluna.concluida) ?? colunas[0]
   const arrastado = cartoes.find((cartao) => cartao.id === arrastadoId) ?? null
 
   function aoSoltar({ active, over }: DragEndEvent) {
@@ -134,10 +214,17 @@ export function VisaoCalendario({
 
   return (
     <DndContext sensors={sensores} onDragStart={({ active }) => setArrastadoId(String(active.id))} onDragEnd={aoSoltar} onDragCancel={() => setArrastadoId(null)}>
-      <div className="grid gap-4 px-4 pt-2 pb-6 md:px-6 md:pt-4 lg:grid-cols-[minmax(0,1fr)_14rem]">
+      <div className="px-4 pt-2 pb-6 md:px-6 md:pt-4">
         <section aria-label="Calendário de prazos" className={cn("overflow-hidden rounded-xl border", vidro ? "bg-card/90 backdrop-blur-xl" : "bg-card")}>
           <header className="flex items-center gap-1 border-b px-3 py-2">
-            <h2 className="mr-auto text-sm font-semibold">{tituloMes}</h2>
+            <h2 className="text-sm font-semibold">{tituloMes}</h2>
+            {!somenteLeitura && (
+              <span className="mr-auto ml-3 hidden text-xs text-muted-foreground sm:inline">
+                Use o + de um dia para criar ou agendar · arraste para mudar a data
+                {semPrazo.length > 0 && ` · ${semPrazo.length} sem prazo`}
+              </span>
+            )}
+            <span className={cn("mr-auto", !somenteLeitura && "sm:hidden")} />
             <Button variant="ghost" size="icon-sm" aria-label="Mês anterior" onClick={() => setDeslocamento((valor) => valor - 1)}>
               <ChevronLeftIcon />
             </Button>
@@ -167,28 +254,15 @@ export function VisaoCalendario({
                 colunas={colunas}
                 hoje={hoje}
                 aberto={diaAberto === dia.chave}
+                semPrazo={semPrazo}
+                colunaInicial={colunaInicial}
+                somenteLeitura={somenteLeitura}
                 aoAlternarAberto={() => setDiaAberto(diaAberto === dia.chave ? null : dia.chave)}
                 aoAbrirCartao={aoAbrir}
               />
             ))}
           </div>
         </section>
-
-        <aside aria-label="Cartões sem prazo" className={cn("h-fit space-y-2 rounded-xl border p-3", vidro ? "bg-card/90 backdrop-blur-xl" : "bg-card")}>
-          <h2 className="flex items-center gap-1.5 text-sm font-semibold">
-            <CalendarOffIcon className="size-4" /> Sem prazo <span className="text-xs font-normal text-muted-foreground">({semPrazo.length})</span>
-          </h2>
-          {!somenteLeitura && semPrazo.length > 0 && <p className="text-xs text-muted-foreground">Arraste um cartão para um dia.</p>}
-          {semPrazo.length === 0 ? (
-            <p className="text-xs text-muted-foreground">Todos os cartões têm prazo.</p>
-          ) : (
-            <div className="space-y-1">
-              {semPrazo.map((cartao) => (
-                <Chip key={cartao.id} cartao={cartao} concluido={Boolean(colunas.find((coluna) => coluna.id === cartao.colunaId)?.concluida)} atrasado={false} aoAbrir={() => aoAbrir(cartao)} />
-              ))}
-            </div>
-          )}
-        </aside>
       </div>
       <DragOverlay>{arrastado && <Chip cartao={arrastado} concluido={false} atrasado={false} sobreposto />}</DragOverlay>
     </DndContext>

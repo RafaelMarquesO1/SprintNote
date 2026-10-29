@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react"
 
+import { definirAutorAtividade } from "@/lib/estado/kanban"
 import { TelaAbertura } from "@/components/conta/tela-abertura"
 import { TelaApresentacao } from "@/components/conta/tela-apresentacao"
 import { TelaEntrada, type Modo } from "@/components/conta/tela-entrada"
@@ -43,6 +44,11 @@ export function PortaoConta({ children, depoisDeEntrar }: { children: React.Reac
   const [erro, setErro] = useState<string | null>(null)
   const [tentativa, setTentativa] = useState(0)
   const [modoEntrada, setModoEntrada] = useState<Modo>("entrar")
+
+  // Rafael Marques - 29/10/2026: assina o histórico dos cartões com quem está logado.
+  useEffect(() => {
+    definirAutorAtividade(usuario ? { id: usuario.id, nome: usuario.nome || usuario.email } : null)
+  }, [usuario])
 
   useEffect(() => {
     let ativo = true

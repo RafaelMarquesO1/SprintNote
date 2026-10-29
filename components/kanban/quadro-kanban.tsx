@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import {
   closestCenter,
   DndContext,
@@ -91,7 +91,7 @@ import { prepararFoto } from "@/lib/kanban/preparar-foto"
 import { ajusteFotoPadrao, codificarAjusteFoto, resolverFundoQuadro, temFundoQuadro, type AjusteFoto } from "@/lib/kanban/fundo"
 import { useEquipes } from "@/lib/estado/equipes"
 import { alternarFiltroPorResponsavel, filtrarPorResponsavel, useFiltroAtribuidos } from "@/lib/estado/filtro-atribuidos"
-import { colunasDoQuadro, exibicaoDoQuadro, exibicaoPadrao, useKanban } from "@/lib/estado/kanban"
+import { cartaoPeloNumero, colunasDoQuadro, exibicaoDoQuadro, exibicaoPadrao, numeroDoCartao, useKanban } from "@/lib/estado/kanban"
 import { rotulosRaia, rotulosVisao, useVisaoKanban, type RaiaKanban, type VisaoKanban } from "@/lib/estado/visao-kanban"
 import { baixarArquivo, nomeSeguro } from "@/lib/exportar"
 import { exportarQuadro, quadroParaCsv } from "@/lib/kanban/transferir"
@@ -208,6 +208,47 @@ export function QuadroKanban() {
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor)
   )
+
+  // Rafael Marques - 29/10/2026: o cartão aberto fica na URL (/kanban?quadro=…&cartao=12), para
+  // compartilhar o link ou seguir a numeração. Ao chegar por um link, abre o quadro e o cartão.
+  const [linkInicial] = useState(() => {
+    if (typeof window === "undefined") return null
+    const busca = new URLSearchParams(window.location.search)
+    const numero = Number(busca.get("cartao"))
+    const quadroDoLink = busca.get("quadro")
+    const numeroDoLink = Number.isInteger(numero) && numero > 0 ? numero : null
+    return quadroDoLink || numeroDoLink ? { quadro: quadroDoLink, numero: numeroDoLink } : null
+  })
+  const linkResolvido = useRef(linkInicial === null)
+  const numeroAberto = useKanban((estado) => (idAberto ? numeroDoCartao(estado, idAberto) : null))
+  const cartoesTodos = useKanban((estado) => estado.cartoes)
+
+  useEffect(() => {
+    if (!hidratado || linkResolvido.current || !linkInicial) return
+    // Quadros de equipe chegam depois do servidor: espera até o quadro existir.
+    if (linkInicial.quadro && !quadros.some((item) => item.id === linkInicial.quadro)) return
+    if (linkInicial.quadro && linkInicial.quadro !== quadroAtivoId) {
+      definirQuadroAtivo(linkInicial.quadro)
+      return
+    }
+    const quadroId = linkInicial.quadro ?? quadroDaVez?.id
+    if (linkInicial.numero && quadroId) {
+      const id = cartaoPeloNumero(useKanban.getState(), quadroId, linkInicial.numero)
+      if (!id) return
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- o cartão do link só existe depois que os dados chegam.
+      setIdAberto(id)
+    }
+    linkResolvido.current = true
+  }, [hidratado, linkInicial, quadros, cartoesTodos, quadroAtivoId, quadroDaVez?.id, definirQuadroAtivo])
+
+  useEffect(() => {
+    if (!hidratado || !linkResolvido.current || !quadroDaVez) return
+    const url = new URL(window.location.href)
+    url.searchParams.set("quadro", quadroDaVez.id)
+    if (idAberto && numeroAberto) url.searchParams.set("cartao", String(numeroAberto))
+    else url.searchParams.delete("cartao")
+    if (url.href !== window.location.href) window.history.replaceState(window.history.state, "", url)
+  }, [hidratado, quadroDaVez, idAberto, numeroAberto])
 
   if (!hidratado) {
     return (
@@ -350,6 +391,7 @@ export function QuadroKanban() {
   const cartaoArrastado = cartoes.find((cartao) => cartao.id === idArrastado) ?? null
   const colunaArrastada = colunas.find((coluna) => coluna.id === colunaArrastadaId) ?? null
   const cartaoAberto = cartoes.find((cartao) => cartao.id === idAberto) ?? null
+
   // Rafael Marques - 23/10/2026: cartões de equipe atribuídos a mim neste quadro (em aberto), para o atalho do cabeçalho.
   const atribuidosAMim = cartoesDoQuadro.filter((cartao) => meuId !== null && cartao.responsavelId === meuId && !concluidaId(cartao.colunaId)).length
   const concluidos = cartoesDoQuadro.filter((cartao) => concluidaId(cartao.colunaId)).length
@@ -378,7 +420,7 @@ export function QuadroKanban() {
                   <Icone nome={quadro.icone} className="size-5" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-auto">
-                  <div className="grid grid-cols-8 gap-0.5">
+                  <div className="grid max-h-72 grid-cols-8 gap-0.5 overflow-y-auto">
                     {iconesNota.map((icone) => (
                       <DropdownMenuItem key={icone} aria-label={icone} className="justify-center" onClick={() => atualizarQuadro(quadro.id, { icone })}>
                         <Icone nome={icone} />

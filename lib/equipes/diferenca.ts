@@ -41,6 +41,7 @@ const chaveCartao = (cartao: CartaoKanban, ordem: number) =>
     cartao.recorrencia,
     cartao.bloqueadoPor,
     cartao.estimativa,
+    cartao.numero ?? null, // Rafael Marques - 29/10/2026
     ordem,
   ])
 
@@ -61,6 +62,7 @@ function paraGravar(cartao: CartaoKanban, ordem: number): CartaoGravar & { ordem
     recorrencia: cartao.recorrencia,
     bloqueadoPor: cartao.bloqueadoPor,
     estimativa: cartao.estimativa,
+    numero: cartao.numero,
     ordem,
   }
 }

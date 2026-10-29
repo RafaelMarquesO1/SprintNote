@@ -2,7 +2,8 @@
 // Menus de sugestão do editor: "/" (blocos), "[[" (notas e livros), "#" (tags já usadas) e "@" (prazos).
 
 import type { Editor, Range } from "@tiptap/core"
-import { CalendarIcon, CalendarSearchIcon, FilePlusIcon, HashIcon } from "lucide-react"
+import { CalendarIcon, CalendarSearchIcon, FilePlusIcon, HashIcon, KanbanIcon } from "lucide-react"
+import { buscarCartoesCitaveis } from "@/components/notas/editor/extensoes/citacao-cartao"
 
 import { Icone } from "@/components/icone"
 import { itensDeComando } from "@/components/notas/editor/comandos-barra"
@@ -23,18 +24,36 @@ export const SugestaoBarra = criarSugestao({
 export const SugestaoLinks = criarSugestao({
   nome: "links",
   char: "[[",
-  titulo: "Linkar nota ou livro",
+  titulo: "Linkar nota, livro ou cartão",
   allowSpaces: true,
   allowedPrefixes: null,
   itens: (consulta, editor) => {
     const { notas, livros, criarNota } = useNotas.getState()
     const { notaId, livroId } = ganchosDo(editor)
-    return sugerirLinks({ notas, livros }, consulta, { notaId, livroId }).map((sugestao) => ({
+    // Rafael Marques - 29/10/2026: cartões do Kanban também podem ser citados.
+    const cartoes = buscarCartoesCitaveis(consulta, consulta.trim() ? 5 : 3).map((cartao) => ({
+      chave: `cartao-${cartao.id}`,
+      rotulo: `#${cartao.numero} ${cartao.titulo}`,
+      descricao: `Cartão · ${cartao.local}`,
+      icone: <KanbanIcon className="size-4" />,
+      executar: (editorAtual: Editor, range: Range) => {
+        editorAtual
+          .chain()
+          .focus()
+          .deleteRange(range)
+          .insertContent([
+            { type: "text", text: `#${cartao.numero} ${cartao.titulo}`, marks: [{ type: "link", attrs: { href: cartao.href } }] },
+            { type: "text", text: " " },
+          ])
+          .run()
+      },
+    }))
+    const deNotas = sugerirLinks({ notas, livros }, consulta, { notaId, livroId }).map((sugestao) => ({
       chave: sugestao.chave,
       rotulo: sugestao.rotulo,
       descricao: sugestao.detalhe,
       icone: sugestao.criar ? <FilePlusIcon className="size-4" /> : <Icone nome={sugestao.icone} className="size-4" />,
-      executar: (editorAtual, range) => {
+      executar: (editorAtual: Editor, range: Range) => {
         // Escolheu "Criar nota": a nota nasce agora e o link já aponta para ela.
         if (sugestao.criar) criarNota(dadosNovaNota(sugestao.alvo, { notas, livros }, livroId))
         editorAtual
@@ -45,6 +64,7 @@ export const SugestaoLinks = criarSugestao({
           .run()
       },
     }))
+    return [...deNotas, ...cartoes]
   },
 })
 

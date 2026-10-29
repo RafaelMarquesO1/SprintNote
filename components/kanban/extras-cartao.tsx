@@ -5,9 +5,9 @@
 // Valem para quadros pessoais e de equipe.
 
 import { useRef, useState } from "react"
-import { ImageIcon, LinkIcon, LockIcon, PaperclipIcon, PlusIcon, XIcon } from "lucide-react"
+import { ImageIcon, LinkIcon, PaperclipIcon, XIcon } from "lucide-react"
 
-import { Propriedade, Secao } from "@/components/kanban/blocos-cartao"
+import { Secao } from "@/components/kanban/blocos-cartao"
 import { classeSelect } from "@/components/tarefas/dialogo-tarefa"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
@@ -24,7 +24,7 @@ const MAXIMO_ANEXOS = 6
 // para o servidor junto com o cartão.
 const LIMITE_IMAGEM_CARACTERES = 380_000
 
-type Atualizar = (mudancas: Partial<Pick<CartaoKanban, "anexos" | "recorrencia" | "bloqueadoPor" | "estimativa">>, atividade?: string) => void
+type Atualizar = (mudancas: Partial<Pick<CartaoKanban, "anexos" | "recorrencia" | "estimativa">>, atividade?: string) => void
 
 export function SecaoAnexos({ cartao, atualizar }: { cartao: CartaoKanban; atualizar: Atualizar }) {
   const entrada = useRef<HTMLInputElement>(null)
@@ -185,110 +185,68 @@ export function BarrasComplexidade({ nivel, className }: { nivel: number; classN
   )
 }
 
-export function PropriedadesExtras({ cartao, atualizar, cartoesDoQuadro, concluidas }: { cartao: CartaoKanban; atualizar: Atualizar; cartoesDoQuadro: CartaoKanban[]; concluidas: Set<string> }) {
-  const outros = cartoesDoQuadro.filter((item) => item.id !== cartao.id && !item.arquivado)
-  const bloqueadores = cartao.bloqueadoPor.map((id) => cartoesDoQuadro.find((item) => item.id === id)).filter((item): item is CartaoKanban => Boolean(item))
-  const disponiveis = outros.filter((item) => !cartao.bloqueadoPor.includes(item.id))
-  const rec = cartao.recorrencia
-
+// Rafael Marques - 29/10/2026: complexidade e repetição viraram peças separadas (o cartão as mostra em menus,
+// estilo Trello). A opção "Bloqueado por" foi retirada.
+export function SeletorComplexidade({ cartao, atualizar }: { cartao: CartaoKanban; atualizar: Atualizar }) {
   return (
-    <>
-      <Propriedade titulo="Complexidade">
-        <div className="grid grid-cols-3 gap-1" role="radiogroup" aria-label="Complexidade">
-          {complexidades.map((opcao) => {
-            const ativa = complexidadeDe(cartao.estimativa) === opcao.id
-            return (
-              <button
-                key={opcao.id}
-                type="button"
-                role="radio"
-                aria-checked={ativa}
-                title={ativa ? "Clique de novo para tirar" : undefined}
-                onClick={() => atualizar({ estimativa: ativa ? null : opcao.valor }, ativa ? "Complexidade removida" : `Complexidade ${opcao.rotulo.toLowerCase()}`)}
-                className={cn("flex h-8 items-center justify-center gap-1.5 rounded-md border text-xs", ativa ? "border-foreground bg-foreground text-background" : "hover:bg-muted")}
-              >
-                <BarrasComplexidade nivel={opcao.valor} /> {opcao.rotulo}
-              </button>
-            )
-          })}
-        </div>
-      </Propriedade>
-
-      <Propriedade titulo="Repetir">
-        <select
-          value={rec?.frequencia ?? ""}
-          onChange={(evento) => {
-            const frequencia = evento.target.value as FrequenciaRecorrencia | ""
-            atualizar({ recorrencia: frequencia ? { frequencia, intervalo: rec?.intervalo ?? 1 } : null }, frequencia ? "Repetição ativada" : "Repetição desativada")
-          }}
-          className={classeSelect}
-          aria-label="Repetir o cartão"
-        >
-          <option value="">Não repetir</option>
-          <option value="diaria">Todo dia</option>
-          <option value="semanal">Toda semana</option>
-          <option value="mensal">Todo mês</option>
-          <option value="anual">Todo ano</option>
-        </select>
-        {rec && (
-          <>
-            <label className="flex items-center gap-2 text-xs text-muted-foreground">
-              A cada
-              <Input
-                type="number"
-                min={1}
-                max={365}
-                value={rec.intervalo}
-                aria-label="Intervalo da repetição"
-                className="h-7 w-16"
-                onChange={(evento) => atualizar({ recorrencia: { ...rec, intervalo: Math.min(365, Math.max(1, Math.round(Number(evento.target.value)) || 1)) } })}
-              />
-              {rec.intervalo === 1 ? nomesFrequencia[rec.frequencia].um : nomesFrequencia[rec.frequencia].varios}
-            </label>
-            <p className="text-xs text-muted-foreground">{descreverRecorrencia(rec)}: ao concluir, o próximo cartão é criado sozinho.</p>
-          </>
-        )}
-      </Propriedade>
-
-      <Propriedade titulo="Bloqueado por">
-        {bloqueadores.length > 0 && (
-          <ul className="space-y-1">
-            {bloqueadores.map((item) => {
-              const pronto = concluidas.has(item.colunaId)
-              return (
-                <li key={item.id} className="flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs">
-                  <LockIcon className={cn("size-3 shrink-0", pronto ? "text-muted-foreground/50" : "text-foreground")} />
-                  <span className={cn("min-w-0 flex-1 truncate", pronto && "text-muted-foreground line-through")}>{item.titulo}</span>
-                  <button type="button" aria-label={`Remover bloqueio de ${item.titulo}`} onClick={() => atualizar({ bloqueadoPor: cartao.bloqueadoPor.filter((id) => id !== item.id) })} className="rounded p-0.5 text-muted-foreground hover:text-foreground">
-                    <XIcon className="size-3" />
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
-        )}
-        {disponiveis.length > 0 ? (
-          <select
-            value=""
-            onChange={(evento) => evento.target.value && atualizar({ bloqueadoPor: [...cartao.bloqueadoPor, evento.target.value] }, "Bloqueio adicionado")}
-            className={classeSelect}
-            aria-label="Adicionar um cartão que bloqueia este"
+    <div className="grid grid-cols-3 gap-1" role="radiogroup" aria-label="Complexidade">
+      {complexidades.map((opcao) => {
+        const ativa = complexidadeDe(cartao.estimativa) === opcao.id
+        return (
+          <button
+            key={opcao.id}
+            type="button"
+            role="radio"
+            aria-checked={ativa}
+            title={ativa ? "Clique de novo para tirar" : undefined}
+            onClick={() => atualizar({ estimativa: ativa ? null : opcao.valor }, ativa ? "Complexidade removida" : `Complexidade ${opcao.rotulo.toLowerCase()}`)}
+            className={cn("flex h-8 items-center justify-center gap-1.5 rounded-md border px-2 text-xs", ativa ? "border-foreground bg-foreground text-background" : "hover:bg-muted")}
           >
-            <option value="">+ Esperar outro cartão…</option>
-            {disponiveis.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.titulo}
-              </option>
-            ))}
-          </select>
-        ) : (
-          bloqueadores.length === 0 && (
-            <p className="flex items-center gap-1 text-xs text-muted-foreground">
-              <PlusIcon className="size-3" /> Crie outros cartões para ligar bloqueios.
-            </p>
-          )
-        )}
-      </Propriedade>
-    </>
+            <BarrasComplexidade nivel={opcao.valor} /> {opcao.rotulo}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+export function CampoRepetir({ cartao, atualizar }: { cartao: CartaoKanban; atualizar: Atualizar }) {
+  const rec = cartao.recorrencia
+  return (
+    <div className="space-y-2">
+      <select
+        value={rec?.frequencia ?? ""}
+        onChange={(evento) => {
+          const frequencia = evento.target.value as FrequenciaRecorrencia | ""
+          atualizar({ recorrencia: frequencia ? { frequencia, intervalo: rec?.intervalo ?? 1 } : null }, frequencia ? "Repetição ativada" : "Repetição desativada")
+        }}
+        className={classeSelect}
+        aria-label="Repetir o cartão"
+      >
+        <option value="">Não repetir</option>
+        <option value="diaria">Todo dia</option>
+        <option value="semanal">Toda semana</option>
+        <option value="mensal">Todo mês</option>
+        <option value="anual">Todo ano</option>
+      </select>
+      {rec && (
+        <>
+          <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            A cada
+            <Input
+              type="number"
+              min={1}
+              max={365}
+              value={rec.intervalo}
+              aria-label="Intervalo da repetição"
+              className="h-7 w-16"
+              onChange={(evento) => atualizar({ recorrencia: { ...rec, intervalo: Math.min(365, Math.max(1, Math.round(Number(evento.target.value)) || 1)) } })}
+            />
+            {rec.intervalo === 1 ? nomesFrequencia[rec.frequencia].um : nomesFrequencia[rec.frequencia].varios}
+          </label>
+          <p className="text-xs text-muted-foreground">{descreverRecorrencia(rec)}: ao concluir, o próximo cartão é criado sozinho.</p>
+        </>
+      )}
+    </div>
   )
 }

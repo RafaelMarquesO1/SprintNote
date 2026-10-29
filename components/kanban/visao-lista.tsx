@@ -5,7 +5,7 @@
 // troca de coluna direto na linha.
 
 import { useMemo, useState } from "react"
-import { ArrowDownIcon, ArrowUpIcon, CalendarIcon, FlagIcon, LockIcon, PaperclipIcon, RepeatIcon } from "lucide-react"
+import { ArrowDownIcon, ArrowUpIcon, CalendarIcon, FlagIcon, PaperclipIcon, RepeatIcon } from "lucide-react"
 
 import { estilosPrioridade } from "@/components/kanban/cartao-kanban"
 import { useHoje } from "@/hooks/use-hoje"
@@ -108,7 +108,7 @@ export function VisaoLista({
                   <td className="max-w-80 px-3 py-2">
                     <button type="button" onClick={() => aoAbrir(cartao)} className="flex w-full min-w-0 flex-col items-start gap-1 text-left">
                       <span className={cn("max-w-full truncate font-medium", concluido && "text-muted-foreground line-through")}>{cartao.titulo}</span>
-                      {(doCartao.length > 0 || cartao.anexos.length > 0 || cartao.recorrencia || cartao.bloqueadoPor.length > 0) && (
+                      {(doCartao.length > 0 || cartao.anexos.length > 0 || cartao.recorrencia) && (
                         <span className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
                           {doCartao.map((etiqueta) => (
                             <span key={etiqueta.id} className="rounded px-1.5 py-0.5 text-[11px] leading-none font-medium" style={{ background: `color-mix(in oklch, ${etiqueta.cor} 22%, transparent)`, color: etiqueta.cor }}>
@@ -119,7 +119,6 @@ export function VisaoLista({
                             <span className="flex items-center gap-0.5"><PaperclipIcon className="size-3" /> {cartao.anexos.length}</span>
                           )}
                           {cartao.recorrencia && <RepeatIcon className="size-3" aria-label="Se repete" />}
-                          {cartao.bloqueadoPor.length > 0 && <LockIcon className="size-3" aria-label="Tem bloqueios" />}
                         </span>
                       )}
                     </button>

@@ -388,6 +388,8 @@ function converterCartao(
     recorrencia: (linha.recorrencia as CartaoKanban["recorrencia"]) ?? null,
     bloqueadoPor: (linha.bloqueado_por as string[]) ?? [],
     estimativa: linha.estimativa === null || linha.estimativa === undefined ? null : Number(linha.estimativa),
+    // Rafael Marques - 29/10/2026: número do cartão no quadro (db/004-numero-cartao.sql).
+    ...(typeof linha.numero === "number" && linha.numero > 0 ? { numero: linha.numero } : {}),
   }
 }
 
@@ -407,7 +409,7 @@ export async function baixarQuadro(
     sql`SELECT id, nome, cor FROM etiquetas_equipe WHERE quadro_id = ${quadroId} ORDER BY ordem, id`,
     sql`SELECT * FROM cartoes_equipe WHERE quadro_id = ${quadroId} ORDER BY ordem, criado_em, id`,
     sql`SELECT id, cartao_id, autor_id, autor_nome, texto, criado_em FROM comentarios_cartao WHERE quadro_id = ${quadroId} ORDER BY criado_em, id`,
-    sql`SELECT id, cartao_id, texto, criado_em FROM atividade_cartao WHERE quadro_id = ${quadroId} ORDER BY criado_em, id`,
+    sql`SELECT id, cartao_id, autor_id, autor_nome, texto, criado_em FROM atividade_cartao WHERE quadro_id = ${quadroId} ORDER BY criado_em, id`,
   ])
 
   const porCartao = <T,>(linhas: Record<string, unknown>[], converter: (linha: Record<string, unknown>) => T) => {
@@ -429,6 +431,8 @@ export async function baixarQuadro(
     id: String(linha.id),
     texto: String(linha.texto),
     criadoEm: new Date(linha.criado_em as string).getTime(),
+    // Rafael Marques - 29/10/2026: quem fez (o servidor grava pela sessão; "Ex-membro" se anonimizado).
+    ...(linha.autor_nome ? { autorId: linha.autor_id ? String(linha.autor_id) : undefined, autorNome: String(linha.autor_nome) } : {}),
   }))
 
   return {
@@ -620,25 +624,29 @@ export async function aplicarOperacoes(quadroId: string, usuario: Usuario, bruto
       recorrencia: limparRecorrencia(c.recorrencia),
       bloqueado_por: lista(c.bloqueadoPor, 50).filter((valor): valor is string => typeof valor === "string" && formatoId.test(valor)),
       estimativa: typeof c.estimativa === "number" && Number.isFinite(c.estimativa) && c.estimativa >= 0 && c.estimativa < 1000 ? c.estimativa : null,
+      // Rafael Marques - 29/10/2026
+      numero: typeof c.numero === "number" && Number.isInteger(c.numero) && c.numero > 0 && c.numero < 1000000 ? c.numero : null,
     }
   })
   if (cartoesGravar.length > 0) {
     consultas.push(sql`
       INSERT INTO cartoes_equipe
         (quadro_id, id, coluna_id, titulo, descricao, ordem, etiquetas, prazo, cor, prioridade, arquivado, checklist, responsavel_id, criado_por,
-         anexos, recorrencia, bloqueado_por, estimativa)
+         anexos, recorrencia, bloqueado_por, estimativa, numero)
       SELECT ${quadroId}, c.id, c.coluna_id, c.titulo, c.descricao, c.ordem, c.etiquetas, c.prazo, c.cor, c.prioridade,
              c.arquivado, c.checklist, c.responsavel_id, ${usuario.id}::uuid,
-             COALESCE(c.anexos, '[]'::jsonb), c.recorrencia, COALESCE(c.bloqueado_por, '[]'::jsonb), c.estimativa
+             COALESCE(c.anexos, '[]'::jsonb), c.recorrencia, COALESCE(c.bloqueado_por, '[]'::jsonb), c.estimativa, c.numero
       FROM jsonb_to_recordset(${JSON.stringify(cartoesGravar)}::jsonb)
         AS c(id text, coluna_id text, titulo text, descricao text, ordem double precision, etiquetas jsonb, prazo text, cor text,
              prioridade text, arquivado boolean, checklist jsonb, responsavel_id uuid,
-             anexos jsonb, recorrencia jsonb, bloqueado_por jsonb, estimativa double precision)
+             anexos jsonb, recorrencia jsonb, bloqueado_por jsonb, estimativa double precision, numero integer)
       ON CONFLICT (quadro_id, id) DO UPDATE SET
         coluna_id = EXCLUDED.coluna_id, titulo = EXCLUDED.titulo, descricao = EXCLUDED.descricao, ordem = EXCLUDED.ordem,
         etiquetas = EXCLUDED.etiquetas, prazo = EXCLUDED.prazo, cor = EXCLUDED.cor, prioridade = EXCLUDED.prioridade,
         arquivado = EXCLUDED.arquivado, checklist = EXCLUDED.checklist, responsavel_id = EXCLUDED.responsavel_id,
         anexos = EXCLUDED.anexos, recorrencia = EXCLUDED.recorrencia, bloqueado_por = EXCLUDED.bloqueado_por, estimativa = EXCLUDED.estimativa,
+        -- O número, uma vez dado, não muda.
+        numero = COALESCE(cartoes_equipe.numero, EXCLUDED.numero),
         atualizado_em = now()
     `)
   }

@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { DndContext, DragOverlay, KeyboardSensor, PointerSensor, TouchSensor, useDraggable, useDroppable, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core"
 import { useShallow } from "zustand/react/shallow"
-import { ChevronRightIcon, FilePlusIcon, FolderInputIcon, MoreHorizontalIcon, PencilIcon, Trash2Icon, WorkflowIcon } from "lucide-react"
+import { ChevronRightIcon, FilePlusIcon, FolderIcon, FolderInputIcon, FolderOpenIcon, MoreHorizontalIcon, PencilIcon, Trash2Icon, WorkflowIcon } from "lucide-react"
 
 import { Icone } from "@/components/icone"
 import { DialogoExcluirLivro } from "@/components/livros/dialogo-excluir-livro"
@@ -375,8 +375,14 @@ function LinhaNota({
         {renomeando ? (
           <CampoNome valor={nota.titulo} aoConfirmar={aoConfirmarNome} />
         ) : (
-          <button type="button" onClick={aoAbrir} onDoubleClick={aoRenomear} className="flex min-w-0 flex-1 items-center gap-2 py-1 text-left">
-            <Icone nome={nota.icone} className="text-muted-foreground" />
+          // Rafael Marques - 29/10/2026: nota com notas dentro aparece como seção. Mostra o ícone escolhido;
+          // a pasta só entra no lugar do ícone padrão ("arquivo").
+          <button type="button" onClick={aoAbrir} onDoubleClick={aoRenomear} className={cn("flex min-w-0 flex-1 items-center gap-2 py-1 text-left", temFilhas && "font-medium")}>
+            {temFilhas && (!nota.icone || nota.icone === "arquivo") ? (
+              aberta ? <FolderOpenIcon className="size-4 shrink-0 text-muted-foreground" /> : <FolderIcon className="size-4 shrink-0 text-muted-foreground" />
+            ) : (
+              <Icone nome={nota.icone} className="text-muted-foreground" />
+            )}
             <span className="truncate">{nota.titulo}</span>
           </button>
         )}
@@ -387,7 +393,7 @@ function LinhaNota({
           <DropdownMenuContent align="start" className="w-48">
             {nota.tipo !== "quadro" && (
               <DropdownMenuItem onClick={() => aoNova(false)}>
-                <FilePlusIcon /> Nova subnota
+                <FilePlusIcon /> {temFilhas ? "Nova nota na seção" : "Nova nota dentro (vira seção)"}
               </DropdownMenuItem>
             )}
             <DropdownMenuItem onClick={aoRenomear}>

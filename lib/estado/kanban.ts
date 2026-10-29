@@ -9,6 +9,7 @@ import { oferecerDesfazer } from "@/lib/estado/desfazer-kanban"
 import { chaveHoje } from "@/lib/datas"
 import { gerarId } from "@/lib/gerar-id"
 import { montarQuadroDoModelo, type ModeloKanban } from "@/lib/kanban/modelos"
+import { numerarCartoes } from "@/lib/kanban/numeracao"
 import { prazoDaProxima } from "@/lib/kanban/recorrencia"
 import { lerQuadroImportado } from "@/lib/kanban/transferir"
 import type {
@@ -18,6 +19,7 @@ import type {
   EtiquetaKanban,
   ExibicaoCartao,
   IdColuna,
+  ModeloCartao,
   Prioridade,
   QuadroKanban,
 } from "@/lib/tipos"
@@ -48,6 +50,8 @@ type EstadoKanban = {
   colunas: ColunaKanban[]
   cartoes: CartaoKanban[]
   quadroAtivoId: string | null
+  // Rafael Marques - 29/10/2026: modelos de cartão.
+  modelosCartao: ModeloCartao[]
 
   // Quadros
   criarQuadro: (titulo?: string) => QuadroKanban
@@ -70,7 +74,8 @@ type EstadoKanban = {
   excluirEtiqueta: (quadroId: string, id: string) => void
 
   // Cartões
-  adicionarCartao: (colunaId: IdColuna, titulo: string) => void
+  // Rafael Marques - 29/10/2026: aceita um prazo (criar pelo calendário) e devolve o id.
+  adicionarCartao: (colunaId: IdColuna, titulo: string, prazo?: string | null) => string | null
   // "atividade" (opcional): linha extra para o histórico do cartão (ex.: quem ficou responsável).
   atualizarCartao: (id: string, mudancas: MudancasCartao, atividade?: string) => void
   duplicarCartao: (id: string) => void
@@ -84,6 +89,12 @@ type EstadoKanban = {
   // Move o cartão para a coluna, antes do cartão "antesDeId" (ou no fim).
   moverCartao: (id: string, colunaId: IdColuna, antesDeId?: string | null) => void
   desvincularNotas: (notaIds: string[]) => void
+
+  // Rafael Marques - 29/10/2026: modelos de cartão.
+  salvarModeloCartao: (cartaoId: string, nome: string) => void
+  excluirModeloCartao: (id: string) => void
+  // Cria o cartão no fim da coluna e devolve o id dele.
+  criarCartaoDeModelo: (modeloId: string, colunaId: IdColuna) => string | null
 
   // Rafael Marques - 26/10/2026: modelos e importação de quadros.
   criarQuadroDeModelo: (modelo: ModeloKanban, comExemplos: boolean) => QuadroKanban
@@ -136,8 +147,14 @@ const LIMITE_ATIVIDADE = 50
 const rotulosPrioridade: Record<Prioridade, string> = { alta: "alta", media: "média", baixa: "baixa" }
 
 // Acrescenta uma linha ao histórico do cartão (guarda só as mais recentes).
+// Rafael Marques - 29/10/2026: quem está usando o app assina cada linha do histórico.
+let autorAtividade: { id: string; nome: string } | null = null
+export function definirAutorAtividade(autor: { id: string; nome: string } | null) {
+  autorAtividade = autor
+}
+
 function comAtividade(cartao: CartaoKanban, texto: string): CartaoKanban {
-  const item: AtividadeCartao = { id: gerarId(), texto, criadoEm: Date.now() }
+  const item: AtividadeCartao = { id: gerarId(), texto, criadoEm: Date.now(), ...(autorAtividade && { autorId: autorAtividade.id, autorNome: autorAtividade.nome }) }
   return { ...cartao, atividade: [...cartao.atividade, item].slice(-LIMITE_ATIVIDADE) }
 }
 
@@ -170,6 +187,7 @@ export const useKanban = create<EstadoKanban>()(
       colunas: colunasPadrao(quadroInicial.id, ["a-fazer", "fazendo", "concluido"]),
       cartoes: [],
       quadroAtivoId: quadroInicial.id,
+      modelosCartao: [],
 
       // ---------- Quadros ----------
       criarQuadro: (titulo = "Novo quadro") => {
@@ -274,9 +292,11 @@ export const useKanban = create<EstadoKanban>()(
         }),
 
       // ---------- Cartões ----------
-      adicionarCartao: (colunaId, titulo) => {
-        if (!titulo.trim()) return
-        set({ cartoes: [...get().cartoes, completarCartao({ id: gerarId(), titulo: titulo.trim(), colunaId })] })
+      adicionarCartao: (colunaId, titulo, prazo = null) => {
+        if (!titulo.trim()) return null
+        const id = gerarId()
+        set({ cartoes: [...get().cartoes, completarCartao({ id, titulo: titulo.trim(), colunaId, prazo })] })
+        return id
       },
 
       atualizarCartao: (id, mudancas, atividade) =>
@@ -309,6 +329,7 @@ export const useKanban = create<EstadoKanban>()(
           bloqueadoPor: [],
           comentarios: [],
           atividade: [],
+          numero: undefined, // Rafael Marques - 29/10/2026: ganha o próximo número
         }
         const cartoes = [...get().cartoes]
         cartoes.splice(indice + 1, 0, copia)
@@ -376,7 +397,10 @@ export const useKanban = create<EstadoKanban>()(
         const cartao = get().cartoes.find((item) => item.id === id)
         if (!cartao || id === antesDeId) return
         const restantes = get().cartoes.filter((item) => item.id !== id)
-        let movido = { ...cartao, colunaId }
+        let movido: CartaoKanban = { ...cartao, colunaId }
+        // Rafael Marques - 29/10/2026: mudou de quadro, ganha o próximo número do quadro novo.
+        const quadroDe = (alvo: string) => get().colunas.find((coluna) => coluna.id === alvo)?.quadroId
+        if (quadroDe(cartao.colunaId) !== quadroDe(colunaId)) movido.numero = undefined
         if (cartao.colunaId !== colunaId) {
           const nome = (alvo: string) => get().colunas.find((coluna) => coluna.id === alvo)?.titulo ?? "outra coluna"
           movido = comAtividade(movido, `Movido de ${nome(cartao.colunaId)} para ${nome(colunaId)}`)
@@ -405,6 +429,7 @@ export const useKanban = create<EstadoKanban>()(
                 comentarios: [],
                 atividade: [],
                 arquivado: false,
+                numero: undefined,
               },
               "Criado pela repetição do cartão anterior"
             )
@@ -436,6 +461,51 @@ export const useKanban = create<EstadoKanban>()(
       },
 
       // Quando notas são excluídas, os cartões perdem o vínculo.
+      // Rafael Marques - 29/10/2026: modelos de cartão.
+      salvarModeloCartao: (cartaoId, nome) => {
+        const { cartoes, colunas, quadros } = get()
+        const cartao = cartoes.find((item) => item.id === cartaoId)
+        if (!cartao || !nome.trim()) return
+        const quadro = quadros.find((item) => item.id === colunas.find((coluna) => coluna.id === cartao.colunaId)?.quadroId)
+        const modelo: ModeloCartao = {
+          id: gerarId(),
+          nome: nome.trim().slice(0, 80),
+          titulo: cartao.titulo,
+          descricao: cartao.descricao,
+          checklist: cartao.checklist.map((item) => item.texto),
+          prioridade: cartao.prioridade,
+          estimativa: cartao.estimativa,
+          cor: cartao.cor,
+          etiquetas: (quadro?.etiquetas ?? []).filter((etiqueta) => cartao.etiquetas.includes(etiqueta.id)).map((etiqueta) => etiqueta.nome),
+          criadoEm: Date.now(),
+        }
+        set({ modelosCartao: [...get().modelosCartao, modelo].slice(-50) })
+      },
+
+      excluirModeloCartao: (id) => set({ modelosCartao: get().modelosCartao.filter((modelo) => modelo.id !== id) }),
+
+      criarCartaoDeModelo: (modeloId, colunaId) => {
+        const { modelosCartao, colunas, quadros } = get()
+        const modelo = modelosCartao.find((item) => item.id === modeloId)
+        if (!modelo) return null
+        const quadro = quadros.find((item) => item.id === colunas.find((coluna) => coluna.id === colunaId)?.quadroId)
+        const nomes = new Set(modelo.etiquetas.map((nome) => nome.toLowerCase()))
+        const id = gerarId()
+        const cartao = completarCartao({
+          id,
+          titulo: modelo.titulo,
+          colunaId,
+          descricao: modelo.descricao,
+          checklist: modelo.checklist.map((texto) => ({ id: gerarId(), texto, feito: false })),
+          prioridade: modelo.prioridade,
+          estimativa: modelo.estimativa,
+          cor: modelo.cor,
+          etiquetas: (quadro?.etiquetas ?? []).filter((etiqueta) => nomes.has(etiqueta.nome.toLowerCase())).map((etiqueta) => etiqueta.id),
+        })
+        set({ cartoes: [...get().cartoes, comAtividade(cartao, `Criado a partir do modelo “${modelo.nome}”`)] })
+        return id
+      },
+
       desvincularNotas: (notaIds) =>
         set({
           cartoes: get().cartoes.map((cartao) =>
@@ -453,6 +523,7 @@ export const useKanban = create<EstadoKanban>()(
         return {
           ...atual,
           ...dados,
+          modelosCartao: Array.isArray(dados.modelosCartao) ? dados.modelosCartao : [],
           cartoes: (dados.cartoes ?? atual.cartoes).map((cartao) => completarCartao(cartao as Partial<CartaoKanban> & Pick<CartaoKanban, "id" | "titulo" | "colunaId">)),
         }
       },
@@ -520,4 +591,59 @@ export function cartoesRelevantes(cartoes: CartaoKanban[], colunas: ColunaKanban
     if (!colunasDeEquipe.has(cartao.colunaId)) return true
     return meuId !== null && cartao.responsavelId === meuId
   })
+}
+
+// Rafael Marques - 29/10/2026: todo cartão novo de quadro pessoal ganha o próximo número do quadro,
+// venha de onde vier (botão, cópia, modelo, repetição, importação).
+function numerarPendentes(estado: { quadros: QuadroKanban[]; colunas: ColunaKanban[]; cartoes: CartaoKanban[] }) {
+  if (!estado.cartoes.some((cartao) => !cartao.numero)) return null
+  const quadroDaColuna = new Map(estado.colunas.map((coluna) => [coluna.id, coluna.quadroId]))
+  // Rafael Marques - 29/10/2026: os de equipe também (o servidor guarda o número desde a db/004).
+  const pessoais = new Set(estado.quadros.map((quadro) => quadro.id))
+  const porQuadro = new Map<string, CartaoKanban[]>()
+  for (const cartao of estado.cartoes) {
+    const quadroId = quadroDaColuna.get(cartao.colunaId)
+    if (!quadroId || !pessoais.has(quadroId)) continue
+    porQuadro.set(quadroId, [...(porQuadro.get(quadroId) ?? []), cartao])
+  }
+  const novos = new Map<string, number>()
+  for (const cartoes of porQuadro.values()) {
+    if (!cartoes.some((cartao) => !cartao.numero)) continue
+    for (const [id, numero] of numerarCartoes(cartoes)) novos.set(id, numero)
+  }
+  if (!estado.cartoes.some((cartao) => !cartao.numero && novos.has(cartao.id))) return null
+  return estado.cartoes.map((cartao) => (!cartao.numero && novos.has(cartao.id) ? { ...cartao, numero: novos.get(cartao.id) } : cartao))
+}
+
+if (typeof window !== "undefined") {
+  const aplicar = () => {
+    const cartoes = numerarPendentes(useKanban.getState())
+    if (cartoes) useKanban.setState({ cartoes })
+  }
+  useKanban.subscribe(aplicar)
+  useKanban.persist.onFinishHydration(aplicar)
+  aplicar()
+}
+
+// Rafael Marques - 29/10/2026: número do cartão no quadro (#12) e o caminho inverso, para a URL.
+function cartoesDoMesmoQuadro(estado: { colunas: ColunaKanban[]; cartoes: CartaoKanban[] }, quadroId: string | undefined) {
+  const ids = new Set(estado.colunas.filter((coluna) => coluna.quadroId === quadroId).map((coluna) => coluna.id))
+  return estado.cartoes.filter((cartao) => ids.has(cartao.colunaId))
+}
+
+export function numeroDoCartao(estado: { colunas: ColunaKanban[]; cartoes: CartaoKanban[] }, cartaoId: string): number | null {
+  const cartao = estado.cartoes.find((item) => item.id === cartaoId)
+  if (!cartao) return null
+  if (cartao.numero) return cartao.numero
+  const quadroId = estado.colunas.find((coluna) => coluna.id === cartao.colunaId)?.quadroId
+  return numerarCartoes(cartoesDoMesmoQuadro(estado, quadroId)).get(cartaoId) ?? null
+}
+
+export function cartaoPeloNumero(estado: { colunas: ColunaKanban[]; cartoes: CartaoKanban[] }, quadroId: string, numero: number): string | null {
+  for (const [id, n] of numerarCartoes(cartoesDoMesmoQuadro(estado, quadroId))) if (n === numero) return id
+  return null
+}
+
+export function useNumeroDoCartao(cartaoId: string) {
+  return useKanban((estado) => numeroDoCartao(estado, cartaoId))
 }

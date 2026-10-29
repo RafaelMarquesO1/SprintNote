@@ -10,6 +10,7 @@ import {
   ChevronsLeftRightIcon,
   GaugeIcon,
   GripVerticalIcon,
+  LayoutTemplateIcon,
   MoreHorizontalIcon,
   PaletteIcon,
   PencilIcon,
@@ -24,7 +25,9 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
@@ -45,14 +48,49 @@ const limites = [3, 5, 8, 10, 15]
 
 function NovoCartao({ colunaId }: { colunaId: string }) {
   const adicionarCartao = useKanban((estado) => estado.adicionarCartao)
+  const modelos = useKanban((estado) => estado.modelosCartao)
+  const criarCartaoDeModelo = useKanban((estado) => estado.criarCartaoDeModelo)
+  const excluirModeloCartao = useKanban((estado) => estado.excluirModeloCartao)
   const [aberto, setAberto] = useState(false)
   const [titulo, setTitulo] = useState("")
 
   if (!aberto) {
     return (
-      <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" onClick={() => setAberto(true)}>
-        <PlusIcon /> Adicionar cartão
-      </Button>
+      <div className="flex items-center gap-1">
+        <Button variant="ghost" size="sm" className="flex-1 justify-start text-muted-foreground" onClick={() => setAberto(true)}>
+          <PlusIcon /> Adicionar cartão
+        </Button>
+        {/* Rafael Marques - 29/10/2026: criar a partir de um modelo de cartão. */}
+        <DropdownMenu>
+          <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label="Criar a partir de um modelo" title="Criar a partir de um modelo" />}>
+            <LayoutTemplateIcon />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-60">
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Modelos de cartão</DropdownMenuLabel>
+              {modelos.length === 0 && (
+                <p className="px-2 pb-2 text-xs text-muted-foreground">Nenhum modelo ainda. Abra um cartão e use “Salvar como modelo”.</p>
+              )}
+              {modelos.map((modelo) => (
+                <DropdownMenuItem key={modelo.id} className="group/modelo" onClick={() => criarCartaoDeModelo(modelo.id, colunaId)}>
+                  <LayoutTemplateIcon /> <span className="min-w-0 flex-1 truncate">{modelo.nome}</span>
+                  <button
+                    type="button"
+                    aria-label={`Excluir o modelo ${modelo.nome}`}
+                    onClick={(evento) => {
+                      evento.stopPropagation()
+                      excluirModeloCartao(modelo.id)
+                    }}
+                    className="rounded p-0.5 text-muted-foreground opacity-0 group-hover/modelo:opacity-100 hover:text-destructive"
+                  >
+                    <Trash2Icon className="size-3.5" />
+                  </button>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     )
   }
 

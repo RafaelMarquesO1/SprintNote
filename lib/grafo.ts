@@ -17,6 +17,8 @@ export type NoGrafo = {
   livroId: string | null
   icone: string
   grau: number
+  // Rafael Marques - 29/10/2026: nota com notas dentro (seção).
+  secao?: boolean
 }
 
 export type ArestaGrafo = {
@@ -63,7 +65,8 @@ export function montarGrafo(biblioteca: Biblioteca, opcoes: OpcoesGrafo) {
 
   for (const nota of biblioteca.notas) {
     if (!visivel(nota.livroId)) continue
-    nos.set(idNota(nota.id), { id: idNota(nota.id), tipo: "nota", titulo: nota.titulo, livroId: nota.livroId, icone: nota.icone, grau: 0 })
+    const secao = biblioteca.notas.some((item) => item.paiId === nota.id)
+    nos.set(idNota(nota.id), { id: idNota(nota.id), tipo: "nota", titulo: nota.titulo, livroId: nota.livroId, icone: nota.icone, grau: 0, secao })
   }
 
   for (const nota of biblioteca.notas) {
