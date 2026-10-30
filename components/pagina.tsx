@@ -1,3 +1,5 @@
+import Link from "next/link"
+
 import { cn } from "@/lib/utils"
 
 
@@ -66,25 +68,36 @@ export const classeTituloEditavel =
 
 // Resumo em uma linha (sem cartões): cada item é uma etiqueta leve com o
 // número em destaque. "alerta" pinta de vermelho (ex.: tarefas atrasadas).
-type ItemResumo = { valor: React.ReactNode; texto: string; alerta?: boolean }
+// Rafael Marques - 30/10/2026: "href" (opcional) faz o item levar à tela correspondente (resumo do Início).
+type ItemResumo = { valor: React.ReactNode; texto: string; alerta?: boolean; href?: string }
 
 export function ResumoLinha({ itens }: { itens: (false | null | undefined | ItemResumo)[] }) {
   const visiveis = itens.filter((item): item is ItemResumo => Boolean(item))
   if (visiveis.length === 0) return null
   return (
     <div className="flex flex-wrap items-center gap-1.5 pt-1.5">
-      {visiveis.map((item) => (
-        <span
-          key={item.texto}
-          className={cn(
-            "inline-flex items-baseline gap-1 rounded-md px-2 py-0.5 text-xs ring-1 ring-inset",
-            item.alerta ? "bg-destructive/10 text-destructive ring-destructive/20" : "bg-muted/60 text-muted-foreground ring-border"
-          )}
-        >
-          <strong className={cn("text-sm font-semibold tabular-nums", !item.alerta && "text-foreground")}>{item.valor}</strong>
-          {item.texto}
-        </span>
-      ))}
+      {visiveis.map((item) => {
+        const classe = cn(
+          "inline-flex items-baseline gap-1 rounded-md px-2 py-0.5 text-xs ring-1 ring-inset",
+          item.alerta ? "bg-destructive/10 text-destructive ring-destructive/20" : "bg-muted/60 text-muted-foreground ring-border",
+          item.href && (item.alerta ? "hover:bg-destructive/15" : "hover:bg-muted hover:text-foreground")
+        )
+        const conteudo = (
+          <>
+            <strong className={cn("text-sm font-semibold tabular-nums", !item.alerta && "text-foreground")}>{item.valor}</strong>
+            {item.texto}
+          </>
+        )
+        return item.href ? (
+          <Link key={item.texto} href={item.href} className={classe}>
+            {conteudo}
+          </Link>
+        ) : (
+          <span key={item.texto} className={classe}>
+            {conteudo}
+          </span>
+        )
+      })}
     </div>
   )
 }

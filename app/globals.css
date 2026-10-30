@@ -203,6 +203,18 @@
     pointer-events: none;
     color: var(--muted-foreground);
   }
+  /* Rafael Marques - 30/10/2026: linha da tela de apresentação que liga a citação ao cartão (a única animação). */
+  .linha-vitrine {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: desenhar-linha-vitrine 900ms 400ms ease-out forwards;
+  }
+  @keyframes desenhar-linha-vitrine {
+    to { stroke-dashoffset: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .linha-vitrine { animation: none; stroke-dashoffset: 0; }
+  }
   /* Rafael Marques - 29/10/2026: citação de cartão do Kanban ("#12 Título") como etiqueta. */
   .citacao-cartao,
   .editor-notas a[href^="/kanban?"] {

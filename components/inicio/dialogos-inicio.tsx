@@ -144,7 +144,7 @@ export function GaleriaWidgets({ aberto, aoFechar, colunas }: { aberto: boolean;
 
 // ---------- Configurar widget ----------
 
-const comLimite: TipoWidget[] = ["tarefas-hoje", "tarefas-proximas", "rotina-proximas", "kanban-prazos", "notas-recentes", "livros", "tags"]
+const comLimite: TipoWidget[] = ["tarefas-hoje", "tarefas-proximas", "rotina-proximas", "kanban-prazos", "meus-cartoes", "notas-recentes", "livros", "tags"]
 const estilos: { valor: NonNullable<Widget["estilo"]>; rotulo: string }[] = [
   { valor: "padrao", rotulo: "Padrão" },
   { valor: "suave", rotulo: "Suave" },

@@ -33,15 +33,33 @@ export const ordemTipos: TipoNovidade[] = ["novo", "melhorado", "corrigido"]
 
 // Mais recente primeiro.
 export const NOVIDADES: Novidade[] = [
+  // Rafael Marques - 30/10/2026: versão 1.3b (Início, apresentação e sincronização entre aparelhos).
+  {
+    id: "2026-10-30",
+    versao: "1.3b",
+    data: "30/10/2026",
+    titulo: "Início mais útil e nada se perde entre aparelhos",
+    resumo: "O Início resume o seu dia e deixa anotar algo na hora, e usar o SprintNote em mais de um aparelho ao mesmo tempo não apaga mais o que foi salvo no outro.",
+    itens: [
+      { tipo: "novo", titulo: "Resumo do dia", texto: "Debaixo da saudação: tarefas de hoje, atrasadas, cartões, hábitos e rotina. Cada número leva à tela dele." },
+      { tipo: "novo", titulo: "Captura rápida", texto: "Um campo no topo para criar na hora uma tarefa para hoje ou uma nota." },
+      { tipo: "novo", titulo: "Meus cartões", texto: "Widget com os seus cartões em aberto de todos os quadros, inclusive os atribuídos a você nas equipes." },
+      { tipo: "melhorado", titulo: "Tela de apresentação", texto: "A primeira tela, antes de entrar, foi refeita: cada funcionalidade tem a sua seção, com uma ilustração que dá para experimentar." },
+      { tipo: "melhorado", titulo: "Modo Personalizar", texto: "No botão “Personalizar”, cada widget ganha uma barra para mover, escolher a largura e configurar, e uma alça de altura no canto. Ao mover, o destino mostra “Soltar aqui”. No dia a dia o Início fica limpo." },
+      { tipo: "melhorado", titulo: "Sempre atualizado", texto: "Ao voltar para a aba, o app busca o que você mudou em outro aparelho." },
+      { tipo: "corrigido", titulo: "Mudanças em dois aparelhos", texto: "Se outro aparelho salvou antes, o app junta as duas versões em vez de trocar uma pela outra." },
+      { tipo: "corrigido", titulo: "Aba fechada no meio do envio", texto: "O que não chegou a ser salvo é juntado na próxima vez que você abrir o app." },
+    ],
+  },
   // Rafael Marques - 29/10/2026
   {
     id: "2026-10-29-c",
     versao: "1.3a",
     data: "29/10/2026",
     titulo: "Cartão sabe onde foi citado",
-    resumo: "Agora o cartão mostra as notas e seções que o citam, e os créditos listam as tecnologias de verdade.",
+    resumo: "O cartão mostra onde você o citou nas suas notas, e os créditos listam as tecnologias de verdade.",
     itens: [
-      { tipo: "novo", titulo: "Citado em", texto: "O cartão lista as notas que o citam, separando quando a citação está numa seção (vale para ela inteira) ou numa nota individual." },
+      { tipo: "novo", titulo: "Notas em que o cartão foi citado", texto: "O cartão mostra em quais das suas notas ele foi citado, separando seção de nota individual. A equipe não vê as suas notas." },
       { tipo: "melhorado", titulo: "Créditos", texto: "A página de créditos traz todas as tecnologias usadas, organizadas por área." },
     ],
   },

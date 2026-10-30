@@ -14,6 +14,7 @@ import {
   NetworkIcon,
   PinIcon,
   RepeatIcon,
+  SquareUserIcon,
   StickyNoteIcon,
   TimerIcon,
   ZapIcon,
@@ -140,6 +141,16 @@ export const catalogoWidgets: Record<TipoWidget, InfoWidget> = {
     largura: 2,
     href: "/kanban",
     config: { limite: 6, quadroId: null },
+  },
+  // Rafael Marques - 30/10/2026
+  "meus-cartoes": {
+    nome: "Meus cartões",
+    descricao: "Seus cartões em aberto de todos os quadros, incluindo os atribuídos a você nas equipes.",
+    icone: SquareUserIcon,
+    categoria: "Kanban",
+    largura: 2,
+    href: "/kanban",
+    config: { limite: 6 },
   },
   "notas-recentes": {
     nome: "Notas recentes",

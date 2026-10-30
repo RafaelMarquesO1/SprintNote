@@ -58,7 +58,8 @@ export function PortaoConta({ children, depoisDeEntrar }: { children: React.Reac
         const resposta = await fetch("/api/conta", { cache: "no-store" })
         if (!resposta.ok) throw new Error()
         const { usuario: atual } = (await resposta.json()) as { usuario: Usuario | null }
-        if (atual) await carregarDadosDaConta()
+        // Rafael Marques - 30/10/2026: o id separa o que ficou pendente de cada conta.
+        if (atual) await carregarDadosDaConta(atual.id)
         await minimo
         if (!ativo) return
         setUsuario(atual)
@@ -90,7 +91,7 @@ export function PortaoConta({ children, depoisDeEntrar }: { children: React.Reac
     setUsuario(novo)
     setFase("carregando")
     try {
-      await carregarDadosDaConta()
+      await carregarDadosDaConta(novo.id)
       setFase("pronto")
     } catch {
       setErro("Não foi possível carregar seus dados.")

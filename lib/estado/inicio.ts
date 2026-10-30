@@ -20,6 +20,8 @@ export type TipoWidget =
   | "rotina-dia"
   | "kanban-andamento"
   | "kanban-prazos"
+  // Rafael Marques - 30/10/2026
+  | "meus-cartoes"
   | "notas-recentes"
   | "nota-fixada"
   | "livros"

@@ -11,7 +11,7 @@ const grupos = [
   {
     titulo: "Base",
     itens: [
-      { nome: "Next.js 16", uso: "framework (App Router, rotas de API e Server Actions)" },
+      { nome: "Next.js 16", uso: "framework (App Router, Cache Components, rotas de API e Server Actions)" },
       { nome: "React 19", uso: "interface" },
       { nome: "TypeScript", uso: "linguagem do projeto" },
       { nome: "Tailwind CSS 4", uso: "estilos, com tw-animate-css nas animações" },

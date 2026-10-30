@@ -27,6 +27,7 @@ import {
   RepeatIcon,
   SearchIcon,
   SquareStackIcon,
+  UsersIcon,
   type LucideIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -43,7 +44,7 @@ import { diaDaSemana, formatarDataRelativa, lerChave, nomesDias, somarDias, ulti
 import { calcularSequencia, useHabitos, valeNoDia } from "@/lib/estado/habitos"
 import { useInicio, type Widget } from "@/lib/estado/inicio"
 import { useConta } from "@/components/conta/portao-conta"
-import { cartaoConcluido, cartoesRelevantes, colunasDoQuadro, localDoCartao, useKanban } from "@/lib/estado/kanban"
+import { cartaoConcluido, cartoesRelevantes, colunasDoQuadro, localDoCartao, numeroDoCartao, useKanban } from "@/lib/estado/kanban"
 import { useNotas } from "@/lib/estado/notas"
 import { itensDoDia, useRotina } from "@/lib/estado/rotina"
 import { montarGrafo, type NoGrafo } from "@/lib/grafo"
@@ -391,6 +392,7 @@ function WidgetHabitosHoje({ cor }: { cor: string }) {
   const alternarFeito = useHabitos((estado) => estado.alternarFeito)
   if (!hoje) return null
   const deHoje = habitos.filter((habito) => valeNoDia(habito, hoje))
+  const corPadrao = cor === "var(--primary)"
   if (deHoje.length === 0) return <Vazio>Nenhum hábito programado para hoje.</Vazio>
   return (
     <div className="flex flex-wrap gap-2">
@@ -403,8 +405,14 @@ function WidgetHabitosHoje({ cor }: { cor: string }) {
             type="button"
             aria-pressed={feito}
             onClick={() => alternarFeito(habito.id, hoje)}
-            className={cn("flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors", !feito && "hover:bg-muted")}
-            style={feito ? { background: cor, borderColor: cor, color: "white" } : undefined}
+            // Rafael Marques - 30/10/2026: sem cor escolhida, usa as cores do tema (no escuro o fundo é claro e o
+            // texto precisa ser escuro); com cor escolhida (tons médios da paleta), texto branco.
+            className={cn(
+              "flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors",
+              !feito && "hover:bg-muted",
+              feito && corPadrao && "border-primary bg-primary text-primary-foreground"
+            )}
+            style={feito && !corPadrao ? { background: cor, borderColor: cor, color: "white" } : undefined}
           >
             <Icone nome={habito.icone} />
             {habito.nome}
@@ -584,6 +592,45 @@ function WidgetKanbanPrazos({ widget }: { widget: Widget }) {
   )
 }
 
+// Rafael Marques - 30/10/2026: "Meus cartões" — os seus cartões em aberto de todos os quadros (pessoais e os
+// de equipe atribuídos a você): atrasados primeiro, depois por prazo; clicar abre o cartão no Kanban.
+function WidgetMeusCartoes({ widget }: { widget: Widget }) {
+  const hoje = useHoje()
+  const { cartoes, colunas, quadros } = useKanban(useShallow((estado) => ({ cartoes: estado.cartoes, colunas: estado.colunas, quadros: estado.quadros })))
+  const meuId = useConta()?.usuario.id ?? null
+  const estado = useKanban.getState()
+  if (!hoje) return null
+  const lista = cartoesRelevantes(cartoes, colunas, quadros, meuId)
+    .filter((cartao) => !cartaoConcluido(cartao, colunas))
+    .sort((a, b) => (a.prazo ?? "9999").localeCompare(b.prazo ?? "9999") || b.criadoEm - a.criadoEm)
+    .slice(0, limite(widget, 6))
+  if (lista.length === 0) return <Vazio>Nenhum cartão seu em aberto.</Vazio>
+  return (
+    <ul className="space-y-0.5">
+      {lista.map((cartao) => {
+        const quadro = quadros.find((item) => item.id === colunas.find((coluna) => coluna.id === cartao.colunaId)?.quadroId)
+        const numero = numeroDoCartao(estado, cartao.id)
+        const href = quadro && numero ? `/kanban?quadro=${encodeURIComponent(quadro.id)}&cartao=${numero}` : "/kanban"
+        return (
+          <li key={cartao.id}>
+            <Link href={href} className="-mx-1.5 flex items-center gap-2 rounded-md px-1.5 py-1 text-sm hover:bg-muted/60">
+              {numero && <span className="shrink-0 text-xs text-muted-foreground tabular-nums">#{numero}</span>}
+              <span className="min-w-0 flex-1 truncate">{cartao.titulo}</span>
+              <span className="hidden shrink-0 items-center gap-1 truncate text-xs text-muted-foreground sm:flex">
+                {quadro?.equipeId && <UsersIcon className="size-3" />}
+                {quadro?.titulo}
+              </span>
+              <span className={cn("w-16 shrink-0 text-right text-xs", !cartao.prazo ? "text-muted-foreground/60" : cartao.prazo < hoje ? "text-destructive" : cartao.prazo === hoje ? "font-medium text-foreground" : "text-muted-foreground")}>
+                {cartao.prazo ? formatarDataRelativa(cartao.prazo) : "sem prazo"}
+              </span>
+            </Link>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
 // ---------- Notas e livros ----------
 
 function WidgetNotasRecentes({ widget }: { widget: Widget }) {
@@ -751,6 +798,7 @@ export function ConteudoWidget({ widget, cor }: { widget: Widget; cor: string })
     case "rotina-dia": return <WidgetRotina widget={widget} completa />
     case "kanban-andamento": return <WidgetKanbanAndamento widget={widget} cor={cor} />
     case "kanban-prazos": return <WidgetKanbanPrazos widget={widget} />
+    case "meus-cartoes": return <WidgetMeusCartoes widget={widget} />
     case "notas-recentes": return <WidgetNotasRecentes widget={widget} />
     case "nota-fixada": return <WidgetNotaFixada widget={widget} />
     case "livros": return <WidgetLivros widget={widget} />

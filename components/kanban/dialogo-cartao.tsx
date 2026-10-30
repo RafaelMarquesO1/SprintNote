@@ -305,6 +305,7 @@ function CitadoEm({ cartao }: { cartao: CartaoKanban }) {
   const notas = useNotas((estado) => estado.notas)
   const numero = useNumeroDoCartao(cartao.id)
   const quadroId = useKanban((estado) => estado.colunas.find((coluna) => coluna.id === cartao.colunaId)?.quadroId)
+  const deEquipe = useKanban((estado) => Boolean(estado.quadros.find((quadro) => quadro.id === quadroId)?.equipeId))
   if (!numero || !quadroId) return null
   const citacoes = notasQueCitamCartao(notas, quadroId, numero)
   if (citacoes.length === 0) return null
@@ -312,7 +313,12 @@ function CitadoEm({ cartao }: { cartao: CartaoKanban }) {
   // Ao sair do Kanban o cartão fecha sozinho.
   const abrir = (notaId: string) => router.push(`/notas/${notaId}`)
   return (
-    <Secao titulo="Citado em" icone={NotebookPenIcon} extra={citacoes.length}>
+    // Rafael Marques - 30/10/2026: as notas são pessoais — a lista é só de quem está vendo, e a tela diz isso.
+    <Secao
+      titulo="Notas em que este cartão foi citado"
+      icone={NotebookPenIcon}
+    >
+      {deEquipe && <p className="text-xs text-muted-foreground">A equipe não vê em quais das suas notas este cartão foi citado.</p>}
       <ul className="divide-y rounded-lg border">
         {citacoes.map((citacao) => (
           <li key={citacao.notaId}>
