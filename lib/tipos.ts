@@ -30,7 +30,8 @@ export type FonteNota = "padrao" | "serifada" | "mono" | "manuscrita"
 export type TamanhoTexto = "pequeno" | "normal" | "grande"
 export type Espacamento = "compacto" | "normal" | "amplo"
 export type LarguraNota = "normal" | "larga" | "total"
-export type FundoNota = "nenhum" | "papel" | "pontilhado" | "quadriculado" | "pautado"
+// "pautado" é o nome antigo do "caderno" (lido como caderno).
+export type FundoNota = "nenhum" | "caderno" | "foco" | "papel" | "pontilhado" | "quadriculado" | "pautado"
 export type AlturaCapa = "baixa" | "media" | "alta"
 
 export type AparenciaNota = {

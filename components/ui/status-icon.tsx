@@ -3,7 +3,8 @@ import { cn } from "@/lib/utils"
 import { FORMAS_STATUS, type FormaStatus } from "@/lib/domain/quadros"
 
 // StatusIcon (seção 6): status por forma, sem arco-íris. Substitui as cores de status do quadro.
-export function StatusIcon({ status, className, label }: { status: FormaStatus; className?: string; label?: boolean }) {
+// desenhar: no "done", o círculo dá um pulo e o check se desenha (M8, ao soltar um cartão em Concluído).
+export function StatusIcon({ status, className, label, desenhar = false }: { status: FormaStatus; className?: string; label?: boolean; desenhar?: boolean }) {
   const nome = FORMAS_STATUS.find((forma) => forma.valor === status)?.rotulo ?? status
   return (
     <svg
@@ -29,8 +30,17 @@ export function StatusIcon({ status, className, label }: { status: FormaStatus; 
       ) : null}
       {status === "done" ? (
         <>
-          <circle cx="8" cy="8" r="6.75" fill="currentColor" />
-          <path d="m5.2 8.2 1.9 1.9 3.7-3.9" fill="none" stroke="var(--color-night)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="8" cy="8" r="6.75" fill="currentColor" className={desenhar ? "status-pulo" : undefined} />
+          <path
+            d="m5.2 8.2 1.9 1.9 3.7-3.9"
+            fill="none"
+            stroke="var(--color-night)"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            pathLength={desenhar ? 1 : undefined}
+            className={desenhar ? "status-desenhar" : undefined}
+          />
         </>
       ) : null}
     </svg>

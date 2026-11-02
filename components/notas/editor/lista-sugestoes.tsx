@@ -5,10 +5,11 @@
 // e "#" (tags). O TipTap posiciona a lista perto do cursor; aqui só desenhamos e tratamos
 // as setas, Enter e Tab.
 
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react"
+import { forwardRef, useEffect, useId, useImperativeHandle, useRef, useState } from "react"
 import type { Editor, Range } from "@tiptap/core"
+import { motion } from "motion/react"
 
-import { cn } from "@/lib/utils"
+import { lift, spring } from "@/components/motion/presets"
 
 export type ItemSugestao = {
   chave: string
@@ -34,6 +35,8 @@ export const ListaSugestoes = forwardRef<ListaSugestoesRef, Propriedades>(functi
   const [indiceAtivo, setIndiceAtivo] = useState(0)
   const [chaves, setChaves] = useState("")
   const caixaRef = useRef<HTMLDivElement>(null)
+  // Fundo do item ativo, que desliza entre os itens (M17). Um id por lista, para não pular entre menus.
+  const idDestaque = `sugestao-ativa-${useId()}`
 
   // A lista mudou (a pessoa digitou mais uma letra): volta para o primeiro item.
   const chavesAtuais = items.map((item) => item.chave).join("|")
@@ -72,10 +75,14 @@ export const ListaSugestoes = forwardRef<ListaSugestoesRef, Propriedades>(functi
   if (items.length === 0) return null
 
   return (
-    <div
+    // M17: a lista surge com uma leve subida (lift) perto do cursor.
+    <motion.div
       ref={caixaRef}
       role="listbox"
       aria-label={titulo ?? "Sugestões"}
+      initial={lift.initial}
+      animate={lift.animate}
+      transition={lift.transition}
       className="rolagem-fina max-h-80 w-80 max-w-[calc(100vw-1.5rem)] overflow-y-auto rounded-lg bg-popover p-1 text-sm text-popover-foreground shadow-lg ring-1 ring-foreground/10"
     >
       {items.map((item, indice) => {
@@ -92,8 +99,11 @@ export const ListaSugestoes = forwardRef<ListaSugestoesRef, Propriedades>(functi
               onMouseDown={(evento) => evento.preventDefault()}
               onMouseEnter={() => setIndiceAtivo(indice)}
               onClick={() => command(item)}
-              className={cn("flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left", indice === indiceAtivo && "bg-muted")}
+              className="relative isolate flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left"
             >
+              {indice === indiceAtivo && (
+                <motion.span aria-hidden="true" layoutId={idDestaque} transition={spring.snappy} className="absolute inset-0 -z-10 rounded-md bg-muted" />
+              )}
               {item.icone && (
                 <span className="flex size-8 shrink-0 items-center justify-center rounded-md border bg-background text-muted-foreground">{item.icone}</span>
               )}
@@ -106,6 +116,6 @@ export const ListaSugestoes = forwardRef<ListaSugestoesRef, Propriedades>(functi
           </div>
         )
       })}
-    </div>
+    </motion.div>
   )
 })

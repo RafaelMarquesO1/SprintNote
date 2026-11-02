@@ -186,7 +186,8 @@ export function ConteudoCartao({
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-small text-ink-soft">
             {mostrarPrioridade && !concluido && (
               <span className="flex items-center gap-1.5">
-                <PriorityIcon priority={cartao.prioridade!} /> {estilosPrioridade[cartao.prioridade!].titulo}
+                {/* Rafael Marques - 02/11/2026: escrito por extenso para não confundir com a complexidade (ícones parecidos). */}
+                <PriorityIcon priority={cartao.prioridade!} /> Prioridade {estilosPrioridade[cartao.prioridade!].titulo.toLowerCase()}
               </span>
             )}
             {mostrarPrazo && (
@@ -212,9 +213,9 @@ export function ConteudoCartao({
               </span>
             )}
             {complexidadeDe(cartao.estimativa) && (
-              <span className="flex items-center gap-1" title={`Complexidade ${rotuloComplexidade(cartao.estimativa)?.toLowerCase()}`}>
+              <span className="flex items-center gap-1.5">
                 <BarrasComplexidade nivel={complexidades[complexidadeDe(cartao.estimativa)!]} />
-                <span className="sr-only">Complexidade {rotuloComplexidade(cartao.estimativa)?.toLowerCase()}</span>
+                Complexidade {rotuloComplexidade(cartao.estimativa)?.toLowerCase()}
               </span>
             )}
             {mostrarComentarios && (

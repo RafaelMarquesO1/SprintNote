@@ -92,7 +92,7 @@ import { VisaoLista } from "@/components/kanban/visao-lista"
 import { AjusteFotoAoVivo } from "@/components/kanban/ajuste-foto-ao-vivo"
 import { estiloDoContraste, useLeituraDaFoto } from "@/components/kanban/leitura-foto"
 import { prepararFoto } from "@/lib/kanban/preparar-foto"
-import { ajusteFotoPadrao, codificarAjusteFoto, resolverFundoQuadro, temFundoQuadro, type AjusteFoto } from "@/lib/kanban/fundo"
+import { ajusteFotoPadrao, codificarAjusteFoto, pedeVidro, resolverFundoQuadro, type AjusteFoto } from "@/lib/kanban/fundo"
 import { useEquipes } from "@/lib/estado/equipes"
 import { alternarFiltroPorResponsavel, filtrarPorResponsavel, useFiltroAtribuidos } from "@/lib/estado/filtro-atribuidos"
 import { cartaoPeloNumero, colunasDoQuadro, exibicaoDoQuadro, exibicaoPadrao, numeroDoCartao, useKanban } from "@/lib/estado/kanban"
@@ -304,7 +304,8 @@ export function QuadroKanban() {
   const membrosDoQuadro = equipeDoQuadro?.membros ?? []
   // "Por pessoa" só faz sentido em quadro de equipe.
   const raia: RaiaKanban = raiaEscolhida === "responsavel" && !equipeDoQuadro ? "nenhuma" : raiaEscolhida
-  const vidro = rascunhoFoto !== null || temFundoQuadro(quadro.fundo, quadro.imagemFundo)
+  // Rafael Marques - 02/11/2026: colunas em vidro só com foto (as texturas são leves).
+  const vidro = rascunhoFoto !== null || pedeVidro(resolverFundoQuadro(quadro.fundo, quadro.imagemFundo))
 
   async function ajustarFoto(arquivo?: File) {
     setPersonalizarAberto(false)
@@ -525,8 +526,9 @@ export function QuadroKanban() {
           <div className="min-w-0 flex-[1_1_20rem] space-y-3">
             <div className="flex items-center gap-3">
               <DropdownMenu>
-                <DropdownMenuTrigger aria-label="Trocar ícone do quadro" className="flex size-10 shrink-0 items-center justify-center rounded-sm text-ink-soft hover:bg-raised hover:text-paper">
-                  <Icone nome={quadro.icone} className="size-5" />
+                {/* O ícone acompanha a altura do título (antes 20px, sumia ao lado dele). */}
+                <DropdownMenuTrigger aria-label="Trocar ícone do quadro" className="flex size-11 shrink-0 items-center justify-center rounded-md text-ink-soft hover:bg-raised hover:text-paper md:size-12">
+                  <Icone nome={quadro.icone} className="size-7 md:size-8" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-auto">
                   <div className="grid max-h-72 grid-cols-8 gap-0.5 overflow-y-auto">

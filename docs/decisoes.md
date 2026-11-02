@@ -44,7 +44,7 @@ Escolhas que o `SPRINTNOTE_REDESIGN.md` não cobria ou que precisaram de ajuste 
 - **Entrada:** sem "Esqueci minha senha" — o backend não tem fluxo de recuperação (pendência). A exclusão de conta continua pedindo a **senha** (mais forte que digitar o e-mail).
 - **Landing:** as sete seções ilustradas da v1.3b deram lugar às três colunas do artboard; a demonstração "Seu dia" usa `animation-timeline: view()` só onde o navegador suporta.
 - **Termos e Privacidade:** páginas próprias em `/termos` e `/privacidade` (grupo `(publico)`), com o mesmo texto dos dialogs.
-- **Versão:** `package.json` foi para 2.0.0 (exibida "2.0").
+- **Versão:** o redesign é a versão 1.4 (era "2.0"; renumerado em 02/11/2026 para bater com os commits). As mudanças seguintes são a 1.4a (`package.json` 1.4.1, exibida "1.4a").
 
 ## Fase 8 — tinta de etiqueta (pedido do Rafael)
 
@@ -53,3 +53,10 @@ Escolhas que o `SPRINTNOTE_REDESIGN.md` não cobria ou que precisaram de ajuste 
 - **Limpeza:** componentes da v1.3 sem uso foram removidos (menu lateral, widgets do Início, telas antigas de Tarefas/Hábitos/Rotina, avisos de prazo, seções da landing antiga). Vermelho e caixa-alta saíram das telas que vieram da v1.3 (exceto no quadro livre, onde a cor é do desenho).
 - **Logotipo "S de fio" (pedido do Rafael):** em vez de três linhas de texto, a marca desenha o fio do produto: uma linha da nota desce em curva até a linha da tarefa e termina no ponto Brasa ("agora"). O mesmo caminho (`CAMINHO_FIO` em `components/brand/logo.tsx`) está em `app/icon.svg`, `apple-icon` e `opengraph-image`. Na tela de carregamento o fio se desenha uma vez (900ms, o "momento" permitido).
 - **E2E:** "O que há de novo" abre depois de entrar e deixa o resto da página inerte; os testes fecham o aviso antes de verificar cada tela.
+
+## Versão 1.4a (depois do redesign)
+
+- **Fundo da página da nota repaginado (pedido do Rafael, 02/11/2026; desfaz o "remover a pauta" do 8.10):** opções Nenhum, Caderno, Foco, Papel, Pontilhado e Quadriculado. Caderno desenha a pauta em cada bloco de texto com a unidade `lh` (a pauta segue a altura da linha de cada bloco em qualquer fonte, tamanho e espaçamento), tem linha de margem e continua pautado depois do texto. Foco mostra a pauta só no bloco com o cursor (classe `bloco-atual`, extensão `components/notas/editor/extensoes/bloco-atual.ts`), esmaecendo em 240ms via `@property --cor-pauta`. Pontilhado e Quadriculado usam a altura da linha como passo e começam no canto do texto (medido em `useOrigemGrade`). Papel ganhou grão leve (`--grao-papel`). Notas salvas com "pautado" passam a abrir como Caderno. Tudo monocromático; imagens, tabelas e código ficam sem pauta.
+- **Fundo do quadro repaginado (02/11/2026):** só texturas neutras, feitas com a cor do texto em transparência (combinam com o tema claro e escuro): Grão (o ruído do Papel das notas, sem o bege), Pontos, Grade, Linhas e Hachura, além de Nenhum e Sua foto. Névoa saiu. Uma versão com "Progresso" (página enchendo conforme os cartões são concluídos) e "Agora" (coluna em andamento em Brasa) foi testada e descartada pelo Rafael. Fundos salvos que não existem mais (`nevoa`, `cinza`, `grafite`, degradês e os breves `papel`/`progresso`/`agora`) viram Grão (`resolverFundoQuadro`, com teste). Colunas em vidro só com foto (`pedeVidro`); com textura, ficam com o contorno. Modelos de quadro: Estudos → Linhas, Atendimento → Grão, Produção de conteúdo → Hachura. Sem mudança no banco (o fundo já é texto).
+- **Colunas do quadro com contorno (02/11/2026):** sem fundo no quadro, cada coluna tem borda `line` arredondada que termina no último cartão. A versão "bandeja" (fundo `raised` até o pé da tela) foi testada e descartada pelo Rafael.
+- **Cartão do quadro:** prioridade e complexidade escritas por extenso ("Prioridade média", "Complexidade alta"), porque os ícones de barras se confundiam.

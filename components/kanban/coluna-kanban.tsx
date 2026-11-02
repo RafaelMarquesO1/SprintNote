@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useDraggable, useDroppable } from "@dnd-kit/core"
+import { AnimatePresence, motion } from "motion/react"
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -18,6 +19,8 @@ import {
 import { cn } from "@/lib/utils"
 
 import { Cartao } from "@/components/kanban/cartao-kanban"
+import { AnimatedNumber } from "@/components/motion/number"
+import { spring } from "@/components/motion/presets"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -204,6 +207,17 @@ export function Coluna({
 
   const forma = formaDaColuna(coluna)
 
+  // M8: quando um cartão chega numa coluna de concluídos, o check do ícone desenha uma vez.
+  // Conta os cartões da coluna no quadro todo (sem filtros), para limpar um filtro não disparar o check.
+  const totalNaColuna = useKanban((estado) => estado.cartoes.filter((cartao) => cartao.colunaId === coluna.id && !cartao.arquivado).length)
+  const totalAnterior = useRef(totalNaColuna)
+  const [desenhosCheck, setDesenhosCheck] = useState(0)
+  useEffect(() => {
+    if (forma === "done" && totalNaColuna > totalAnterior.current) setDesenhosCheck((vezes) => vezes + 1)
+    totalAnterior.current = totalNaColuna
+  }, [totalNaColuna, forma])
+  const iconeStatus = <StatusIcon key={desenhosCheck} status={forma} desenhar={desenhosCheck > 0} />
+
   // Coluna recolhida (8.8): 44px, texto vertical, um botão que diz como abrir.
   if (coluna.recolhida) {
     return (
@@ -213,14 +227,14 @@ export function Coluna({
           onClick={() => atualizarColuna(coluna.id, { recolhida: false })}
           aria-label={`${coluna.titulo}, ${cartoes.length} ${cartoes.length === 1 ? "cartão" : "cartões"}. Expandir`}
           className={cn(
-            "flex h-80 w-11 flex-col items-center gap-3 rounded-lg border py-3 text-ui font-semibold text-paper hover:bg-raised",
-            isOver ? "border-paper" : "border-line-strong",
-            vidro && "bg-panel/90 backdrop-blur-xl"
+            "flex h-80 w-11 flex-col items-center gap-3 rounded-xl border py-3 text-ui font-semibold text-paper hover:bg-raised",
+            vidro && "bg-panel/90 backdrop-blur-xl",
+            isOver ? "border-paper" : vidro ? "border-line-strong" : "border-line"
           )}
         >
-          <StatusIcon status={forma} />
+          {iconeStatus}
           <span className="[writing-mode:vertical-rl]">
-            {coluna.titulo} <span className="text-ink-muted tabular-nums">{cartoes.length}</span>
+            {coluna.titulo} <AnimatedNumber value={cartoes.length} className="text-ink-muted" />
           </span>
         </button>
       </section>
@@ -235,8 +249,10 @@ export function Coluna({
       }}
       aria-label={coluna.titulo}
       className={cn(
-        "flex w-[80vw] max-w-column shrink-0 snap-start flex-col gap-2.5 rounded-xl transition-colors duration-fast sm:w-column",
-        vidro && "border border-line-strong bg-panel/90 p-2 backdrop-blur-xl",
+        "flex w-[80vw] max-w-column shrink-0 snap-start flex-col gap-2.5 rounded-xl p-2 transition-colors duration-fast sm:w-column",
+        // Rafael Marques - 02/11/2026: sem fundo no quadro, a coluna ganha só um contorno fino (marca onde
+        // ela começa e termina).
+        vidro ? "border border-line-strong bg-panel/90 backdrop-blur-xl" : "border border-line",
         isDragging && "opacity-40"
       )}
     >
@@ -251,13 +267,15 @@ export function Coluna({
         >
           <GripVerticalIcon className="size-4" />
         </button>}
-        <StatusIcon status={forma} />
+        {iconeStatus}
         <TituloColuna coluna={coluna} editando={editando} aoEditar={setEditando} />
         <span
           className={cn("ml-auto shrink-0 text-small text-ink-muted tabular-nums", passouDoLimite && "font-semibold text-paper underline decoration-dotted underline-offset-4")}
           title={coluna.limite !== null ? `Limite: ${coluna.limite} cartões` : undefined}
         >
-          {cartoes.length}{coluna.limite !== null && `/${coluna.limite}`}
+          {/* M8: os dígitos rolam quando a contagem muda. */}
+          <AnimatedNumber value={cartoes.length} />
+          {coluna.limite !== null && `/${coluna.limite}`}
         </span>
         <DropdownMenu>
           <DropdownMenuTrigger aria-label={`Opções da coluna ${coluna.titulo}`} className="flex size-7 shrink-0 items-center justify-center rounded-xs text-ink-soft hover:bg-raised hover:text-paper">
@@ -304,15 +322,27 @@ export function Coluna({
         </DropdownMenu>
       </header>
 
-      <div className="flex min-h-16 flex-col gap-2">
+      {/* M9: cartão que sai da coluna (arquivado, excluído, movido ou filtrado) encolhe em vez de sumir.
+          O espaço entre cartões é padding de cada um (não gap), para encolher junto. */}
+      <div className={cn("flex min-h-16 flex-col", cartoes.length > 0 && "-mb-2")}>
         {cartoes.length === 0 ? (
           <div className={cn("flex h-32 items-center justify-center rounded-lg border border-dashed text-small text-ink-soft transition-colors duration-fast", isOver ? "border-paper text-paper" : "border-line-strong")}>
             Arraste um cartão para cá
           </div>
         ) : null}
-        {cartoes.map((cartao, indice) => (
-          <Cartao key={cartao.id} ordem={indice} cartao={cartao} etiquetas={etiquetas} concluido={coluna.concluida} exibicao={exibicao} aoAbrir={() => aoAbrirCartao(cartao)} />
-        ))}
+        <AnimatePresence initial={false}>
+          {cartoes.map((cartao, indice) => (
+            <motion.div
+              key={cartao.id}
+              className="pb-2"
+              exit={{ opacity: 0, height: 0, paddingBottom: 0 }}
+              // Some rápido e depois fecha o espaço (sem overflow-hidden, que cortaria a linha de "soltar aqui").
+              transition={{ height: spring.layout, paddingBottom: spring.layout, opacity: { duration: 0.12 } }}
+            >
+              <Cartao ordem={indice} cartao={cartao} etiquetas={etiquetas} concluido={coluna.concluida} exibicao={exibicao} aoAbrir={() => aoAbrirCartao(cartao)} />
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
       <NovoCartao colunaId={coluna.id} />
     </section>

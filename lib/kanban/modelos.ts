@@ -56,7 +56,7 @@ export const modelosKanban: ModeloKanban[] = [
     nome: "Estudos",
     descricao: "Matérias para estudar, em estudo, para revisar e dominadas.",
     icone: "estudo",
-    fundo: "nevoa",
+    fundo: "linhas",
     colunas: [{ titulo: "Para estudar" }, { titulo: "Estudando", limite: 3 }, { titulo: "Revisar" }, { titulo: "Dominado", concluida: true }],
     etiquetas: [{ nome: "Prova", cor: vermelho }, { nome: "Leitura", cor: azul }, { nome: "Exercícios", cor: verde }],
     exemplos: [
@@ -82,7 +82,7 @@ export const modelosKanban: ModeloKanban[] = [
     nome: "Atendimento (chamados)",
     descricao: "Chamados novos, em atendimento, aguardando a pessoa e resolvidos.",
     icone: "trabalho",
-    fundo: "nevoa",
+    fundo: "grao",
     colunas: [{ titulo: "Novos" }, { titulo: "Em atendimento", limite: 5 }, { titulo: "Aguardando solicitante" }, { titulo: "Resolvidos", concluida: true }],
     etiquetas: [{ nome: "Incidente", cor: vermelho }, { nome: "Requisição", cor: azul }, { nome: "Urgente", cor: laranja }],
     exemplos: [
@@ -95,7 +95,7 @@ export const modelosKanban: ModeloKanban[] = [
     nome: "Produção de conteúdo",
     descricao: "Ideias, roteiro, produção, revisão e publicado.",
     icone: "pincel",
-    fundo: "quadriculado",
+    fundo: "diagonal",
     colunas: [{ titulo: "Ideias" }, { titulo: "Roteiro" }, { titulo: "Produção", limite: 3 }, { titulo: "Revisão" }, { titulo: "Publicado", concluida: true }],
     etiquetas: [{ nome: "Vídeo", cor: vermelho }, { nome: "Texto", cor: azul }, { nome: "Imagem", cor: verde }],
     exemplos: [

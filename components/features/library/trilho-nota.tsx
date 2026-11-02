@@ -1,9 +1,12 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useState } from "react"
+import { useEffect, useId, useState } from "react"
+import { motion } from "motion/react"
 import { useShallow } from "zustand/react/shallow"
 import { cn } from "@/lib/utils"
+
+import { spring } from "@/components/motion/presets"
 
 import { useNotas } from "@/lib/estado/notas"
 import { obterReferencias } from "@/lib/links-wiki"
@@ -54,6 +57,8 @@ export function useTitulosDaNota(container: HTMLElement | null) {
 }
 
 export function NestaNota({ titulos, ativo }: { titulos: Titulo[]; ativo: string | null }) {
+  // O marcador Brasa desliza entre os títulos ao rolar. Um id por índice (o trilho e a gaveta do celular).
+  const idMarcador = `nesta-nota-${useId()}`
   if (titulos.length === 0) return null
   return (
     <nav aria-label="Nesta nota" className="space-y-2">
@@ -61,7 +66,9 @@ export function NestaNota({ titulos, ativo }: { titulos: Titulo[]; ativo: string
       <ol className="space-y-0.5">
         {titulos.map((titulo) => (
           <li key={titulo.id} className="relative">
-            {titulo.id === ativo ? <span aria-hidden="true" className="absolute top-1 bottom-1 left-0 w-0.5 rounded-full bg-ember" /> : null}
+            {titulo.id === ativo ? (
+              <motion.span aria-hidden="true" layoutId={idMarcador} transition={spring.layout} className="absolute top-1 bottom-1 left-0 w-0.5 rounded-full bg-ember" />
+            ) : null}
             <button
               type="button"
               aria-current={titulo.id === ativo ? "location" : undefined}

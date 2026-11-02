@@ -3,7 +3,7 @@
 
 import assert from "node:assert/strict"
 
-import { ajusteFotoPadrao, brilhoFinalDoTopo, calcularAutomatico, codificarAjusteFoto, estilosDaFoto, lerAjusteFoto, resolverFundoQuadro } from "./fundo.ts"
+import { ajusteFotoPadrao, brilhoFinalDoTopo, calcularAutomatico, codificarAjusteFoto, estilosDaFoto, lerAjusteFoto, pedeVidro, resolverFundoQuadro } from "./fundo.ts"
 
 let falhas = 0
 let total = 0
@@ -39,6 +39,23 @@ caso("foto sem imagem não desenha; modelos antigos viram neutros", () => {
   assert.equal(resolverFundoQuadro(codificarAjusteFoto(ajusteFotoPadrao), "data:image/jpeg;base64,AA")?.tipo, "foto")
   assert.equal(resolverFundoQuadro("diagonal")?.tipo, "modelo")
   assert.equal(resolverFundoQuadro("aurora"), null)
+})
+
+// Rafael Marques - 02/11/2026: só texturas neutras (Grão, Pontos, Grade, Linhas, Hachura).
+caso("texturas valem; fundos que saíram viram Grão", () => {
+  const id = (fundo: string) => {
+    const resolvido = resolverFundoQuadro(fundo)
+    return resolvido?.tipo === "modelo" ? resolvido.id : null
+  }
+  for (const textura of ["grao", "pontos", "quadriculado", "linhas", "diagonal"]) assert.equal(id(textura), textura)
+  for (const antigo of ["nevoa", "cinza", "grafite", "papel", "progresso", "agora", "linear-gradient(135deg, red, blue)"]) assert.equal(id(antigo), "grao", antigo)
+})
+
+caso("vidro nas colunas só com foto", () => {
+  const foto = resolverFundoQuadro(codificarAjusteFoto(ajusteFotoPadrao), "data:image/jpeg;base64,AA")
+  assert.equal(pedeVidro(foto), true)
+  for (const id of ["grao", "pontos", "quadriculado", "linhas", "diagonal"]) assert.equal(pedeVidro(resolverFundoQuadro(id)), false, id)
+  assert.equal(pedeVidro(null), false)
 })
 
 caso("automático: escuro escurece foto clara, claro clareia foto escura, foto agitada aparece menos", () => {

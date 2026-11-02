@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useLayoutEffect, useState } from "react"
 import Link from "next/link"
 import { useShallow } from "zustand/react/shallow"
 import {
@@ -92,12 +92,70 @@ const opcoesFonte: { id: FonteNota; nome: string }[] = [
   { id: "mono", nome: "Mono" },
   { id: "manuscrita", nome: "Manuscrita" },
 ]
+// Rafael Marques - 02/11/2026: fundos que acompanham o texto (Caderno e Foco desenham a pauta
+// em cada linha escrita; Pontilhado e Quadriculado usam a altura da linha como passo).
 const opcoesFundo: { id: FundoNota; nome: string }[] = [
   { id: "nenhum", nome: "Nenhum" },
+  { id: "caderno", nome: "Caderno" },
+  { id: "foco", nome: "Foco" },
   { id: "papel", nome: "Papel" },
   { id: "pontilhado", nome: "Pontilhado" },
   { id: "quadriculado", nome: "Quadriculado" },
 ]
+
+// Altura da linha do corpo para cada espaçamento (a mesma do editor, em globals.css).
+const alturaLinha: Record<Espacamento, number> = { compacto: 1.5, normal: 1.75, amplo: 2 }
+
+// Onde o texto da nota começa dentro da página (para a grade do fundo partir dali).
+// Refaz a conta quando a página muda de tamanho (capa carregando, título quebrando, janela).
+function useOrigemGrade(pagina: HTMLElement | null) {
+  const [origem, setOrigem] = useState({ x: 0, y: 0 })
+  useLayoutEffect(() => {
+    if (!pagina) return
+    const medir = () => {
+      const texto = pagina.querySelector(".editor-notas")
+      if (!texto) return
+      const caixaPagina = pagina.getBoundingClientRect()
+      const caixaTexto = texto.getBoundingClientRect()
+      const x = Math.round(caixaTexto.left - caixaPagina.left)
+      const y = Math.round(caixaTexto.top - caixaPagina.top)
+      setOrigem((atual) => (atual.x === x && atual.y === y ? atual : { x, y }))
+    }
+    medir()
+    const observador = new ResizeObserver(medir)
+    observador.observe(pagina)
+    const texto = pagina.querySelector(".editor-notas")
+    if (texto) observador.observe(texto)
+    // O editor aparece depois do primeiro desenho (immediatelyRender: false).
+    const espera = setTimeout(medir, 300)
+    return () => {
+      observador.disconnect()
+      clearTimeout(espera)
+    }
+  }, [pagina])
+  return origem
+}
+
+// Miniatura do fundo: três linhas de "texto" sobre ele, para ver como a escrita fica.
+function PreviaFundo({ fundo }: { fundo: FundoNota }) {
+  const larguras = ["78%", "92%", "55%"]
+  const pautada = fundo === "caderno" || fundo === "foco"
+  return (
+    <span
+      className={cn("flex size-full flex-col justify-center px-2.5", (fundo === "papel" || fundo === "pontilhado" || fundo === "quadriculado") && `fundo-${fundo}`)}
+      style={{ "--passo": "8px", "--fundo-y": "4px", "--fundo-x": "2px" } as React.CSSProperties}
+    >
+      {larguras.map((largura, indice) => {
+        const comPauta = fundo === "caderno" || (fundo === "foco" && indice === 1)
+        return (
+          <span key={largura} className={cn("relative flex h-2 items-center", pautada && comPauta && "border-b border-line-strong")}>
+            <span className="h-[3px] rounded-full bg-ink-muted" style={{ width: largura }} />
+          </span>
+        )
+      })}
+    </span>
+  )
+}
 
 // Lê a aparência já com os valores padrão (e com os campos antigos convertidos).
 export function aparenciaCompleta(aparencia: AparenciaNota = {}) {
@@ -109,7 +167,8 @@ export function aparenciaCompleta(aparencia: AparenciaNota = {}) {
     espacamento: aparencia.espacamento ?? ("normal" as Espacamento),
     largura: aparencia.largura ?? (aparencia.larguraTotal ? "total" : ("normal" as LarguraNota)),
     corDestaque: aparencia.corDestaque ?? null,
-    fundo: aparencia.fundo ?? ("nenhum" as FundoNota),
+    // "pautado" é o nome antigo do Caderno.
+    fundo: aparencia.fundo === "pautado" ? "caderno" : (aparencia.fundo ?? ("nenhum" as FundoNota)),
     tituloCentralizado: Boolean(aparencia.tituloCentralizado),
     ocultarIcone: Boolean(aparencia.ocultarIcone),
   }
@@ -265,8 +324,8 @@ function MenuPersonalizar({ nota, aoEscolherCapa }: { nota: Nota; aoEscolherCapa
           aoMudar={(fundo) => mudar({ fundo })}
           opcoes={opcoesFundo.map((opcao) => ({
             valor: opcao.id,
-            rotulo: opcao.nome.replace(" (caderno)", ""),
-            previa: <span className={cn("size-full text-[0.6rem]", opcao.id !== "nenhum" && `fundo-${opcao.id}`)} />,
+            rotulo: opcao.nome,
+            previa: <PreviaFundo fundo={opcao.id} />,
           }))}
         />
       </SecaoPersonalizar>
@@ -314,10 +373,16 @@ function TelaNota({ nota, notas }: { nota: Nota; notas: Nota[] }) {
   const caminho = obterCaminho(notas, nota)
   const visual = aparenciaCompleta(nota.aparencia)
   const temCapa = Boolean(visual.capa)
-  // A pauta horizontal saiu (8.10): notas com "pautado" ficam sem fundo.
-  const fundo = visual.fundo === "pautado" ? "nenhum" : visual.fundo
+  const fundo = visual.fundo
   // A fonte manuscrita é mais miúda: ganha um pouco de tamanho.
   const tamanho = tamanhoPx[visual.tamanho] * (visual.fonte === "manuscrita" ? 1.4 : 1)
+  // Pontilhado e quadriculado: passo = altura da linha, grade começando no canto do texto.
+  const grade = fundo === "pontilhado" || fundo === "quadriculado"
+  const [pagina, setPagina] = useState<HTMLDivElement | null>(null)
+  const origemGrade = useOrigemGrade(grade ? pagina : null)
+  const estiloGrade = grade
+    ? ({ "--passo": `${tamanho * alturaLinha[visual.espacamento]}px`, "--fundo-x": `${origemGrade.x}px`, "--fundo-y": `${origemGrade.y}px` } as React.CSSProperties)
+    : undefined
   const editada = new Date(nota.atualizadoEm)
   const hojeTexto = new Date().toDateString() === editada.toDateString()
   const editadaTexto = `${hojeTexto ? "Hoje" : editada.toLocaleDateString("pt-BR", { day: "numeric", month: "short" })}, ${editada.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
@@ -384,7 +449,15 @@ function TelaNota({ nota, notas }: { nota: Nota; notas: Nota[] }) {
   })
 
   return (
-    <div className={cn("-mx-4 -my-8 min-h-[calc(100dvh-var(--spacing-topbar))] md:-mx-10 md:-my-12", fundo !== "nenhum" && `fundo-${fundo}`)}>
+    <div
+      ref={setPagina}
+      className={cn(
+        "-mx-4 -my-8 min-h-[calc(100dvh-var(--spacing-topbar))] md:-mx-10 md:-my-12",
+        // Fundos que pintam a página viram uma folha: borda fina nas laterais (sem sombra: só o que flutua tem sombra).
+        (grade || fundo === "papel") && `fundo-${fundo} md:border-x md:border-line`
+      )}
+      style={estiloGrade}
+    >
       <CapaNota key={JSON.stringify(visual.capa)} nota={nota} altura={visual.alturaCapa} aoTrocar={() => setEscolhendoCapa(true)} />
 
       <div className="flex justify-center gap-12 px-4 md:px-10">
@@ -392,6 +465,7 @@ function TelaNota({ nota, notas }: { nota: Nota; notas: Nota[] }) {
           ref={setDocumento}
           className={cn("documento min-w-0 flex-1 pb-24", visual.largura === "normal" ? "max-w-reading" : visual.largura === "larga" ? "max-w-content" : "max-w-none", classeFonte[visual.fonte])}
           data-espacamento={visual.espacamento}
+          data-fundo={fundo}
           style={{ fontSize: `${tamanho}px` }}
         >
           <div className={cn("group/cabecalho", temCapa && !visual.ocultarIcone ? "-mt-10" : "pt-12", visual.tituloCentralizado && "text-center")}>

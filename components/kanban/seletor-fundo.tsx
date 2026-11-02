@@ -1,8 +1,8 @@
 "use client"
 
 // Rafael Marques - 26/10/2026
-// Fundo do quadro no "Personalizar": nenhum, três modelos neutros (bons no claro e no escuro)
-// ou a sua foto. A foto é ajustada direto no quadro (veja ajuste-foto-ao-vivo.tsx).
+// Fundo do quadro no "Personalizar": nenhum, as texturas neutras de lib/kanban/fundo.ts (Grão,
+// Pontos, Grade, Linhas e Hachura) ou a sua foto. A foto é ajustada direto no quadro (veja ajuste-foto-ao-vivo.tsx).
 
 import { useRef } from "react"
 import { ImagePlusIcon, MoveIcon } from "lucide-react"
@@ -43,7 +43,7 @@ export function SeletorFundo({
 
   return (
     <div className="space-y-3">
-      <div role="radiogroup" aria-label="Fundo do quadro" className="grid grid-cols-4 gap-2">
+      <div role="radiogroup" aria-label="Fundo do quadro" className="grid grid-cols-3 gap-2">
         <Opcao ativo={idAtivo === "nenhum"} rotulo="Nenhum" aoEscolher={() => aoMudar({ fundo: null })}>
           <span />
         </Opcao>

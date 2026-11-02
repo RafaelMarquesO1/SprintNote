@@ -517,6 +517,9 @@
    Tema claro/escuro também para campos nativos (data, select, barra de rolagem) */
 :root {
   --papel: oklch(0.985 0.012 85);
+  /* Grão do fundo "Papel": fino (uma oitava, frequência alta) e fraco, para dar textura sem
+     manchar nem escurecer a folha (ruído escuro no tema claro). */
+  --grao-papel: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='1' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.04 0 0 0 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
   --codigo-palavra: oklch(0.5 0.19 300);
   --codigo-texto: oklch(0.5 0.14 145);
   --codigo-numero: oklch(0.55 0.16 45);
@@ -537,6 +540,8 @@
 }
 .dark {
   --papel: oklch(0.2 0.008 70);
+  /* No tema escuro o grão é claro. */
+  --grao-papel: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='1' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.035 0 0 0 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
   --codigo-palavra: oklch(0.78 0.13 300);
   --codigo-texto: oklch(0.8 0.13 145);
   --codigo-numero: oklch(0.8 0.12 60);
@@ -578,26 +583,22 @@
   .documento[data-espacamento="compacto"] .space-y-0\.5 > * + * { margin-top: 0; }
   .documento[data-espacamento="amplo"] .space-y-0\.5 > * + * { margin-top: 0.35rem; }
 
-  /* Fundos da página */
-  .fundo-papel { background-color: var(--papel); }
+  /* Fundos da página (Rafael Marques - 02/11/2026: repaginados para acompanhar o texto).
+     Pontilhado e quadriculado: o passo é a altura da linha do texto (--passo) e a grade começa
+     no canto do texto (--fundo-x/--fundo-y), medidos em editor-nota.tsx. As miniaturas usam os
+     valores padrão. */
+  .fundo-papel { background-color: var(--papel); background-image: var(--grao-papel); }
   .fundo-pontilhado {
-    background-image: radial-gradient(color-mix(in oklch, var(--foreground) 18%, transparent) 1px, transparent 1.2px);
-    background-size: 22px 22px;
+    background-image: radial-gradient(circle at 1px 1px, color-mix(in oklch, var(--foreground) 22%, transparent) 1px, transparent 1.4px);
+    background-size: var(--passo, 22px) var(--passo, 22px);
+    background-position: var(--fundo-x, 0) var(--fundo-y, 0);
   }
   .fundo-quadriculado {
     background-image:
       linear-gradient(color-mix(in oklch, var(--foreground) 8%, transparent) 1px, transparent 1px),
       linear-gradient(90deg, color-mix(in oklch, var(--foreground) 8%, transparent) 1px, transparent 1px);
-    background-size: 24px 24px;
-  }
-  .fundo-pautado {
-    background-image: repeating-linear-gradient(
-      to bottom,
-      transparent 0,
-      transparent calc(1.75em - 1px),
-      color-mix(in oklch, var(--foreground) 10%, transparent) calc(1.75em - 1px),
-      color-mix(in oklch, var(--foreground) 10%, transparent) 1.75em
-    );
+    background-size: var(--passo, 24px) var(--passo, 24px);
+    background-position: var(--fundo-x, 0) var(--fundo-y, 0);
   }
 
   /* Blocos de destaque (callouts) */
@@ -743,6 +744,51 @@ select optgroup {
   @keyframes piscar-cursor { to { visibility: hidden; } }
 
   .drag-handle { z-index: 20; display: flex; }
+
+  /* Rafael Marques - 02/11/2026: Caderno e Foco. Cada bloco de texto desenha a própria pauta com a
+     unidade lh (a altura da linha dele): toda linha escrita fica sobre uma pauta, em qualquer fonte,
+     tamanho ou espaçamento. A pauta passa logo abaixo da linha de base. Imagens, tabelas e código
+     ficam sem pauta. No Foco, só o bloco com o cursor ganha a pauta (classe "bloco-atual"). */
+  .documento { --tom-pauta: color-mix(in oklch, var(--foreground) 13%, transparent); }
+  .documento:is([data-fundo="caderno"], [data-fundo="foco"]) .editor-notas > :is(p, h1, h2, h3, h4, h5, h6, ul, ol, blockquote),
+  .documento[data-fundo="caderno"] .editor-notas::after {
+    --y-pauta: calc((1lh - 1em) / 2 + 0.95em);
+    background-image: linear-gradient(
+      to bottom,
+      transparent var(--y-pauta),
+      var(--cor-pauta) var(--y-pauta),
+      var(--cor-pauta) calc(var(--y-pauta) + 1px),
+      transparent calc(var(--y-pauta) + 1px)
+    );
+    background-size: 100% 1lh;
+    transition: --cor-pauta var(--duration-base, 240ms) var(--ease-out, ease-out);
+  }
+  .documento[data-fundo="caderno"] .editor-notas { --cor-pauta: var(--tom-pauta); position: relative; }
+  /* Depois do texto, a folha continua pautada. */
+  .documento[data-fundo="caderno"] .editor-notas::after { content: ""; display: block; height: 8lh; pointer-events: none; }
+  /* Linha da margem, à esquerda do texto. */
+  .documento[data-fundo="caderno"] .editor-notas::before {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    left: -0.6rem;
+    width: 1px;
+    background: color-mix(in oklch, var(--foreground) 18%, transparent);
+    pointer-events: none;
+  }
+  @media (min-width: 48rem) {
+    .documento[data-fundo="caderno"] .editor-notas::before { left: -1rem; }
+  }
+  .documento[data-fundo="foco"] .editor-notas.ProseMirror-focused > .bloco-atual { --cor-pauta: var(--tom-pauta); }
+  /* Nos fundos alinhados à linha, parágrafos seguidos não ganham espaço extra (o texto não sai do ritmo). */
+  .documento:is([data-fundo="caderno"], [data-fundo="pontilhado"], [data-fundo="quadriculado"]) .editor-notas > :is(p, ul, ol) + :is(p, ul, ol) { margin-top: 0; }
+}
+
+/* A cor da pauta é registrada para poder esmaecer (o Foco acende a pauta do bloco atual). */
+@property --cor-pauta {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
 }
 
 /* Rafael Marques - 29/10/2026 (sugestão do Kaíke)
@@ -764,6 +810,14 @@ select optgroup {
 .animacao-entrar { animation: kanban-entrar 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: calc(var(--ordem, 0) * 60ms); }
 .animacao-cartao { animation: kanban-cartao 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: calc(var(--ordem, 0) * 35ms + 150ms); }
 .animacao-fundo { animation: kanban-esmaecer 0.7s ease-out backwards; }
+/* Rafael Marques - 02/11/2026 (M8): cartão chegou em Concluído: o círculo do ícone dá um pulo e o check se desenha. */
+@keyframes status-pulo { 0% { transform: scale(0.8); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
+@keyframes status-desenhar { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+.status-pulo { transform-box: fill-box; transform-origin: center; animation: status-pulo var(--duration-slow) var(--ease-out); }
+.status-desenhar { stroke-dasharray: 1; stroke-dashoffset: 0; animation: status-desenhar var(--duration-base) var(--ease-out) 120ms backwards; }
+@media (prefers-reduced-motion: reduce) {
+  .status-pulo, .status-desenhar { animation: none; }
+}
 .animacao-visao { animation: kanban-esmaecer 0.3s ease-out both; }
 @media (prefers-reduced-motion: reduce) {
   .animacao-entrar, .animacao-cartao, .animacao-fundo, .animacao-visao { animation: none; }

@@ -163,6 +163,9 @@ const alturas: Record<AlturaCapa, string> = {
   alta: "h-[42vh] max-h-[28rem] min-h-52",
 }
 
+// Botões em cima da capa: fundo sólido da página (transparentes, sumiam em capas escuras no tema claro).
+const botaoSobreCapa = "bg-night hover:bg-raised"
+
 export function CapaNota({ nota, altura = "media", aoTrocar }: { nota: Nota; altura?: AlturaCapa; aoTrocar: () => void }) {
   const atualizarAparencia = useNotas((estado) => estado.atualizarAparencia)
   const capa = nota.aparencia?.capa
@@ -206,7 +209,7 @@ export function CapaNota({ nota, altura = "media", aoTrocar }: { nota: Nota; alt
       >
         {reposicionando ? (
           <>
-            <Button size="xs" variant="secondary" onClick={() => setReposicionando(false)}>Cancelar</Button>
+            <Button size="xs" variant="secondary" className={botaoSobreCapa} onClick={() => setReposicionando(false)}>Cancelar</Button>
             <Button
               size="xs"
               onClick={() => {
@@ -219,11 +222,12 @@ export function CapaNota({ nota, altura = "media", aoTrocar }: { nota: Nota; alt
           </>
         ) : (
           <>
-            <Button size="xs" variant="secondary" onClick={aoTrocar}><ImageIcon /> Trocar capa</Button>
+            <Button size="xs" variant="secondary" className={botaoSobreCapa} onClick={aoTrocar}><ImageIcon /> Trocar capa</Button>
             {capa.tipo === "imagem" && (
               <Button
                 size="xs"
                 variant="secondary"
+                className={botaoSobreCapa}
                 onClick={() => {
                   setPosicao(capa.posicaoY)
                   setReposicionando(true)
@@ -232,7 +236,7 @@ export function CapaNota({ nota, altura = "media", aoTrocar }: { nota: Nota; alt
                 <MoveVerticalIcon /> Reposicionar
               </Button>
             )}
-            <Button size="xs" variant="secondary" aria-label="Remover capa" onClick={() => atualizarAparencia(nota.id, { capa: null })}>
+            <Button size="xs" variant="secondary" className={botaoSobreCapa} aria-label="Remover capa" onClick={() => atualizarAparencia(nota.id, { capa: null })}>
               <Trash2Icon />
             </Button>
           </>

@@ -33,10 +33,29 @@ export const ordemTipos: TipoNovidade[] = ["novo", "melhorado", "corrigido"]
 
 // Mais recente primeiro.
 export const NOVIDADES: Novidade[] = [
-  // Redesign v2 (02/11/2026).
+  // Rafael Marques - 02/11/2026: versão 1.4a (fundos, colunas, animações e correções depois do redesign).
+  {
+    id: "2026-11-02-b",
+    versao: "1.4a",
+    data: "02/11/2026",
+    titulo: "Fundos que acompanham o que você escreve",
+    resumo: "As notas ganharam fundos que seguem cada linha do texto, os quadros ganharam texturas que combinam com o tema e o app ficou mais vivo, sem exagero.",
+    itens: [
+      { tipo: "novo", titulo: "Caderno", texto: "A pauta volta e passa embaixo de cada linha escrita, em qualquer fonte, tamanho ou espaçamento." },
+      { tipo: "novo", titulo: "Foco", texto: "Fundo da nota que mostra a pauta só no parágrafo onde você está escrevendo." },
+      { tipo: "novo", titulo: "Texturas no quadro", texto: "Grão, Pontos, Grade, Linhas e Hachura, em preto e branco como o resto do app." },
+      { tipo: "melhorado", titulo: "Fundos da nota", texto: "Papel com grão fino e borda de folha; Pontilhado e Quadriculado no ritmo das linhas do texto." },
+      { tipo: "melhorado", titulo: "Colunas", texto: "Cada coluna do quadro tem um contorno fino, para ver onde começa e termina." },
+      { tipo: "melhorado", titulo: "Cartões", texto: "Prioridade e complexidade aparecem escritas por extenso, para não confundir uma com a outra." },
+      { tipo: "melhorado", titulo: "Movimento", texto: "Contadores que rolam, check que se desenha ao concluir, cartões que encolhem ao sair e menus que deslizam." },
+      { tipo: "corrigido", titulo: "Quadros de equipe", texto: "Voltaram a abrir depois do redesign." },
+      { tipo: "corrigido", titulo: "Capa da nota", texto: "Os botões em cima da capa ficam legíveis em capas escuras." },
+    ],
+  },
+  // Redesign (02/11/2026), versão 1.4.
   {
     id: "2026-11-02",
-    versao: "2.0",
+    versao: "1.4",
     data: "02/11/2026",
     titulo: "Um SprintNote novo, em preto e branco",
     resumo: "O app foi redesenhado inteiro. Ele é preto e branco, e o laranja aparece só onde está o seu momento: a hora atual, o dia de hoje e o prazo de hoje.",

@@ -33,19 +33,23 @@ export const automaticoPadrao: AjusteAutomatico = { visibilidade: 0.4, brilho: 0
 
 const PREFIXO_FOTO = "foto:"
 
-const traco = "color-mix(in oklch, var(--foreground) 11%, transparent)"
+// Traço das texturas: a cor do texto em transparência (acompanha o tema claro/escuro).
+const traco = "color-mix(in oklch, var(--foreground) 9%, transparent)"
 
 export type ModeloFundo = { id: string; nome: string; valor: string }
 
-// Só neutros: usam a cor do texto com transparência e acompanham o tema claro/escuro.
+// Rafael Marques - 02/11/2026: só texturas neutras, combinando com o tema (preto e branco).
+// "Grão" usa o mesmo ruído do fundo Papel das notas (--grao-papel em globals.css), sem o bege.
 export const fundosQuadro: ModeloFundo[] = [
+  { id: "grao", nome: "Grão", valor: "var(--grao-papel)" },
   { id: "pontos", nome: "Pontos", valor: `radial-gradient(color-mix(in oklch, var(--foreground) 22%, transparent) 1.2px, transparent 1.7px) 0 0 / 22px 22px` },
   { id: "quadriculado", nome: "Grade", valor: `linear-gradient(${traco} 1px, transparent 1px) 0 0 / 28px 28px, linear-gradient(90deg, ${traco} 1px, transparent 1px) 0 0 / 28px 28px` },
-  { id: "nevoa", nome: "Névoa", valor: "linear-gradient(to bottom, color-mix(in oklch, var(--foreground) 9%, transparent), transparent 80%)" },
+  { id: "linhas", nome: "Linhas", valor: `linear-gradient(${traco} 1px, transparent 1px) 0 0 / 100% 28px` },
+  { id: "diagonal", nome: "Hachura", valor: `repeating-linear-gradient(45deg, ${traco} 0 1px, transparent 1px 12px)` },
 ]
 
-// Fundos de versões anteriores viram o modelo neutro mais parecido.
-const fundosAntigos: Record<string, string> = { diagonal: "quadriculado", cinza: "nevoa", grafite: "nevoa" }
+// Fundos de versões anteriores (e os que existiram por pouco tempo: papel, progresso, agora) viram o mais parecido.
+const fundosAntigos: Record<string, string> = { nevoa: "grao", cinza: "grao", grafite: "grao", papel: "grao", progresso: "grao", agora: "grao" }
 
 export type FundoResolvido = { tipo: "modelo"; id: string; valor: string } | { tipo: "foto"; ajuste: AjusteFoto }
 
@@ -86,12 +90,19 @@ export function resolverFundoQuadro(fundo: string | null | undefined, imagem?: s
   if (ajuste) return imagem ? { tipo: "foto", ajuste } : null
   const id = fundosAntigos[fundo] ?? fundo
   const modelo = fundosQuadro.find((item) => item.id === id)
-  // Degradês coloridos antigos (CSS completo salvo no quadro) viram "Névoa".
-  if (!modelo) return fundo.includes("gradient(") ? { tipo: "modelo", id: "nevoa", valor: fundosQuadro[2].valor } : null
+  if (!modelo) {
+    // Degradês coloridos antigos (CSS completo salvo no quadro) viram "Grão".
+    if (!fundo.includes("gradient(")) return null
+    const grao = fundosQuadro.find((item) => item.id === "grao")!
+    return { tipo: "modelo", id: grao.id, valor: grao.valor }
+  }
   return { tipo: "modelo", id: modelo.id, valor: modelo.valor }
 }
 
 export const temFundoQuadro = (fundo: string | null | undefined, imagem?: string | null) => resolverFundoQuadro(fundo, imagem) !== null
+
+// Colunas em "vidro" (opacas, com desfoque) só com foto: as texturas são leves e as colunas têm contorno.
+export const pedeVidro = (resolvido: FundoResolvido | null) => resolvido?.tipo === "foto"
 
 // Visibilidade e brilho para a foto ficar bonita sem atrapalhar a leitura:
 // - foto agitada (muito contraste) aparece menos;
