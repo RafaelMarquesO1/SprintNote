@@ -258,7 +258,7 @@ export function PainelGrafo() {
   const ordemLivros = biblioteca.livros.map((livro) => livro.id)
   const filtros = [
     ...biblioteca.livros.map((livro, indice) => ({ id: livro.id, titulo: livro.titulo, cor: livro.cor || coresLivro[indice % coresLivro.length] })),
-    { id: "soltas", titulo: "Notas soltas", cor: "var(--muted-foreground)" },
+    { id: "soltas", titulo: "Sem caderno", cor: "var(--muted-foreground)" },
   ]
   // Quantos filtros estão diferentes do padrão (número no botão "Filtros").
   const filtrosAtivos = ocultos.size + (estrutura ? 0 : 1) + (fantasmas ? 0 : 1) + (mostrarTags ? 1 : 0)
@@ -296,7 +296,7 @@ export function PainelGrafo() {
                 <DropdownMenuGroup>
                   <DropdownMenuLabel>Mostrar no grafo</DropdownMenuLabel>
                   <DropdownMenuCheckboxItem checked={estrutura} onCheckedChange={setEstrutura}>
-                    Ligação do livro com as notas
+                    Ligação do caderno com as notas
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem checked={fantasmas} onCheckedChange={setFantasmas}>
                     Notas citadas não criadas
@@ -339,7 +339,7 @@ export function PainelGrafo() {
         <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed p-12 text-center">
           <p className="font-medium">Sua biblioteca está vazia.</p>
           <p className="max-w-md text-sm text-muted-foreground">
-            Crie um livro e escreva notas dentro dele. Cada <code>[[link]]</code> entre notas vira uma linha neste grafo.
+            Crie um caderno e escreva notas dentro dele. Cada <code>[[link]]</code> entre notas vira uma linha neste grafo.
           </p>
           <div className="flex gap-2">
             <Button onClick={() => router.push(`/livros/${criarLivro().id}`)}><BookPlusIcon /> Criar livro</Button>

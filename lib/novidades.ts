@@ -33,6 +33,24 @@ export const ordemTipos: TipoNovidade[] = ["novo", "melhorado", "corrigido"]
 
 // Mais recente primeiro.
 export const NOVIDADES: Novidade[] = [
+  // Redesign v2 (02/11/2026).
+  {
+    id: "2026-11-02",
+    versao: "2.0",
+    data: "02/11/2026",
+    titulo: "Um SprintNote novo, em preto e branco",
+    resumo: "O app foi redesenhado inteiro. Ele é preto e branco, e o laranja aparece só onde está o seu momento: a hora atual, o dia de hoje e o prazo de hoje.",
+    itens: [
+      { tipo: "novo", titulo: "Seu dia", texto: "No Hoje, tarefas, hábitos e rotina numa linha do tempo, com a linha do agora." },
+      { tipo: "novo", titulo: "Buscar ou criar", texto: "Ctrl K busca notas, cartões e tags e cria tarefa, nota, hábito ou cartão a partir do que você digitou." },
+      { tipo: "novo", titulo: "Atalhos", texto: "G e uma letra para ir a cada tela, C para criar, Ctrl \\ para recolher o menu e ? para ver todos." },
+      { tipo: "novo", titulo: "Tinta nas etiquetas", texto: "Cada etiqueta tem um ponto de cor discreto. A capa colorida do cartão pode virar uma etiqueta." },
+      { tipo: "melhorado", titulo: "Quadros", texto: "Status por forma (não por cor), filtros que ficam no endereço e cartões mais fáceis de ler." },
+      { tipo: "melhorado", titulo: "Notas", texto: "Coluna de leitura, índice “Nesta nota” e as ligações ao lado. Sem a pauta de caderno." },
+      { tipo: "melhorado", titulo: "Celular", texto: "Barra inferior com Hoje, Tarefas, Criar, Quadros e Biblioteca; janelas viram gavetas." },
+      { tipo: "melhorado", titulo: "Acessibilidade", texto: "Mais contraste, alvos de toque maiores e status que não dependem só de cor." },
+    ],
+  },
   // Rafael Marques - 30/10/2026: versão 1.3b (Início, apresentação e sincronização entre aparelhos).
   {
     id: "2026-10-30",

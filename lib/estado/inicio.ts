@@ -85,8 +85,26 @@ export function widgetsPadrao(): Widget[] {
   ]
 }
 
+// Redesign v2 (8.4): blocos do Hoje, em ordem, com visibilidade ("Organizar painel"). "seu-dia" é fixo.
+export type BlocoHoje = "quadros" | "habitos-semana" | "notas-recentes" | "tarefas-proximas" | "tags"
+export type ConfigBloco = { id: BlocoHoje; visivel: boolean }
+
+export const blocosPadrao = (): ConfigBloco[] => [
+  { id: "quadros", visivel: true },
+  { id: "habitos-semana", visivel: true },
+  { id: "notas-recentes", visivel: true },
+  { id: "tarefas-proximas", visivel: false },
+  { id: "tags", visivel: false },
+]
+
 type EstadoInicio = {
+  // Os widgets do painel antigo continuam guardados (nada é apagado), mas o Hoje novo usa "blocos".
   widgets: Widget[]
+  blocos: ConfigBloco[]
+  definirBlocos: (blocos: ConfigBloco[]) => void
+  // Checklist de primeiros passos (8.16) dispensado.
+  onboardingDispensado: boolean
+  dispensarOnboarding: () => void
   adicionarWidget: (tipo: TipoWidget, largura: number, config?: ConfigWidget) => string
   duplicarWidget: (id: string) => void
   removerWidget: (id: string) => void
@@ -100,6 +118,10 @@ export const useInicio = create<EstadoInicio>()(
   persist(
     (set, get) => ({
       widgets: widgetsPadrao(),
+      blocos: blocosPadrao(),
+      definirBlocos: (blocos) => set({ blocos }),
+      onboardingDispensado: false,
+      dispensarOnboarding: () => set({ onboardingDispensado: true }),
 
       adicionarWidget: (tipo, largura, config = {}) => {
         const widget = novo(tipo, largura, config)

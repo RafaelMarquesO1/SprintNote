@@ -115,7 +115,7 @@ export function AjusteFotoAoVivo({
           <Button variant="ghost" size="icon-sm" title="Trocar foto" aria-label="Trocar foto" disabled={preparando} onClick={() => entrada.current?.click()}>
             <ImagePlusIcon />
           </Button>
-          <Button variant="ghost" size="icon-sm" title="Remover foto" aria-label="Remover foto" className="text-destructive hover:text-destructive" onClick={aoRemover}>
+          <Button variant="ghost" size="icon-sm" title="Remover foto" aria-label="Remover foto" className="text-paper hover:text-paper" onClick={aoRemover}>
             <Trash2Icon />
           </Button>
         </div>

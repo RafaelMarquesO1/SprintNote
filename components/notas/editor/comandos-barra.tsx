@@ -97,7 +97,7 @@ export const comandosBarra: ComandoBarra[] = [
 
   // Rafael Marques - 29/10/2026: citar um cartão do Kanban (abre o "[[" com os cartões).
   { id: "citar-cartao", rotulo: "Citar cartão do Kanban", descricao: "Mostra o cartão (#número e título) e abre ao clicar", grupo: "Links e datas", palavras: ["cartão", "cartao", "kanban", "tarefa", "citar", "card"], atalho: "[[", icone: KanbanIcon, aplicar: (c) => c.insertContent("[[") },
-  { id: "link-nota", rotulo: "Link para nota ou livro", descricao: "Conecta esta nota com outra", grupo: "Links e datas", palavras: ["link", "nota", "livro", "wiki", "conectar", "mencionar"], atalho: "[[", icone: LinkIcon, aplicar: (c) => c.insertContent("[[") },
+  { id: "link-nota", rotulo: "Link para nota ou caderno", descricao: "Conecta esta nota com outra", grupo: "Links e datas", palavras: ["link", "nota", "livro", "wiki", "conectar", "mencionar"], atalho: "[[", icone: LinkIcon, aplicar: (c) => c.insertContent("[[") },
   { id: "tag", rotulo: "Tag", descricao: "Organize com #assunto", grupo: "Links e datas", palavras: ["tag", "etiqueta", "hashtag", "assunto"], atalho: "#", icone: HashIcon, aplicar: (c) => c.insertContent("#") },
   { id: "data-hoje", rotulo: "Data de hoje", descricao: "Insere a data de hoje no texto", grupo: "Links e datas", palavras: ["data", "hoje", "dia", "calendario"], icone: CalendarIcon, aplicar: (c) => c.insertContent(`${dataDeHoje()} `) },
   { id: "prazo-hoje", rotulo: "Prazo: hoje", descricao: "@hoje — aparece na lista de tarefas", grupo: "Links e datas", palavras: ["prazo", "hoje", "vencimento", "tarefa"], atalho: "@hoje", icone: CalendarPlusIcon, aplicar: (c) => c.insertContent("@hoje ") },

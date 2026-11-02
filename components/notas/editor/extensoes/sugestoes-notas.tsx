@@ -24,7 +24,7 @@ export const SugestaoBarra = criarSugestao({
 export const SugestaoLinks = criarSugestao({
   nome: "links",
   char: "[[",
-  titulo: "Linkar nota, livro ou cartão",
+  titulo: "Ligar nota, caderno ou cartão",
   allowSpaces: true,
   allowedPrefixes: null,
   itens: (consulta, editor) => {

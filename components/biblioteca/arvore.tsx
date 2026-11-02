@@ -281,7 +281,7 @@ function LinhaLivro({
           </button>
         )}
         <DropdownMenu>
-          <DropdownMenuTrigger aria-label="Mais ações do livro" className={botaoLinha}>
+          <DropdownMenuTrigger aria-label="Mais ações do caderno" className={botaoLinha}>
             <MoreHorizontalIcon className="size-3.5" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-44">
@@ -296,8 +296,8 @@ function LinhaLivro({
               <PencilIcon /> Renomear
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive" onClick={aoExcluir}>
-              <Trash2Icon /> Excluir livro
+            <DropdownMenuItem onClick={aoExcluir}>
+              <Trash2Icon /> Excluir caderno
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -315,7 +315,7 @@ function LinhaSoltas({ selecionado, aberto, total, aoAlternar, children }: { sel
         <Seta aberta={aberto} visivel aoClicar={aoAlternar} />
         <button type="button" onClick={aoAlternar} className="flex min-w-0 flex-1 items-center gap-2 py-1 text-left text-muted-foreground">
           <FolderInputIcon className="size-4" />
-          <span className="truncate">Notas soltas</span>
+          <span className="truncate">Sem caderno</span>
           <span className="text-xs tabular-nums">{total}</span>
         </button>
       </div>
@@ -410,11 +410,11 @@ function LinhaNota({
                   </DropdownMenuItem>
                 ))}
                 {livros.length > 0 && <DropdownMenuSeparator />}
-                <DropdownMenuItem onClick={() => aoMover(null)}>Notas soltas</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => aoMover(null)}>Sem caderno</DropdownMenuItem>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
             <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive" onClick={aoExcluir}>
+            <DropdownMenuItem onClick={aoExcluir}>
               <Trash2Icon /> Excluir
             </DropdownMenuItem>
           </DropdownMenuContent>

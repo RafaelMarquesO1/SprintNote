@@ -56,7 +56,7 @@ function NovaEquipe({ aoCriar, destaque = false }: { aoCriar: () => void; destaq
           {ocupado ? <Spinner /> : <PlusIcon />} Criar equipe
         </Button>
       </div>
-      {erro && <p role="alert" className="text-sm text-destructive">{erro}</p>}
+      {erro && <p role="alert" className="text-sm text-paper">{erro}</p>}
     </form>
   )
 }

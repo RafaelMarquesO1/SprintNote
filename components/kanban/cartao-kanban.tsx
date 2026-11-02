@@ -2,12 +2,12 @@
 
 import { useDraggable, useDroppable } from "@dnd-kit/core"
 import {
+  AlertCircleIcon,
   ArchiveIcon,
   CalendarIcon,
   CheckIcon,
   CopyIcon,
   FileTextIcon,
-  FlagIcon,
   ListChecksIcon,
   MessageSquareIcon,
   MoreHorizontalIcon,
@@ -16,6 +16,9 @@ import {
   Trash2Icon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+
+import { EtiquetaChip } from "@/components/ui/etiqueta"
+import { PriorityIcon } from "@/components/ui/status-icon"
 
 import {
   DropdownMenu,
@@ -66,9 +69,9 @@ function Caixa({ marcada, rotulo, aoAlternar, redonda = false }: { marcada: bool
         aoAlternar()
       }}
       className={cn(
-        "flex size-4 shrink-0 items-center justify-center border-[1.5px] transition-colors",
-        redonda ? "rounded-full" : "rounded",
-        marcada ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/50 hover:border-primary"
+        "relative flex size-4 shrink-0 items-center justify-center border-[1.5px] transition-colors duration-fast after:absolute after:-inset-2.5",
+        redonda ? "rounded-full" : "rounded-xs",
+        marcada ? "border-paper bg-paper text-night" : "border-line-strong hover:border-ink-muted"
       )}
     >
       {marcada && <CheckIcon className="size-3" strokeWidth={3} />}
@@ -121,29 +124,21 @@ export function ConteudoCartao({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-lg border bg-card text-left text-sm shadow-xs transition-[transform,box-shadow] duration-200 group-hover/cartao:-translate-y-0.5 group-hover/cartao:shadow-md",
-        atrasado && "border-l-[3px] border-l-destructive",
-        venceHoje && "ring-1 ring-foreground/40",
-        arrastando && "rotate-2 shadow-lg ring-2 ring-primary/30"
+        "overflow-hidden rounded-lg border bg-panel text-left transition-[border-color,translate,scale,rotate,box-shadow] duration-fast ease-out",
+        concluido ? "border-line" : "border-line-strong group-hover/cartao:border-ink-muted",
+        arrastando && "scale-102 -rotate-[1.5deg] shadow-drag"
       )}
     >
-      {exibicao.faixaCor && cartao.cor && <div className="h-1.5" style={{ background: cartao.cor }} />}
-      <div className="space-y-1.5 p-2.5 sm:space-y-2 sm:p-3">
-        {doCartao.length > 0 && (
+      <div className="space-y-2.5 p-3.5">
+        {!concluido && doCartao.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {doCartao.map((etiqueta) => (
-              <span
-                key={etiqueta.id}
-                className="rounded px-1.5 py-0.5 text-[11px] leading-none font-medium"
-                style={{ background: `color-mix(in oklch, ${etiqueta.cor} 22%, transparent)`, color: etiqueta.cor }}
-              >
-                {etiqueta.nome}
-              </span>
+              <EtiquetaChip key={etiqueta.id} nome={etiqueta.nome} cor={etiqueta.cor} />
             ))}
           </div>
         )}
 
-        <div className="flex items-start gap-2 pr-5">
+        <div className="flex items-start gap-2 pr-6">
           {exibicao.concluir && (
             <span className="pt-0.5">
               <Caixa
@@ -154,21 +149,21 @@ export function ConteudoCartao({
               />
             </span>
           )}
-          <p className={cn("min-w-0 font-medium break-words", concluido && "text-muted-foreground line-through")}>
+          <p className={cn("min-w-0 text-ui font-semibold break-words", concluido ? "text-ink-soft" : "text-paper")}>
             {/* Rafael Marques - 29/10/2026: número do cartão no quadro. */}
-            {numero && <span className="mr-1 text-xs font-normal text-muted-foreground tabular-nums no-underline">#{numero}</span>}
+            {numero && <span className="mr-1.5 font-mono text-code font-normal text-ink-muted tabular-nums">#{numero}</span>}
             {cartao.titulo}
           </p>
         </div>
 
-        {exibicao.descricao && cartao.descricao && (
-          <p className="line-clamp-3 text-xs whitespace-pre-line text-muted-foreground">{cartao.descricao}</p>
+        {exibicao.descricao && cartao.descricao && !concluido && (
+          <p className="line-clamp-3 text-small whitespace-pre-line text-ink-soft">{cartao.descricao}</p>
         )}
 
         {exibicao.checklist === "itens" && cartao.checklist.length > 0 && (
           <ul className="space-y-1">
             {cartao.checklist.map((item) => (
-              <li key={item.id} className="flex items-start gap-2 text-xs">
+              <li key={item.id} className="flex items-start gap-2 text-small">
                 <span className="pt-px">
                   <Caixa
                     marcada={item.feito}
@@ -181,41 +176,41 @@ export function ConteudoCartao({
                     }
                   />
                 </span>
-                <span className={cn("min-w-0 break-words", item.feito && "text-muted-foreground line-through")}>{item.texto}</span>
+                <span className={cn("min-w-0 break-words", item.feito ? "text-ink-muted" : "text-ink")}>{item.texto}</span>
               </li>
             ))}
           </ul>
         )}
 
         {temRodape && (
-          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
-            {mostrarPrioridade && (
-              <span className={cn("flex items-center gap-1", estilosPrioridade[cartao.prioridade!].classe)}>
-                <FlagIcon className={cn("size-3", estilosPrioridade[cartao.prioridade!].preenchida && "fill-current")} />
-                {estilosPrioridade[cartao.prioridade!].titulo}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-small text-ink-soft">
+            {mostrarPrioridade && !concluido && (
+              <span className="flex items-center gap-1.5">
+                <PriorityIcon priority={cartao.prioridade!} /> {estilosPrioridade[cartao.prioridade!].titulo}
               </span>
             )}
             {mostrarPrazo && (
-              <span className={cn("flex items-center gap-1", atrasado && "font-medium text-destructive")}>
-                <CalendarIcon className="size-3" /> {rotuloPrazo(cartao.prazo!, hoje)}
+              <span className={cn("flex items-center gap-1", venceHoje && "font-semibold text-ember", atrasado && "text-paper")}>
+                {atrasado ? <AlertCircleIcon className="size-3.5" /> : <CalendarIcon className="size-3.5" />}
+                {venceHoje ? "Hoje" : atrasado ? `Atrasado, ${rotuloPrazo(cartao.prazo!, hoje)}` : rotuloPrazo(cartao.prazo!, hoje)}
               </span>
             )}
             {mostrarProgresso && (
-              <span className={cn("flex items-center gap-1", feitos === cartao.checklist.length && "text-[color:var(--destaque-dica)]")}>
-                <ListChecksIcon className="size-3" /> {feitos}/{cartao.checklist.length}
+              <span className="flex items-center gap-1 tabular-nums">
+                <ListChecksIcon className="size-3.5" /> {feitos}/{cartao.checklist.length} {cartao.checklist.length === 1 ? "item" : "itens"}
               </span>
             )}
             {cartao.anexos.length > 0 && (
               <span className="flex items-center gap-1" title={`${cartao.anexos.length} anexo(s)`}>
-                <PaperclipIcon className="size-3" /> {cartao.anexos.length}
+                <PaperclipIcon className="size-3.5" /> {cartao.anexos.length}
               </span>
             )}
             {cartao.recorrencia && (
               <span className="flex items-center gap-1" title={descreverRecorrencia(cartao.recorrencia)}>
-                <RepeatIcon className="size-3" />
+                <RepeatIcon className="size-3.5" />
+                <span className="sr-only">{descreverRecorrencia(cartao.recorrencia)}</span>
               </span>
             )}
-            {/* Complexidade: só as barrinhas (o texto "Alta/Média/Baixa" já é usado pela prioridade). */}
             {complexidadeDe(cartao.estimativa) && (
               <span className="flex items-center gap-1" title={`Complexidade ${rotuloComplexidade(cartao.estimativa)?.toLowerCase()}`}>
                 <BarrasComplexidade nivel={complexidades[complexidadeDe(cartao.estimativa)!]} />
@@ -223,8 +218,13 @@ export function ConteudoCartao({
               </span>
             )}
             {mostrarComentarios && (
-              <span className="flex items-center gap-1" title={`${cartao.comentarios.length} comentário(s)`}>
-                <MessageSquareIcon className="size-3" /> {cartao.comentarios.length}
+              <span className="flex items-center gap-1">
+                <MessageSquareIcon className="size-3.5" /> {cartao.comentarios.length} {cartao.comentarios.length === 1 ? "comentário" : "comentários"}
+              </span>
+            )}
+            {mostrarNota && (
+              <span className="flex min-w-0 items-center gap-1">
+                <FileTextIcon className="size-3.5 shrink-0" /> <span className="truncate">{nota.titulo}</span>
               </span>
             )}
             {responsavel && (
@@ -239,18 +239,10 @@ export function ConteudoCartao({
                   evento.stopPropagation()
                   if (interativo) alternarFiltroPorResponsavel(responsavel.id, responsavel.id === meuId ? "você" : responsavel.nome)
                 }}
-                className={cn(
-                  "ml-auto rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50 hover:opacity-80",
-                  filtrandoPorEle && "ring-2 ring-foreground"
-                )}
+                className={cn("ml-auto rounded-full hover:opacity-80", filtrandoPorEle && "ring-2 ring-paper")}
               >
                 <AvatarPessoa nome={responsavel.nome} foto={responsavel.foto} tamanho="sm" />
               </button>
-            )}
-            {mostrarNota && (
-              <span className="flex min-w-0 items-center gap-1">
-                <FileTextIcon className="size-3 shrink-0" /> <span className="truncate">{nota.titulo}</span>
-              </span>
             )}
           </div>
         )}
@@ -293,7 +285,7 @@ export function Cartao({
   return (
     <div ref={definirAlvo} className="animacao-cartao group/cartao relative" style={{ ["--ordem" as string]: Math.min(ordem, 12) }}>
       {/* Linha indicando onde o cartão será solto */}
-      {isOver && !isDragging && <div className="absolute -top-1.5 right-0 left-0 h-0.5 rounded-full bg-primary" />}
+      {isOver && !isDragging && <div className="absolute -top-1.5 right-0 left-0 h-0.5 rounded-full bg-paper" />}
       <div
         ref={definirArrastavel}
         onClick={aoAbrir}
@@ -310,8 +302,8 @@ export function Cartao({
         }}
         aria-label={`Cartão ${cartao.titulo}. Enter abre, Espaço arrasta.`}
         className={cn(
-          "block w-full cursor-grab touch-none rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/50 active:cursor-grabbing",
-          isDragging && "opacity-40"
+          "block w-full cursor-grab touch-none rounded-lg active:cursor-grabbing",
+          isDragging && "opacity-30"
         )}
       >
         <ConteudoCartao cartao={cartao} etiquetas={etiquetas} concluido={concluido} exibicao={exibicao} interativo />
@@ -319,7 +311,7 @@ export function Cartao({
       <DropdownMenu>
         <DropdownMenuTrigger
           aria-label={`Ações do cartão ${cartao.titulo}`}
-          className="absolute top-2 right-2 flex size-6 items-center justify-center rounded-md bg-card/80 text-muted-foreground opacity-0 group-hover/cartao:opacity-100 hover:bg-muted hover:text-foreground focus-visible:opacity-100 aria-expanded:opacity-100"
+          className="absolute top-2.5 right-2.5 flex size-7 items-center justify-center rounded-xs bg-panel text-ink-soft opacity-0 group-hover/cartao:opacity-100 hover:bg-raised hover:text-paper focus-visible:opacity-100 aria-expanded:opacity-100"
         >
           <MoreHorizontalIcon className="size-4" />
         </DropdownMenuTrigger>
@@ -328,7 +320,7 @@ export function Cartao({
           <DropdownMenuItem onClick={() => duplicarCartao(cartao.id)}><CopyIcon /> Duplicar</DropdownMenuItem>
           <DropdownMenuItem onClick={() => arquivarCartao(cartao.id, true)}><ArchiveIcon /> Arquivar</DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive" onClick={() => excluirCartao(cartao.id)}><Trash2Icon /> Excluir</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => excluirCartao(cartao.id)}><Trash2Icon /> Excluir</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

@@ -4,7 +4,6 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 
-import { diaDaSemana, somarDias } from "@/lib/datas"
 import { gerarId } from "@/lib/gerar-id"
 import type { Habito } from "@/lib/tipos"
 
@@ -62,21 +61,5 @@ export const useHabitos = create<EstadoHabitos>()(
   )
 )
 
-export function valeNoDia(habito: Habito, data: string) {
-  return habito.dias.includes(diaDaSemana(data))
-}
-
-// Sequência atual: dias programados seguidos em que o hábito foi feito.
-// Hoje só quebra a sequência depois que o dia acaba.
-export function calcularSequencia(habito: Habito, hoje: string) {
-  let sequencia = 0
-  let data = hoje
-  for (let passo = 0; passo < 366; passo++) {
-    if (valeNoDia(habito, data)) {
-      if (habito.feitos.includes(data)) sequencia++
-      else if (data !== hoje) break
-    }
-    data = somarDias(data, -1)
-  }
-  return sequencia
-}
+// Regras puras ficam em lib/domain/habitos.ts (redesign v2); reexportadas aqui para quem já importa daqui.
+export { calcularSequencia, valeNoDia } from "@/lib/domain/habitos"

@@ -2,59 +2,49 @@ import Link from "next/link"
 
 import { cn } from "@/lib/utils"
 
-
-// Rafael Marques - 21/10/2026
-// Estrutura comum das telas: mesma largura, mesmo cabeçalho e mesma faixa
-// de números — para todas as páginas seguirem o mesmo padrão visual.
+// Rafael Marques - 21/10/2026 · redesign v2 (fase 8)
+// Estrutura comum das telas que ainda usam este wrapper. O shell já limita a largura (1120px);
+// aqui só fica o espaçamento vertical e uma largura de leitura opcional.
 
 type Largura = "leitura" | "padrao" | "ampla" | "total"
 
 const larguras: Record<Largura, string> = {
-  // Textos longos (créditos).
-  leitura: "max-w-3xl",
-  // Telas de conteúdo (início, biblioteca, tarefas, hábitos, rotina, tags, dados).
-  padrao: "max-w-5xl",
-  // Painéis com muitas colunas (início).
-  ampla: "max-w-7xl",
-  // Telas que precisam de espaço (kanban, grafo).
+  leitura: "max-w-reading",
+  padrao: "",
+  ampla: "",
   total: "max-w-none",
 }
 
 export function Pagina({ largura = "padrao", className, children }: { largura?: Largura; className?: string; children: React.ReactNode }) {
-  return <div className={cn("mx-auto w-full space-y-6 pb-10", larguras[largura], className)}>{children}</div>
+  return <div className={cn("w-full space-y-8 pb-10", larguras[largura], className)}>{children}</div>
 }
 
+// Cabeçalho no padrão do PageHeader (seção 6): título grande, descrição em ink-soft, ações à direita.
+// "secao" e "icone" continuam aceitos, mas não aparecem mais: o rótulo acima do título repetia o menu (1.3).
 export function CabecalhoPagina({
-  secao,
-  icone: IconeSecao,
   titulo,
   descricao,
   resumo,
   acoes,
   compactoNoCelular = false,
 }: {
-  // Rótulo pequeno acima do título (ex.: "Organização", "Biblioteca").
-  secao: string
-  icone: React.ElementType
-  // Texto ou um campo editável (ex.: nome do quadro no Kanban).
+  secao?: string
+  icone?: React.ElementType
   titulo: React.ReactNode
   descricao?: React.ReactNode
-  // Linha curta de números (ex.: "2 para hoje · 1 atrasada").
   resumo?: React.ReactNode
   acoes?: React.ReactNode
-  // Rafael Marques - 23/10/2026: no celular esconde o rótulo e a descrição para sobrar espaço (Kanban).
   compactoNoCelular?: boolean
 }) {
   return (
-    <header className="flex flex-wrap items-end justify-between gap-4">
-      {/* Rafael Marques - 22/10/2026: base de 18rem para os botões irem para a
-          linha de baixo no celular, em vez de espremer o título. */}
-      <div className="min-w-0 flex-[1_1_18rem] space-y-1">
-        <p className={cn("flex items-center gap-1.5 text-xs font-medium tracking-wider text-muted-foreground uppercase", compactoNoCelular && "max-sm:hidden")}>
-          <IconeSecao className="size-3.5" /> {secao}
-        </p>
-        {typeof titulo === "string" ? <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{titulo}</h1> : titulo}
-        {descricao && <p className={cn("text-sm text-muted-foreground", compactoNoCelular && "max-sm:hidden")}>{descricao}</p>}
+    <header className="flex flex-wrap items-end justify-between gap-5">
+      <div className="min-w-0 flex-[1_1_20rem] space-y-3">
+        {typeof titulo === "string" ? (
+          <h1 className="font-display text-4xl leading-none font-bold tracking-tight text-paper [view-transition-name:page-title] md:text-display-lg">{titulo}</h1>
+        ) : (
+          titulo
+        )}
+        {descricao && <p className={cn("max-w-[60ch] text-body text-ink-soft", compactoNoCelular && "max-sm:hidden")}>{descricao}</p>}
         {resumo}
       </div>
       {acoes && <div className="flex flex-wrap items-center gap-2">{acoes}</div>}
@@ -64,40 +54,42 @@ export function CabecalhoPagina({
 
 // Classe do título quando ele é um campo editável (mesmo visual do <h1>).
 export const classeTituloEditavel =
-  "w-full min-w-0 bg-transparent text-2xl font-bold tracking-tight outline-none placeholder:text-muted-foreground/50 sm:text-3xl"
+  "w-full min-w-0 bg-transparent font-display text-4xl leading-none font-bold tracking-tight text-paper outline-none placeholder:text-ink-muted md:text-display-lg"
 
-// Resumo em uma linha (sem cartões): cada item é uma etiqueta leve com o
-// número em destaque. "alerta" pinta de vermelho (ex.: tarefas atrasadas).
-// Rafael Marques - 30/10/2026: "href" (opcional) faz o item levar à tela correspondente (resumo do Início).
+// Resumo em uma linha, no padrão do StatList inline: número em paper, rótulo em ink-soft.
+// "alerta" ganha um ícone (sem vermelho: cor nunca é o único sinal). "href" leva à tela correspondente.
 type ItemResumo = { valor: React.ReactNode; texto: string; alerta?: boolean; href?: string }
 
 export function ResumoLinha({ itens }: { itens: (false | null | undefined | ItemResumo)[] }) {
   const visiveis = itens.filter((item): item is ItemResumo => Boolean(item))
   if (visiveis.length === 0) return null
   return (
-    <div className="flex flex-wrap items-center gap-1.5 pt-1.5">
+    <dl className="flex flex-wrap items-center gap-x-4 gap-y-1 text-ui text-ink-soft">
       {visiveis.map((item) => {
-        const classe = cn(
-          "inline-flex items-baseline gap-1 rounded-md px-2 py-0.5 text-xs ring-1 ring-inset",
-          item.alerta ? "bg-destructive/10 text-destructive ring-destructive/20" : "bg-muted/60 text-muted-foreground ring-border",
-          item.href && (item.alerta ? "hover:bg-destructive/15" : "hover:bg-muted hover:text-foreground")
-        )
         const conteudo = (
           <>
-            <strong className={cn("text-sm font-semibold tabular-nums", !item.alerta && "text-foreground")}>{item.valor}</strong>
-            {item.texto}
+            <dd className="text-paper tabular-nums">
+              {item.alerta ? (
+                <svg viewBox="0 0 16 16" aria-hidden="true" className="mr-1 inline size-3.5 align-[-2px]">
+                  <circle cx="8" cy="8" r="6.75" fill="none" stroke="currentColor" strokeWidth="1.5" />
+                  <path d="M8 4.5v4.25M8 11.1v.15" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                </svg>
+              ) : null}
+              {item.valor}
+            </dd>
+            <dt>{item.texto}</dt>
           </>
         )
         return item.href ? (
-          <Link key={item.texto} href={item.href} className={classe}>
+          <Link key={item.texto} href={item.href} className="flex items-baseline gap-1 rounded-xs hover:text-paper">
             {conteudo}
           </Link>
         ) : (
-          <span key={item.texto} className={classe}>
+          <div key={item.texto} className="flex items-baseline gap-1">
             {conteudo}
-          </span>
+          </div>
         )
       })}
-    </div>
+    </dl>
   )
 }

@@ -132,7 +132,7 @@ export function AlcaBloco({ editor }: { editor: Editor }) {
               <CopyIcon /> Duplicar
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive" onClick={excluir}>
+            <DropdownMenuItem onClick={excluir}>
               <Trash2Icon /> Excluir bloco
             </DropdownMenuItem>
           </DropdownMenuContent>

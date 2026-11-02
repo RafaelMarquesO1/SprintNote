@@ -64,7 +64,7 @@ export function DialogoCompartilhar({
             </li>
           ))}
         </ul>
-        {erro && <p role="alert" className="text-sm text-destructive">{erro}</p>}
+        {erro && <p role="alert" className="text-sm text-paper">{erro}</p>}
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={() => aoMudarAberto(false)}>Cancelar</Button>
           <Button onClick={compartilhar} disabled={ocupado || !alvo}>{ocupado && <Spinner />} Compartilhar</Button>

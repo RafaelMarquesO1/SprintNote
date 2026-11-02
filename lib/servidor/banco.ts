@@ -1,5 +1,6 @@
 // Rafael Marques - 21/10/2026
 // Conexão com o banco do Neon (Postgres). Só roda no servidor.
+// Em "next dev" a URL vem de .env.development.local quando ele existe (branch de teste do redesign).
 
 import "server-only"
 import { neon, type NeonQueryFunction } from "@neondatabase/serverless"

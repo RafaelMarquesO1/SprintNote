@@ -62,7 +62,7 @@ function MenuDoDia({ chave, semPrazo, colunaInicial }: { chave: string; semPrazo
         <PlusIcon className="size-3.5" />
       </PopoverTrigger>
       <PopoverContent align="start" className="w-72">
-        <p className="text-sm font-medium first-letter:uppercase">{rotulo}</p>
+        <p className="text-sm font-medium first-letter:">{rotulo}</p>
         {colunaInicial && (
           <form
             className="flex gap-1.5"

@@ -12,6 +12,9 @@
 
 import { create, type StoreApi } from "zustand"
 
+import { lerMeusDados, lerMinhasVersoes, salvarArea } from "@/lib/actions/dados"
+import type { DadosDaConta } from "@/lib/servidor/dados"
+
 import { useHabitos } from "@/lib/estado/habitos"
 import { useInicio } from "@/lib/estado/inicio"
 import { useKanban } from "@/lib/estado/kanban"
@@ -158,6 +161,25 @@ async function juntarComServidor(nome: string, textoRemoto: string | null, versa
   if (resultado !== null && resultado !== textoLocal) await aplicarTexto(nome, resultado)
 }
 
+type Gravacao = { ok: true; versao: string } | { ok: false; erro: string; valor?: unknown; versao?: string | null }
+
+async function enviarPelaRota(nome: string, texto: string): Promise<Gravacao> {
+  const resposta = await fetch(`/api/dados?chave=${encodeURIComponent(nome)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", "x-versao-base": versoes.get(nome) ?? "" },
+    body: texto,
+    // keepalive deixa o envio terminar com a aba fechando (limite de ~64 KB).
+    keepalive: texto.length < 60_000,
+  })
+  if (resposta.status === 409) {
+    const { valor, versao } = (await resposta.json()) as { valor: unknown; versao: string | null }
+    return { ok: false, erro: "conflito", valor, versao }
+  }
+  if (!resposta.ok) return { ok: false, erro: `HTTP ${resposta.status}` }
+  const { versao } = (await resposta.json()) as { versao: string }
+  return { ok: true, versao }
+}
+
 async function enviar(nome: string, aoSairDaPagina = false) {
   if (emVoo.has(nome)) {
     // Um envio desta área já está a caminho: manda de novo quando ele voltar.
@@ -175,21 +197,15 @@ async function enviar(nome: string, aoSairDaPagina = false) {
   atualizarEstado()
   let tentarDeNovo = false
   try {
-    const resposta = await fetch(`/api/dados?chave=${encodeURIComponent(nome)}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json", "x-versao-base": versoes.get(nome) ?? "" },
-      body: texto,
-      // keepalive deixa o envio terminar com a aba fechando (limite de ~64 KB).
-      keepalive: aoSairDaPagina && texto.length < 60_000,
-    })
-    if (resposta.status === 409) {
-      const { valor, versao } = (await resposta.json()) as { valor: unknown; versao: string | null }
-      await juntarComServidor(nome, valor === null ? null : JSON.stringify(valor), versao)
+    // Redesign v2: gravação por Server Action. Ao fechar a aba, a rota /api/dados com "keepalive"
+    // (Server Actions não terminam com a página saindo).
+    const resultado = aoSairDaPagina ? await enviarPelaRota(nome, texto) : await salvarArea(nome, texto, versoes.get(nome) ?? "")
+    if (!resultado.ok && resultado.erro === "conflito") {
+      await juntarComServidor(nome, resultado.valor == null ? null : JSON.stringify(resultado.valor), resultado.versao ?? null)
       reenviar.add(nome)
     } else {
-      if (!resposta.ok) throw new Error(`HTTP ${resposta.status}`)
-      const { versao } = (await resposta.json()) as { versao: string }
-      versoes.set(nome, versao)
+      if (!resultado.ok) throw new Error(resultado.erro)
+      versoes.set(nome, resultado.versao)
       ultimoTexto.set(nome, texto)
       if (localStorage.getItem(nome) === texto) limparPendente(nome)
     }
@@ -237,13 +253,12 @@ export async function enviarPendentes(aoSairDaPagina = false) {
 // com o que tenha sobrado neste navegador.
 // Rafael Marques - 30/10/2026: exceção — mudanças desta mesma conta que não chegaram
 // a ser enviadas são juntadas ao que veio do banco.
-export async function carregarDadosDaConta(usuarioId: string) {
-  const resposta = await fetch("/api/dados", { cache: "no-store" })
-  if (!resposta.ok) throw new Error("Não foi possível carregar seus dados.")
-  const { dados, versoes: versoesRemotas } = (await resposta.json()) as {
-    dados: Record<string, unknown>
-    versoes: Record<string, string>
-  }
+// Redesign v2: os dados normalmente já chegam lidos no servidor (app/(app)/layout.tsx);
+// sem eles, pede por Server Action.
+export async function carregarDadosDaConta(usuarioId: string, dadosIniciais?: DadosDaConta) {
+  const lidos = dadosIniciais ?? (await lerMeusDados())
+  if ("erro" in lidos) throw new Error("Não foi possível carregar seus dados.")
+  const { dados, versoes: versoesRemotas } = lidos
 
   const marca = lerPendencias()
   const pendentes = marca?.usuarioId === usuarioId ? marca.areas : {}
@@ -289,15 +304,14 @@ async function buscarMudancasDeFora() {
   if (!ativa || buscando) return
   buscando = true
   try {
-    const resposta = await fetch("/api/dados?versoes=1", { cache: "no-store" })
-    if (!resposta.ok) return
-    const { versoes: remotas } = (await resposta.json()) as { versoes: Record<string, string> }
+    const remotas = await lerMinhasVersoes()
+    if ("erro" in remotas) return
     const mudaram = lojas.map(nomeDa).filter((nome) => nome in remotas && remotas[nome] !== versoes.get(nome))
     if (mudaram.length === 0) return
 
-    const completa = await fetch("/api/dados", { cache: "no-store" })
-    if (!completa.ok) return
-    const { dados, versoes: atuais } = (await completa.json()) as { dados: Record<string, unknown>; versoes: Record<string, string> }
+    const completa = await lerMeusDados()
+    if ("erro" in completa) return
+    const { dados, versoes: atuais } = completa
     for (const nome of mudaram) {
       // Envio desta área a caminho: se der conflito, ele mesmo junta.
       if (emVoo.has(nome) || !(nome in dados)) continue

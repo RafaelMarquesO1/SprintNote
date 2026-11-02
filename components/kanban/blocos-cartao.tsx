@@ -5,7 +5,7 @@
 export function Propriedade({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
     <section className="space-y-1.5">
-      <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{titulo}</h3>
+      <h3 className="text-xs font-medium text-muted-foreground">{titulo}</h3>
       {children}
     </section>
   )

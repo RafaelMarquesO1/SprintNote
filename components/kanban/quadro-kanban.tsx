@@ -15,22 +15,19 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core"
 import {
+  AlertCircleIcon,
   ArchiveIcon,
-  CalendarDaysIcon,
   ChartColumnIcon,
   CheckIcon,
   DownloadIcon,
   LayoutTemplateIcon,
-  ListIcon,
   Rows3Icon,
   UploadIcon,
   FilterIcon,
   Share2Icon,
   UserCheckIcon,
   UsersIcon,
-  FlagIcon,
   KanbanIcon,
-  ChevronDownIcon,
   MoreHorizontalIcon,
   PlusIcon,
   SearchIcon,
@@ -49,7 +46,7 @@ import { useConta } from "@/components/conta/portao-conta"
 import { AvatarPessoa } from "@/components/equipes/avatar-pessoa"
 import { AvisoDesfazer } from "@/components/kanban/aviso-desfazer"
 import { DialogoCompartilhar } from "@/components/kanban/dialogo-compartilhar"
-import { BotaoEquipes, PaineisKanban } from "@/components/kanban/paineis-kanban"
+import { PaineisKanban } from "@/components/kanban/paineis-kanban"
 import { DialogoArquivados } from "@/components/kanban/dialogo-arquivados"
 import { DialogoEtiquetas, DialogoExcluirColuna } from "@/components/kanban/dialogos-quadro"
 import {
@@ -61,9 +58,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Button } from "@/components/ui/button"
+import { Button, IconButton } from "@/components/ui/button"
+import { TopbarSlot } from "@/components/shell/estado"
+import { AvatarStack } from "@/components/ui/avatar-stack"
+import { chipVariants, ToggleChip } from "@/components/ui/chip"
+import { PontoTinta } from "@/components/ui/etiqueta"
+import { Segmented } from "@/components/ui/segmented"
+import { StatList } from "@/components/ui/stat-list"
+import { PriorityIcon } from "@/components/ui/status-icon"
+import { abrirPainelKanban } from "@/lib/estado/paineis-kanban"
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
@@ -73,11 +79,9 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import { CabecalhoPagina, ResumoLinha, classeTituloEditavel } from "@/components/pagina"
 import { Interruptor, OpcoesLadoALado, PainelPersonalizar, SecaoPersonalizar } from "@/components/painel-personalizar"
 import { useHidratado } from "@/hooks/use-hidratado"
 import { useHoje } from "@/hooks/use-hoje"
-import { AvisosPrazo } from "@/components/avisos-prazo"
 import { DialogoModelos } from "@/components/kanban/dialogo-modelos"
 import { DialogoResumo } from "@/components/kanban/dialogo-resumo"
 import { chaveDaRaia, montarRaias, mudancasDaRaia, RaiasKanban } from "@/components/kanban/raias-kanban"
@@ -92,7 +96,7 @@ import { ajusteFotoPadrao, codificarAjusteFoto, resolverFundoQuadro, temFundoQua
 import { useEquipes } from "@/lib/estado/equipes"
 import { alternarFiltroPorResponsavel, filtrarPorResponsavel, useFiltroAtribuidos } from "@/lib/estado/filtro-atribuidos"
 import { cartaoPeloNumero, colunasDoQuadro, exibicaoDoQuadro, exibicaoPadrao, numeroDoCartao, useKanban } from "@/lib/estado/kanban"
-import { rotulosRaia, rotulosVisao, useVisaoKanban, type RaiaKanban, type VisaoKanban } from "@/lib/estado/visao-kanban"
+import { rotulosRaia, useVisaoKanban, type RaiaKanban, type VisaoKanban } from "@/lib/estado/visao-kanban"
 import { baixarArquivo, nomeSeguro } from "@/lib/exportar"
 import { exportarQuadro, quadroParaCsv } from "@/lib/kanban/transferir"
 import { criarQuadroDeEquipe } from "@/lib/estado/sincronizacao-equipes"
@@ -133,7 +137,7 @@ function TituloQuadro({ quadroId, titulo }: { quadroId: string; titulo: string }
       onBlur={() => setRascunho(titulo)}
       onKeyDown={(evento) => evento.key === "Enter" && evento.currentTarget.blur()}
       aria-label="Nome do quadro"
-      className={classeTituloEditavel}
+      className="w-full min-w-0 bg-transparent font-display text-4xl leading-none font-bold tracking-tight text-paper outline-none placeholder:text-ink-muted md:text-display-md"
     />
   )
 }
@@ -165,9 +169,12 @@ export function QuadroKanban() {
   const [excluindoQuadro, setExcluindoQuadro] = useState(false)
   const [novaColuna, setNovaColuna] = useState<string | null>(null)
   const [busca, setBusca] = useState("")
-  const [filtroEtiquetas, setFiltroEtiquetas] = useState<string[]>([])
+  // Redesign v2 (8.8): filtros na URL. A tag chega pelo nome ("nome:SisPep") e vale para a etiqueta com esse nome.
+  const [filtroEtiquetas, setFiltroEtiquetas] = useState<string[]>(() =>
+    typeof window === "undefined" ? [] : new URLSearchParams(window.location.search).getAll("tag").map((nome) => `nome:${nome}`)
+  )
   const [filtroPrioridades, setFiltroPrioridades] = useState<Prioridade[]>([])
-  const [soAtrasados, setSoAtrasados] = useState(false)
+  const [soAtrasados, setSoAtrasados] = useState(() => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("atrasados") === "1")
   const [verArquivados, setVerArquivados] = useState(false)
   // Rafael Marques - 23/10/2026: no celular os chips de filtro ficam recolhidos atrás do botão "Filtros".
   const [mostrarFiltros, setMostrarFiltros] = useState(false)
@@ -253,8 +260,15 @@ export function QuadroKanban() {
     url.searchParams.set("quadro", quadroDaVez.id)
     if (idAberto && numeroAberto) url.searchParams.set("cartao", String(numeroAberto))
     else url.searchParams.delete("cartao")
+    url.searchParams.delete("tag")
+    for (const filtro of filtroEtiquetas) {
+      const nome = filtro.startsWith("nome:") ? filtro.slice(5) : quadroDaVez.etiquetas.find((etiqueta) => etiqueta.id === filtro)?.nome
+      if (nome) url.searchParams.append("tag", nome)
+    }
+    if (soAtrasados) url.searchParams.set("atrasados", "1")
+    else url.searchParams.delete("atrasados")
     if (url.href !== window.location.href) window.history.replaceState(window.history.state, "", url)
-  }, [hidratado, quadroDaVez, idAberto, numeroAberto])
+  }, [hidratado, quadroDaVez, idAberto, numeroAberto, filtroEtiquetas, soAtrasados])
 
   if (!hidratado) {
     return (
@@ -311,12 +325,14 @@ export function QuadroKanban() {
       setPreparandoFoto(false)
     }
   }
+  // "nome:SisPep" (veio da URL) → id da etiqueta com esse nome neste quadro.
+  const idDaEtiqueta = (filtro: string) => (filtro.startsWith("nome:") ? (quadro.etiquetas.find((etiqueta) => etiqueta.nome === filtro.slice(5))?.id ?? filtro) : filtro)
   const filtrando = Boolean(termo) || filtroEtiquetas.length > 0 || filtroPrioridades.length > 0 || soAtrasados || Boolean(responsavelFiltrado)
   const concluidaId = (colunaId: string) => Boolean(colunas.find((coluna) => coluna.id === colunaId)?.concluida)
   const visivel = (cartao: (typeof cartoes)[number]) =>
     !cartao.arquivado &&
     (!termo || `${cartao.titulo} ${cartao.descricao}`.toLowerCase().includes(termo)) &&
-    filtroEtiquetas.every((id) => cartao.etiquetas.includes(id)) &&
+    filtroEtiquetas.every((id) => cartao.etiquetas.includes(idDaEtiqueta(id))) &&
     (!responsavelFiltrado || cartao.responsavelId === responsavelFiltrado.id) &&
     (filtroPrioridades.length === 0 || (cartao.prioridade !== null && filtroPrioridades.includes(cartao.prioridade))) &&
     (!soAtrasados || Boolean(hoje && cartao.prazo && cartao.prazo < hoje && !concluidaId(cartao.colunaId)))
@@ -401,28 +417,115 @@ export function QuadroKanban() {
   // Rafael Marques - 23/10/2026: cartões de equipe atribuídos a mim neste quadro (em aberto), para o atalho do cabeçalho.
   const atribuidosAMim = cartoesDoQuadro.filter((cartao) => meuId !== null && cartao.responsavelId === meuId && !concluidaId(cartao.colunaId)).length
   const concluidos = cartoesDoQuadro.filter((cartao) => concluidaId(cartao.colunaId)).length
-  const emAndamento = cartoesDoQuadro.length - concluidos
   const atrasados = cartoesDoQuadro.filter(
     (cartao) => hoje && cartao.prazo && cartao.prazo < hoje && !colunas.find((coluna) => coluna.id === cartao.colunaId)?.concluida
   ).length
 
+  const menuTrocarQuadro = (
+    <DropdownMenu>
+      <DropdownMenuTrigger render={<Button variant="secondary" size="sm" />}>
+        <span className="max-sm:hidden">Trocar quadro</span>
+        <KanbanIcon className="sm:hidden" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-60">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Meus quadros</DropdownMenuLabel>
+          {quadros.filter((item) => !item.equipeId).map((item) => (
+            <DropdownMenuItem key={item.id} onClick={() => definirQuadroAtivo(item.id)}>
+              <Icone nome={item.icone} /> {item.titulo}
+              {item.id === quadro.id && <CheckIcon className="ml-auto" />}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuGroup>
+        {equipes.map((equipe) => {
+          const doTime = quadros.filter((item) => item.equipeId === equipe.id)
+          if (doTime.length === 0) return null
+          return (
+            <DropdownMenuGroup key={equipe.id}>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="flex items-center gap-1.5"><UsersIcon className="size-3" /> {equipe.nome}</DropdownMenuLabel>
+              {doTime.map((item) => (
+                <DropdownMenuItem key={item.id} onClick={() => definirQuadroAtivo(item.id)}>
+                  <Icone nome={item.icone} /> {item.titulo}
+                  {item.id === quadro.id && <CheckIcon className="ml-auto" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuGroup>
+          )
+        })}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => criarQuadro("Novo quadro")}><PlusIcon /> Novo quadro</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setEscolhendoModelo(true)}><LayoutTemplateIcon /> Novo a partir de um modelo…</DropdownMenuItem>
+        {equipes.filter((equipe) => equipe.meuPapel !== "leitor").map((equipe) => (
+          <DropdownMenuItem key={equipe.id} onClick={() => criarQuadroDeEquipe(equipe.id).catch((falha) => setErroEquipe(mensagemDoErro(falha)))}>
+            <UsersIcon /> <span className="truncate">Novo quadro em {equipe.nome}</span>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+
+  const menuMais = (
+    <DropdownMenu>
+      <DropdownMenuTrigger render={<IconButton variant="secondary" size="sm" aria-label="Mais opções do quadro" />}>
+        <MoreHorizontalIcon />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-60">
+        <DropdownMenuItem onClick={() => abrirPainelKanban("equipes")}><UsersIcon /> Equipes…</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setVerResumo(true)}><ChartColumnIcon /> Resumo do quadro…</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setEditandoEtiquetas(true)}><TagIcon /> Etiquetas…</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setNovaColuna("")}><PlusIcon /> Nova coluna</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setVerArquivados(true)}>
+          <ArchiveIcon /> Arquivados{arquivados.length > 0 && ` (${arquivados.length})`}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={exportarJson}><DownloadIcon /> Exportar quadro (.json)</DropdownMenuItem>
+        <DropdownMenuItem onClick={exportarCsv}><DownloadIcon /> Exportar planilha (.csv)</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => entradaArquivo.current?.click()}><UploadIcon /> Importar quadro…</DropdownMenuItem>
+        <DropdownMenuSeparator />
+        {!quadro.equipeId && equipes.some((equipe) => equipe.meuPapel !== "leitor") && (
+          <DropdownMenuItem onClick={() => setCompartilhando(true)}><Share2Icon /> Compartilhar com equipe…</DropdownMenuItem>
+        )}
+        {(!quadro.equipeId || meuPapel === "dono") && (
+          <DropdownMenuItem onClick={() => setExcluindoQuadro(true)}><Trash2Icon /> Excluir quadro…</DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+
+  const filtrosAtivos = filtroEtiquetas.length + filtroPrioridades.length + (soAtrasados ? 1 : 0)
+
   return (
-    // Rafael Marques - 26/10/2026: fundo numa camada própria (modelo neutro ou foto) e animações de entrada.
-    <div className="relative isolate -mx-4 -mt-4 flex min-h-[calc(100svh-3rem)] flex-col md:-mx-6 md:-mt-6">
+    // Rafael Marques - 26/10/2026: fundo numa camada própria (sem fundo = night liso) e animações de entrada.
+    <div className="relative isolate -mx-4 -my-6 flex min-h-[calc(100dvh-var(--spacing-topbar))] flex-col md:-mx-6">
+      <TopbarSlot
+        largura="bleed"
+        trilha={[{ rotulo: "Quadros", href: "/kanban" }, { rotulo: quadro.titulo }]}
+        acoes={
+          <>
+            {quadro.equipeId && (
+              <Button
+                variant={filtroEMeu ? "primary" : "secondary"}
+                size="sm"
+                aria-pressed={filtroEMeu}
+                onClick={() => meuId && alternarFiltroPorResponsavel(meuId, "você")}
+              >
+                <UserCheckIcon className="sm:hidden" /> <span className="max-sm:hidden">Atribuídos a mim</span>
+                {atribuidosAMim > 0 && <span className="text-micro tabular-nums opacity-70">{atribuidosAMim}</span>}
+              </Button>
+            )}
+            {menuTrocarQuadro}
+            {menuMais}
+          </>
+        }
+      />
       <CamadaFundo quadro={quadro} automatico={automatico} rascunho={rascunhoFoto} />
-      {/* Cabeçalho no padrão das outras telas + números do quadro */}
-      <div className="space-y-3 px-4 pt-4 transition-colors duration-500 md:space-y-5 md:px-6 md:pt-6" style={contraste ? estiloDoContraste[contraste] : undefined}>
-        <CabecalhoPagina
-          compactoNoCelular
-          secao="Organização · Kanban"
-          icone={KanbanIcon}
-          titulo={
-            <div className="flex items-center gap-2">
+      <div className="space-y-5 px-4 pt-8 transition-colors duration-slow md:px-10 md:pt-10" style={contraste ? estiloDoContraste[contraste] : undefined}>
+        <header className="flex flex-wrap items-end justify-between gap-5">
+          <div className="min-w-0 flex-[1_1_20rem] space-y-3">
+            <div className="flex items-center gap-3">
               <DropdownMenu>
-                <DropdownMenuTrigger
-                  aria-label="Trocar ícone do quadro"
-                  className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-background/70 hover:bg-background"
-                >
+                <DropdownMenuTrigger aria-label="Trocar ícone do quadro" className="flex size-10 shrink-0 items-center justify-center rounded-sm text-ink-soft hover:bg-raised hover:text-paper">
                   <Icone nome={quadro.icone} className="size-5" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-auto">
@@ -435,290 +538,165 @@ export function QuadroKanban() {
                   </div>
                 </DropdownMenuContent>
               </DropdownMenu>
-
               <TituloQuadro key={quadro.id} quadroId={quadro.id} titulo={quadro.titulo} />
             </div>
-          }
-          descricao="Arraste cartões e colunas. Clique em um cartão para editar — tudo é salvo na hora."
-          acoes={
-            <>
-              {quadro.equipeId && (
-                <Button
-                  variant={filtroEMeu ? "default" : "outline"}
-                  size="sm"
-                  className={filtroEMeu ? undefined : "bg-background/70"}
-                  aria-pressed={filtroEMeu}
-                  title="Mostrar só os cartões atribuídos a mim"
-                  onClick={() => meuId && alternarFiltroPorResponsavel(meuId, "você")}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              {equipeDoQuadro && <AvatarStack pessoas={equipeDoQuadro.membros.map((membro) => ({ id: membro.id, nome: membro.nome, foto: membro.foto }))} max={5} />}
+              <StatList
+                stats={[
+                  { label: cartoesDoQuadro.length === 1 ? "cartão" : "cartões", value: cartoesDoQuadro.length },
+                  { label: concluidos === 1 ? "concluído" : "concluídos", value: concluidos },
+                  ...(atrasados > 0 ? [{ label: atrasados === 1 ? "atrasado" : "atrasados", value: atrasados }] : []),
+                ]}
+              />
+              {meuPapel && <span className="text-ui text-ink-soft" title={descricoesPapel[meuPapel]}>Você é {rotulosPapel[meuPapel].toLowerCase()}</span>}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <PainelPersonalizar
+              aberto={personalizarAberto}
+              aoMudarAberto={setPersonalizarAberto}
+              titulo="Opções do quadro"
+              rotuloBotao="Opções do quadro"
+              descricao="As mudanças aparecem na hora."
+              tamanhoBotao="sm"
+              aoRestaurar={() => {
+                definirExibicao(quadro.id, exibicaoPadrao)
+                atualizarQuadro(quadro.id, { fundo: null, imagemFundo: null })
+              }}
+            >
+              <SecaoPersonalizar titulo="Fundo do quadro">
+                <SeletorFundo fundo={quadro.fundo} imagem={quadro.imagemFundo} aoMudar={(mudancas) => atualizarQuadro(quadro.id, mudancas)} aoAjustarFoto={(arquivo) => void ajustarFoto(arquivo)} />
+                {avisoFoto && !rascunhoFoto && (
+                  <p role="alert" className="text-small text-paper">
+                    {avisoFoto}
+                  </p>
+                )}
+              </SecaoPersonalizar>
+              <SecaoPersonalizar titulo="Mostrar nos cartões">
+                <Interruptor rotulo="Caixa para concluir" descricao="Marca o cartão como feito sem abrir." marcado={exibicao.concluir} aoMudar={(marcado) => definirExibicao(quadro.id, { concluir: marcado })} />
+                <Interruptor rotulo="Etiquetas" marcado={exibicao.etiquetas} aoMudar={(marcado) => definirExibicao(quadro.id, { etiquetas: marcado })} />
+                <Interruptor rotulo="Prioridade" marcado={exibicao.prioridade} aoMudar={(marcado) => definirExibicao(quadro.id, { prioridade: marcado })} />
+                <Interruptor rotulo="Comentários" marcado={exibicao.comentarios} aoMudar={(marcado) => definirExibicao(quadro.id, { comentarios: marcado })} />
+                <Interruptor rotulo="Prazo" marcado={exibicao.prazo} aoMudar={(marcado) => definirExibicao(quadro.id, { prazo: marcado })} />
+                <Interruptor rotulo="Trecho da descrição" marcado={exibicao.descricao} aoMudar={(marcado) => definirExibicao(quadro.id, { descricao: marcado })} />
+                <Interruptor rotulo="Nota vinculada" marcado={exibicao.nota} aoMudar={(marcado) => definirExibicao(quadro.id, { nota: marcado })} />
+              </SecaoPersonalizar>
+              <SecaoPersonalizar titulo="Checklist no cartão">
+                <OpcoesLadoALado
+                  rotulo="Checklist no cartão"
+                  valor={exibicao.checklist}
+                  aoMudar={(checklist) => definirExibicao(quadro.id, { checklist })}
+                  opcoes={[
+                    { valor: "oculto", rotulo: "Oculta" },
+                    { valor: "progresso", rotulo: "Progresso" },
+                    { valor: "itens", rotulo: "Itens" },
+                  ]}
+                />
+                <p className="text-small text-ink-soft">“Itens” mostra a lista no cartão para marcar sem abrir.</p>
+              </SecaoPersonalizar>
+            </PainelPersonalizar>
+            <Segmented
+              label="Visão do quadro"
+              value={visao}
+              onChange={(valor) => definirVisao(quadro.id, valor)}
+              options={[
+                { value: "quadro", label: "Quadro" },
+                { value: "lista", label: "Lista" },
+                { value: "calendario", label: "Calendário" },
+              ]}
+            />
+          </div>
+        </header>
+
+        {(avisoEquipe || erroEquipe) && quadro.equipeId && (
+          <p role="alert" className="flex items-center gap-2 rounded-md border border-line-strong px-3 py-2 text-small text-paper">
+            <AlertCircleIcon className="size-4" /> {erroEquipe ?? avisoEquipe}
+          </p>
+        )}
+        {meuPapel === "leitor" && <p className="text-small text-ink-soft">Somente leitura neste quadro.</p>}
+
+        {/* Filtros (ficam na URL: ?tag=…&atrasados=1) */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative max-md:min-w-0 max-md:flex-1">
+            <SearchIcon aria-hidden="true" className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-soft" />
+            <Input inputSize="sm" value={busca} onChange={(evento) => setBusca(evento.target.value)} placeholder="Filtrar cartões" aria-label="Filtrar cartões" className="w-full pl-9 md:w-64" />
+          </div>
+          <Button variant="secondary" size="sm" className="md:hidden" aria-expanded={mostrarFiltros} onClick={() => setMostrarFiltros(!mostrarFiltros)}>
+            <FilterIcon /> Filtros {filtrosAtivos > 0 && <span className="tabular-nums">{filtrosAtivos}</span>}
+          </Button>
+          <div className={cn("contents", !mostrarFiltros && "max-md:hidden")}>
+            {quadro.etiquetas.length > 0 && <span aria-hidden="true" className="mx-1 h-6 w-px bg-line-strong" />}
+            {quadro.etiquetas.map((etiqueta) => {
+              const ativa = filtroEtiquetas.some((filtro) => idDaEtiqueta(filtro) === etiqueta.id)
+              return (
+                <ToggleChip
+                  key={etiqueta.id}
+                  pressed={ativa}
+                  onPressedChange={(ligar) => setFiltroEtiquetas(ligar ? [...filtroEtiquetas, etiqueta.id] : filtroEtiquetas.filter((filtro) => idDaEtiqueta(filtro) !== etiqueta.id))}
                 >
-                  <UserCheckIcon /> <span className="hidden sm:inline">Atribuídos a mim</span>
-                  {atribuidosAMim > 0 && (
-                    <span className={cn("rounded-full px-1.5 text-[10px] leading-4 font-semibold", filtroEMeu ? "bg-background text-foreground" : "bg-foreground text-background")}>
-                      {atribuidosAMim}
-                    </span>
-                  )}
-                </Button>
-              )}
-              <BotaoEquipes />
+                  <PontoTinta cor={etiqueta.cor} />
+                  {etiqueta.nome}
+                </ToggleChip>
+              )
+            })}
+            <span aria-hidden="true" className="mx-1 h-6 w-px bg-line-strong" />
+            <ToggleChip pressed={soAtrasados} onPressedChange={setSoAtrasados}>
+              Atrasados
+            </ToggleChip>
+            <DropdownMenu>
+              <DropdownMenuTrigger render={<button type="button" aria-pressed={filtroPrioridades.length > 0} className={cn(chipVariants({ variant: "filter" }), "cursor-pointer")} />}>
+                Prioridade{filtroPrioridades.length > 0 && <span className="tabular-nums">{filtroPrioridades.length}</span>}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-44">
+                {(["alta", "media", "baixa"] as const).map((prioridade) => (
+                  <DropdownMenuCheckboxItem
+                    key={prioridade}
+                    checked={filtroPrioridades.includes(prioridade)}
+                    onCheckedChange={(ligar) => setFiltroPrioridades(ligar ? [...filtroPrioridades, prioridade] : filtroPrioridades.filter((item) => item !== prioridade))}
+                  >
+                    <PriorityIcon priority={prioridade} /> {estilosPrioridade[prioridade].titulo}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            {equipeDoQuadro && (
               <DropdownMenu>
-                <DropdownMenuTrigger render={<Button variant="outline" size="sm" className="bg-background/70" />}>
-                  <KanbanIcon className="sm:hidden" /> <span className="max-sm:hidden">Quadros </span>({quadros.length}) <ChevronDownIcon />
+                <DropdownMenuTrigger render={<button type="button" aria-pressed={Boolean(responsavelFiltrado)} className={cn(chipVariants({ variant: "filter" }), "cursor-pointer")} />}>
+                  {responsavelFiltrado ? (responsavelFiltrado.id === meuId ? "Responsável: você" : `Responsável: ${responsavelFiltrado.nome}`) : "Responsável"}
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuContent align="start" className="w-56">
+                  {equipeDoQuadro.membros.map((membro) => (
+                    <DropdownMenuItem key={membro.id} onClick={() => alternarFiltroPorResponsavel(membro.id, membro.id === meuId ? "você" : membro.nome)}>
+                      <AvatarPessoa nome={membro.nome} foto={membro.foto} tamanho="sm" /> {membro.nome}
+                      {responsavelFiltrado?.id === membro.id && <CheckIcon className="ml-auto" />}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            {visao === "quadro" && (
+              <DropdownMenu>
+                <DropdownMenuTrigger render={<button type="button" aria-pressed={raia !== "nenhuma"} className={cn(chipVariants({ variant: "filter" }), "cursor-pointer")} />}>
+                  <Rows3Icon /> {raia === "nenhuma" ? "Raias" : rotulosRaia[raia]}
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
                   <DropdownMenuGroup>
-                    <DropdownMenuLabel>Meus quadros</DropdownMenuLabel>
-                    {quadros.filter((item) => !item.equipeId).map((item) => (
-                      <DropdownMenuItem key={item.id} onClick={() => definirQuadroAtivo(item.id)}>
-                        <Icone nome={item.icone} /> {item.titulo}
-                        {item.id === quadro.id && <CheckIcon className="ml-auto" />}
+                  <DropdownMenuLabel>Agrupar o quadro</DropdownMenuLabel>
+                  {(Object.keys(rotulosRaia) as RaiaKanban[])
+                    .filter((opcao) => opcao !== "responsavel" || equipeDoQuadro)
+                    .map((opcao) => (
+                      <DropdownMenuItem key={opcao} onClick={() => definirRaia(quadro.id, opcao)}>
+                        {rotulosRaia[opcao]} {raia === opcao && <CheckIcon className="ml-auto" />}
                       </DropdownMenuItem>
                     ))}
                   </DropdownMenuGroup>
-                  {equipes.map((equipe) => {
-                    const doTime = quadros.filter((item) => item.equipeId === equipe.id)
-                    if (doTime.length === 0) return null
-                    return (
-                      <DropdownMenuGroup key={equipe.id}>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuLabel className="flex items-center gap-1.5"><UsersIcon className="size-3" /> {equipe.nome}</DropdownMenuLabel>
-                        {doTime.map((item) => (
-                          <DropdownMenuItem key={item.id} onClick={() => definirQuadroAtivo(item.id)}>
-                            <Icone nome={item.icone} /> {item.titulo}
-                            {item.id === quadro.id && <CheckIcon className="ml-auto" />}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuGroup>
-                    )
-                  })}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => criarQuadro("Novo quadro")}><PlusIcon /> Novo quadro</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setEscolhendoModelo(true)}><LayoutTemplateIcon /> Novo a partir de um modelo…</DropdownMenuItem>
-                  {equipes.filter((equipe) => equipe.meuPapel !== "leitor").map((equipe) => (
-                    <DropdownMenuItem
-                      key={equipe.id}
-                      onClick={() => criarQuadroDeEquipe(equipe.id).catch((falha) => setErroEquipe(mensagemDoErro(falha)))}
-                    >
-                      <UsersIcon /> <span className="truncate">Novo quadro em {equipe.nome}</span>
-                    </DropdownMenuItem>
-                  ))}
                 </DropdownMenuContent>
               </DropdownMenu>
-
-              <PainelPersonalizar
-                aberto={personalizarAberto}
-                aoMudarAberto={setPersonalizarAberto}
-                titulo="Aparência do quadro"
-                descricao="As mudanças aparecem na hora."
-                tamanhoBotao="sm"
-                aoRestaurar={() => {
-                  definirExibicao(quadro.id, exibicaoPadrao)
-                  atualizarQuadro(quadro.id, { fundo: null, imagemFundo: null })
-                }}
-              >
-                <SecaoPersonalizar titulo="Fundo do quadro">
-                  <SeletorFundo fundo={quadro.fundo} imagem={quadro.imagemFundo} aoMudar={(mudancas) => atualizarQuadro(quadro.id, mudancas)} aoAjustarFoto={(arquivo) => void ajustarFoto(arquivo)} />
-                  {avisoFoto && !rascunhoFoto && (
-                    <p role="alert" className="text-xs text-destructive">
-                      {avisoFoto}
-                    </p>
-                  )}
-                </SecaoPersonalizar>
-                <SecaoPersonalizar titulo="Mostrar nos cartões">
-                  <Interruptor
-                    rotulo="Caixa para concluir"
-                    descricao="Marca o cartão como feito sem abrir."
-                    marcado={exibicao.concluir}
-                    aoMudar={(marcado) => definirExibicao(quadro.id, { concluir: marcado })}
-                  />
-                  <Interruptor rotulo="Etiquetas" marcado={exibicao.etiquetas} aoMudar={(marcado) => definirExibicao(quadro.id, { etiquetas: marcado })} />
-                  <Interruptor rotulo="Prioridade" marcado={exibicao.prioridade} aoMudar={(marcado) => definirExibicao(quadro.id, { prioridade: marcado })} />
-                  <Interruptor rotulo="Comentários" marcado={exibicao.comentarios} aoMudar={(marcado) => definirExibicao(quadro.id, { comentarios: marcado })} />
-                  <Interruptor rotulo="Prazo" marcado={exibicao.prazo} aoMudar={(marcado) => definirExibicao(quadro.id, { prazo: marcado })} />
-                  <Interruptor rotulo="Trecho da descrição" marcado={exibicao.descricao} aoMudar={(marcado) => definirExibicao(quadro.id, { descricao: marcado })} />
-                  <Interruptor rotulo="Nota vinculada" marcado={exibicao.nota} aoMudar={(marcado) => definirExibicao(quadro.id, { nota: marcado })} />
-                  <Interruptor rotulo="Faixa de cor" marcado={exibicao.faixaCor} aoMudar={(marcado) => definirExibicao(quadro.id, { faixaCor: marcado })} />
-                </SecaoPersonalizar>
-                <SecaoPersonalizar titulo="Checklist no cartão">
-                  <OpcoesLadoALado
-                    rotulo="Checklist no cartão"
-                    valor={exibicao.checklist}
-                    aoMudar={(checklist) => definirExibicao(quadro.id, { checklist })}
-                    opcoes={[
-                      { valor: "oculto", rotulo: "Oculta" },
-                      { valor: "progresso", rotulo: "Progresso" },
-                      { valor: "itens", rotulo: "Itens" },
-                    ]}
-                  />
-                  <p className="text-xs text-muted-foreground">“Itens” mostra a lista no cartão para marcar sem abrir.</p>
-                </SecaoPersonalizar>
-              </PainelPersonalizar>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger render={<Button variant="outline" size="icon-sm" aria-label="Opções do quadro" className="bg-background/70" />}>
-                  <MoreHorizontalIcon />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem onClick={() => setVerResumo(true)}><ChartColumnIcon /> Resumo do quadro…</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setEditandoEtiquetas(true)}><TagIcon /> Etiquetas…</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setNovaColuna("")}><PlusIcon /> Nova coluna</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setVerArquivados(true)}>
-                    <ArchiveIcon /> Arquivados{arquivados.length > 0 && ` (${arquivados.length})`}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={exportarJson}><DownloadIcon /> Exportar quadro (.json)</DropdownMenuItem>
-                  <DropdownMenuItem onClick={exportarCsv}><DownloadIcon /> Exportar planilha (.csv)</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => entradaArquivo.current?.click()}><UploadIcon /> Importar quadro…</DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  {!quadro.equipeId && equipes.some((equipe) => equipe.meuPapel !== "leitor") && (
-                    <DropdownMenuItem onClick={() => setCompartilhando(true)}><Share2Icon /> Compartilhar com equipe…</DropdownMenuItem>
-                  )}
-                  {(!quadro.equipeId || meuPapel === "dono") && (
-                    <DropdownMenuItem variant="destructive" onClick={() => setExcluindoQuadro(true)}><Trash2Icon /> Excluir quadro</DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </>
-          }
-          resumo={
-            <ResumoLinha
-              itens={[
-                { valor: cartoesDoQuadro.length, texto: cartoesDoQuadro.length === 1 ? "cartão" : "cartões" },
-                { valor: `${cartoesDoQuadro.length ? Math.round((concluidos / cartoesDoQuadro.length) * 100) : 0}%`, texto: "concluído" },
-                emAndamento > 0 && { valor: emAndamento, texto: "em aberto" },
-                atrasados > 0 && { valor: atrasados, texto: atrasados === 1 ? "atrasado" : "atrasados", alerta: true },
-              ]}
-            />
-          }
-        />
-
-        <AvisosPrazo areas={["kanban"]} quadroId={quadro.id} comLinks={false} />
-
-        {equipeDoQuadro && (
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg bg-background/70 px-3 py-1.5 text-xs text-muted-foreground md:py-2">
-            <span className="flex items-center gap-1.5 font-medium text-foreground"><UsersIcon className="size-3.5" /> {equipeDoQuadro.nome}</span>
-            <span className="flex -space-x-1.5">
-              {equipeDoQuadro.membros.slice(0, 7).map((membro, indice) => (
-                <AvatarPessoa key={membro.id} nome={membro.nome} foto={membro.foto} tamanho="sm" className={cn("ring-2 ring-background", indice >= 4 && "max-sm:hidden")} />
-              ))}
-            </span>
-            {equipeDoQuadro.membros.length > 4 && <span className="sm:hidden">+{equipeDoQuadro.membros.length - 4}</span>}
-            {equipeDoQuadro.membros.length > 7 && <span className="max-sm:hidden">+{equipeDoQuadro.membros.length - 7}</span>}
-            {meuPapel && <span className="max-sm:hidden" title={descricoesPapel[meuPapel]}>Você é {rotulosPapel[meuPapel].toLowerCase()}</span>}
-            {meuPapel === "leitor" && <span className="font-medium text-foreground">Somente leitura</span>}
-          </div>
-        )}
-        {(avisoEquipe || erroEquipe) && quadro.equipeId && (
-          <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-            {erroEquipe ?? avisoEquipe}
-          </p>
-        )}
-
-        {/* Filtros e progresso */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative max-md:min-w-0 max-md:flex-1">
-            <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={busca} onChange={(evento) => setBusca(evento.target.value)} placeholder="Filtrar cartões…" aria-label="Filtrar cartões" className="h-8 w-full bg-background/70 pl-8 md:w-52" />
-          </div>
-          <div role="tablist" aria-label="Como ver o quadro" className="inline-flex rounded-lg border bg-background/70 p-0.5">
-            {([
-              { id: "quadro", Icone: KanbanIcon },
-              { id: "lista", Icone: ListIcon },
-              { id: "calendario", Icone: CalendarDaysIcon },
-            ] as const).map(({ id, Icone: IconeVisao }) => (
-              <button
-                key={id}
-                type="button"
-                role="tab"
-                aria-selected={visao === id}
-                title={rotulosVisao[id]}
-                onClick={() => definirVisao(quadro.id, id)}
-                className={cn("flex h-7 items-center gap-1.5 rounded-md px-2 text-xs font-medium", visao === id ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground")}
-              >
-                <IconeVisao className="size-3.5" /> <span className="max-sm:hidden">{rotulosVisao[id]}</span>
-              </button>
-            ))}
-          </div>
-          {visao === "quadro" && (
-            <DropdownMenu>
-              <DropdownMenuTrigger render={<Button variant="outline" size="sm" className="bg-background/70" aria-label="Agrupar em raias" />}>
-                <Rows3Icon /> <span className="max-sm:hidden">{raia === "nenhuma" ? "Raias" : rotulosRaia[raia]}</span>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-48">
-                <p className="px-1.5 py-1 text-xs font-medium text-muted-foreground">Agrupar o quadro</p>
-                {(Object.keys(rotulosRaia) as RaiaKanban[])
-                  .filter((opcao) => opcao !== "responsavel" || equipeDoQuadro)
-                  .map((opcao) => (
-                    <DropdownMenuItem key={opcao} onClick={() => definirRaia(quadro.id, opcao)}>
-                      {rotulosRaia[opcao]} {raia === opcao && <CheckIcon className="ml-auto" />}
-                    </DropdownMenuItem>
-                  ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            className="bg-background/70 md:hidden"
-            aria-expanded={mostrarFiltros}
-            onClick={() => setMostrarFiltros(!mostrarFiltros)}
-          >
-            <FilterIcon /> Filtros
-            {filtroEtiquetas.length + filtroPrioridades.length + (soAtrasados ? 1 : 0) > 0 && (
-              <span className="rounded-full bg-foreground px-1.5 text-[10px] leading-4 font-semibold text-background">
-                {filtroEtiquetas.length + filtroPrioridades.length + (soAtrasados ? 1 : 0)}
-              </span>
             )}
-          </Button>
-          <div className={cn("contents", !mostrarFiltros && "max-md:hidden")}>
-          {quadro.etiquetas.map((etiqueta) => {
-            const ativa = filtroEtiquetas.includes(etiqueta.id)
-            return (
-              <button
-                key={etiqueta.id}
-                type="button"
-                aria-pressed={ativa}
-                onClick={() => setFiltroEtiquetas(ativa ? filtroEtiquetas.filter((id) => id !== etiqueta.id) : [...filtroEtiquetas, etiqueta.id])}
-                className={cn("rounded-md px-2 py-0.5 text-xs font-medium transition-opacity", !ativa && "opacity-60 hover:opacity-100")}
-                style={{ background: `color-mix(in oklch, ${etiqueta.cor} ${ativa ? 28 : 14}%, var(--background))`, color: etiqueta.cor }}
-              >
-                {etiqueta.nome}
-              </button>
-            )
-          })}
-          <button
-            type="button"
-            aria-pressed={soAtrasados}
-            onClick={() => setSoAtrasados(!soAtrasados)}
-            className={cn("rounded-md border px-2 py-0.5 text-xs font-medium transition-colors", soAtrasados ? "border-foreground bg-foreground text-background" : "bg-background/70 text-muted-foreground hover:text-foreground")}
-          >
-            Atrasados
-          </button>
-          {(["alta", "media", "baixa"] as const).map((prioridade) => {
-            const ativa = filtroPrioridades.includes(prioridade)
-            return (
-              <button
-                key={prioridade}
-                type="button"
-                aria-pressed={ativa}
-                aria-label={`Prioridade ${estilosPrioridade[prioridade].titulo}`}
-                onClick={() => setFiltroPrioridades(ativa ? filtroPrioridades.filter((item) => item !== prioridade) : [...filtroPrioridades, prioridade])}
-                className={cn("flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium transition-colors", ativa ? "border-foreground bg-foreground text-background" : "bg-background/70 text-muted-foreground hover:text-foreground")}
-              >
-                <FlagIcon className={cn("size-3", prioridade === "alta" && "fill-current")} /> {estilosPrioridade[prioridade].titulo}
-              </button>
-            )
-          })}
           </div>
-          {responsavelFiltrado && (
-            <span className="flex items-center gap-1 rounded-md border border-foreground bg-foreground px-2 py-0.5 text-xs font-medium text-background">
-              Cartões de {responsavelFiltrado.id === meuId ? "você" : responsavelFiltrado.nome}
-              <button type="button" aria-label="Remover filtro de responsável" onClick={() => filtrarPorResponsavel(null)} className="rounded hover:opacity-70">
-                <XIcon className="size-3" />
-              </button>
-            </span>
-          )}
           {filtrando && (
-            <Button variant="ghost" size="xs" onClick={() => { setBusca(""); setFiltroEtiquetas([]); setFiltroPrioridades([]); setSoAtrasados(false); filtrarPorResponsavel(null) }}>
+            <Button variant="ghost" size="sm" onClick={() => { setBusca(""); setFiltroEtiquetas([]); setFiltroPrioridades([]); setSoAtrasados(false); filtrarPorResponsavel(null) }}>
               <XIcon /> Limpar filtros
             </Button>
           )}
@@ -726,7 +704,7 @@ export function QuadroKanban() {
       </div>
 
       {avisoArquivo && (
-        <p role="alert" className="mx-4 mt-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive md:mx-6">
+        <p role="alert" className="mx-4 mt-2 rounded-md border border-line-strong px-3 py-2 text-small text-paper md:mx-10">
           {avisoArquivo}
         </p>
       )}
@@ -779,7 +757,7 @@ export function QuadroKanban() {
             aoExcluirColuna={setColunaParaExcluir}
           />
         ) : (
-        <div className="flex flex-1 items-start gap-3 overflow-x-auto px-4 pt-2 pb-6 md:px-6 md:pt-4">
+        <div className="flex flex-1 snap-x items-start gap-4 overflow-x-auto px-4 pt-4 pb-8 md:px-10 md:pt-6">
           {colunas.map((coluna, indice) => (
             <Coluna
               key={coluna.id}
@@ -801,13 +779,13 @@ export function QuadroKanban() {
             <button
               type="button"
               onClick={() => setNovaColuna("")}
-              className={cn("flex h-12 w-[80vw] max-w-72 shrink-0 items-center gap-2 rounded-xl border border-dashed px-3 text-sm text-muted-foreground hover:text-foreground sm:w-72", vidro ? "bg-card/90 backdrop-blur-xl hover:bg-card" : "bg-background/40 hover:bg-background/70")}
+              className={cn("flex h-control w-[80vw] max-w-column shrink-0 items-center gap-2 rounded-lg border border-dashed border-line-strong px-3 text-ui text-ink-soft hover:border-ink-muted hover:text-paper sm:w-column", vidro && "bg-panel/90 backdrop-blur-xl")}
             >
-              <PlusIcon className="size-4" /> Adicionar coluna
+              <PlusIcon className="size-4" /> Nova coluna
             </button>
           ) : (
             <form
-              className="w-[80vw] max-w-72 shrink-0 space-y-2 rounded-xl border border-foreground/10 bg-card/90 p-2 backdrop-blur-xl sm:w-72"
+              className="w-[80vw] max-w-column shrink-0 space-y-2 rounded-lg border border-line-strong bg-panel p-2 sm:w-column"
               onSubmit={(evento) => {
                 evento.preventDefault()
                 if (!novaColuna.trim()) return
@@ -843,7 +821,7 @@ export function QuadroKanban() {
             />
           )}
           {colunaArrastada && (
-            <div className="w-72 rotate-1 rounded-xl bg-muted p-3 text-sm font-semibold shadow-lg ring-2 ring-primary/30">
+            <div className="w-column -rotate-1 rounded-lg bg-panel p-3 text-ui font-semibold text-paper shadow-drag">
               {colunaArrastada.titulo}
             </div>
           )}
@@ -919,7 +897,7 @@ export function QuadroKanban() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <Button
-              variant="destructive"
+              variant="danger"
               onClick={() => {
                 excluirQuadro(quadro.id)
                 setExcluindoQuadro(false)

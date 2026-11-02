@@ -1,10 +1,18 @@
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 
-function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
+// Skeleton (M14): shimmer sutil line → raised, nas mesmas dimensões do conteúdo final.
+function Skeleton({ className, variant = "block", ...props }: React.ComponentProps<"div"> & { variant?: "line" | "block" | "card" }) {
   return (
     <div
       data-slot="skeleton"
-      className={cn("animate-pulse rounded-md bg-muted", className)}
+      aria-hidden="true"
+      className={cn(
+        "bg-line motion-safe:animate-shimmer",
+        variant === "line" && "h-3.5 rounded-xs",
+        variant === "block" && "rounded-sm",
+        variant === "card" && "h-28 rounded-lg",
+        className
+      )}
       {...props}
     />
   )

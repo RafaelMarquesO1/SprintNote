@@ -9,6 +9,7 @@ import {
   ChevronRightIcon,
   DownloadIcon,
   ImageIcon,
+  LinkIcon,
   MoreHorizontalIcon,
   NetworkIcon,
   Trash2Icon,
@@ -22,8 +23,12 @@ import { EditorNotas } from "@/components/notas/editor/editor-notas"
 import { QuadroEditor } from "@/components/quadro/quadro-editor"
 import { LinhaTags } from "@/components/notas/linha-tags"
 import { PainelConexoes, useTotalConexoes } from "@/components/notas/painel-conexoes"
-import { Interruptor, MiniaturasOpcoes, OpcoesLadoALado, PainelPersonalizar, SecaoPersonalizar, SeletorCores } from "@/components/painel-personalizar"
-import { Button } from "@/components/ui/button"
+import { Interruptor, MiniaturasOpcoes, OpcoesLadoALado, PainelPersonalizar, SecaoPersonalizar } from "@/components/painel-personalizar"
+import { Ligacoes, NestaNota, useTitulosDaNota } from "@/components/features/library/trilho-nota"
+import { useDefinirTopbar } from "@/components/shell/estado"
+import { useTextoSincronizacao } from "@/components/shell/sync-status"
+import { Button, IconButton } from "@/components/ui/button"
+import { toast } from "@/components/ui/toast"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -68,12 +73,7 @@ export const classeFonte: Record<FonteNota, string> = {
   manuscrita: "font-manuscrita",
 }
 
-const tamanhoPx: Record<TamanhoTexto, number> = { pequeno: 14, normal: 16, grande: 18 }
-const classeLargura: Record<LarguraNota, string> = {
-  normal: "mx-auto max-w-3xl",
-  larga: "mx-auto max-w-5xl",
-  total: "max-w-none md:px-12",
-}
+const tamanhoPx: Record<TamanhoTexto, number> = { pequeno: 15, normal: 17, grande: 19 }
 
 // Cores de destaque (funcionam no claro e no escuro).
 export const coresDestaque = [
@@ -97,7 +97,6 @@ const opcoesFundo: { id: FundoNota; nome: string }[] = [
   { id: "papel", nome: "Papel" },
   { id: "pontilhado", nome: "Pontilhado" },
   { id: "quadriculado", nome: "Quadriculado" },
-  { id: "pautado", nome: "Pautado (caderno)" },
 ]
 
 // Lê a aparência já com os valores padrão (e com os campos antigos convertidos).
@@ -148,7 +147,7 @@ function CampoTitulo({ nota, centralizado, aoConfirmar }: { nota: Nota; centrali
       aria-label="Título da nota"
       className={cn(
         // Rafael Marques - 29/10/2026: título comprido (ou palavra enorme) quebra de linha em vez de cortar.
-        "field-sizing-content block w-full max-w-full min-w-0 resize-none overflow-hidden bg-transparent [overflow-wrap:anywhere] break-words whitespace-pre-wrap text-[2.5em] leading-tight font-bold tracking-tight outline-none placeholder:text-muted-foreground/40",
+        "field-sizing-content block w-full max-w-full min-w-0 resize-none overflow-hidden bg-transparent [overflow-wrap:anywhere] break-words whitespace-pre-wrap font-display text-4xl leading-tight font-bold tracking-tight text-paper outline-none placeholder:text-ink-muted md:text-5xl",
         centralizado && "text-center"
       )}
     />
@@ -195,6 +194,7 @@ function MenuPersonalizar({ nota, aoEscolherCapa }: { nota: Nota; aoEscolherCapa
   return (
     <PainelPersonalizar
       titulo="Aparência da nota"
+      rotuloBotao="Aparência da nota"
       descricao="As mudanças aparecem na hora."
       tamanhoBotao="sm"
       aoRestaurar={() =>
@@ -258,15 +258,6 @@ function MenuPersonalizar({ nota, aoEscolherCapa }: { nota: Nota; aoEscolherCapa
         />
       </SecaoPersonalizar>
 
-      <SecaoPersonalizar titulo="Cor de destaque">
-        <SeletorCores
-          valor={visual.corDestaque}
-          cores={coresDestaque.map((cor) => ({ valor: cor.valor, nome: cor.nome }))}
-          aoMudar={(cor) => mudar({ corDestaque: cor ?? undefined })}
-        />
-        <p className="text-xs text-muted-foreground">Usada nas caixas de tarefa, marcadores, citações e links.</p>
-      </SecaoPersonalizar>
-
       <SecaoPersonalizar titulo="Fundo da página">
         <MiniaturasOpcoes
           rotulo="Fundo da página"
@@ -311,55 +302,58 @@ function TelaNota({ nota, notas }: { nota: Nota; notas: Nota[] }) {
   const atualizarNota = useNotas((estado) => estado.atualizarNota)
   const moverNota = useNotas((estado) => estado.moverNota)
   const totalConexoes = useTotalConexoes(nota)
+  const sincronia = useTextoSincronizacao()
   const [excluindo, setExcluindo] = useState(false)
   const [conexoesAbertas, setConexoesAbertas] = useState(false)
   const [escolhendoCapa, setEscolhendoCapa] = useState(false)
   const [pedidoFocoTexto, setPedidoFocoTexto] = useState(0)
+  const [documento, setDocumento] = useState<HTMLElement | null>(null)
+  const { titulos, ativo } = useTitulosDaNota(documento)
 
   const livro = livros.find((item) => item.id === nota.livroId)
   const caminho = obterCaminho(notas, nota)
   const visual = aparenciaCompleta(nota.aparencia)
   const temCapa = Boolean(visual.capa)
+  // A pauta horizontal saiu (8.10): notas com "pautado" ficam sem fundo.
+  const fundo = visual.fundo === "pautado" ? "nenhum" : visual.fundo
   // A fonte manuscrita é mais miúda: ganha um pouco de tamanho.
   const tamanho = tamanhoPx[visual.tamanho] * (visual.fonte === "manuscrita" ? 1.4 : 1)
+  const editada = new Date(nota.atualizadoEm)
+  const hojeTexto = new Date().toDateString() === editada.toDateString()
+  const editadaTexto = `${hojeTexto ? "Hoje" : editada.toLocaleDateString("pt-BR", { day: "numeric", month: "short" })}, ${editada.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
 
-  return (
-    <div className={cn("-mx-4 -mt-4 min-h-[calc(100svh-3rem)] md:-mx-6 md:-mt-6", visual.fundo !== "nenhum" && `fundo-${visual.fundo}`)}>
-      {/* Barra fina: caminho à esquerda, ações à direita */}
-      <div className="flex h-11 items-center gap-2 px-4 text-sm md:px-6">
-        <nav aria-label="Caminho" className="flex min-w-0 flex-1 items-center gap-1 text-muted-foreground">
-          {livro ? (
-            // Rafael Marques - 22/10/2026: nome do livro encurta com "…" (antes passava por cima dos botões no celular)
-            <Link href={`/livros/${livro.id}`} className="flex max-w-[60%] min-w-0 items-center gap-1 rounded px-1 hover:bg-muted hover:text-foreground">
-              <Icone nome={livro.icone} className="size-3.5 shrink-0" /> <span className="truncate">{livro.titulo}</span>
-            </Link>
-          ) : (
-            <Link href="/notas" className="shrink-0 rounded px-1 hover:bg-muted hover:text-foreground">Notas soltas</Link>
-          )}
-          {caminho.map((item) => (
-            <span key={item.id} className="flex min-w-0 items-center gap-1">
-              <ChevronRightIcon className="size-3.5 shrink-0" />
-              <Link href={`/notas/${item.id}`} className="truncate rounded px-1 hover:bg-muted hover:text-foreground">{item.titulo}</Link>
-            </span>
-          ))}
-          <ChevronRightIcon className="size-3.5 shrink-0" />
-          <span className="truncate text-foreground">{nota.titulo}</span>
-        </nav>
-
-        <Button variant="ghost" size="sm" onClick={() => setConexoesAbertas(true)} className="text-muted-foreground">
-          <NetworkIcon /> <span className="max-sm:hidden">Conexões</span>
-          {totalConexoes > 0 && <span className="rounded-full bg-muted px-1.5 text-xs tabular-nums">{totalConexoes}</span>}
+  useDefinirTopbar({
+    trilha: [
+      livro ? { rotulo: livro.titulo, href: `/notas?livro=${livro.id}` } : { rotulo: "Sem caderno", href: "/notas" },
+      ...caminho.map((item) => ({ rotulo: item.titulo, href: `/notas/${item.id}` })),
+      { rotulo: nota.titulo || "Sem título" },
+    ],
+    acoes: (
+      <>
+        <span role="status" className="text-small text-ink-muted max-md:hidden">
+          {sincronia.texto === "Tudo salvo" ? "Salvo agora" : sincronia.texto}
+        </span>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => {
+            void navigator.clipboard?.writeText(window.location.href)
+            toast("Link da nota copiado.")
+          }}
+        >
+          <LinkIcon className="sm:hidden" /> <span className="max-sm:hidden">Compartilhar</span>
         </Button>
-
         <MenuPersonalizar nota={nota} aoEscolherCapa={() => setEscolhendoCapa(true)} />
-
         <DropdownMenu>
-          <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Mais opções" className="text-muted-foreground" />}>
+          <DropdownMenuTrigger render={<IconButton variant="secondary" size="sm" aria-label="Mais opções da nota" />}>
             <MoreHorizontalIcon />
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuContent align="end" className="w-60">
+            <DropdownMenuItem className="xl:hidden" onClick={() => setConexoesAbertas(true)}>
+              <NetworkIcon /> Ligações{totalConexoes > 0 ? ` (${totalConexoes})` : ""}
+            </DropdownMenuItem>
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger><BookIcon /> Mover para o livro</DropdownMenuSubTrigger>
+              <DropdownMenuSubTrigger><BookIcon /> Mover para o caderno</DropdownMenuSubTrigger>
               <DropdownMenuSubContent className="w-52">
                 {livros.map((item) => (
                   <DropdownMenuItem key={item.id} onClick={() => moverNota(nota.id, item.id, null)}>
@@ -369,87 +363,94 @@ function TelaNota({ nota, notas }: { nota: Nota; notas: Nota[] }) {
                 ))}
                 {livros.length > 0 && <DropdownMenuSeparator />}
                 <DropdownMenuItem onClick={() => moverNota(nota.id, null, null)}>
-                  Notas soltas {nota.livroId === null && <CheckIcon className="ml-auto" />}
+                  Sem caderno {nota.livroId === null && <CheckIcon className="ml-auto" />}
                 </DropdownMenuItem>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
+            <DropdownMenuItem onClick={() => setConexoesAbertas(true)}>
+              <NetworkIcon /> Conexões e mapa
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => exportarNotaMarkdown(nota)}>
-              <DownloadIcon /> Exportar como Markdown
+              <DownloadIcon /> Exportar Markdown
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive" onClick={() => setExcluindo(true)}>
-              <Trash2Icon /> Excluir nota
+            <DropdownMenuItem onClick={() => setExcluindo(true)}>
+              <Trash2Icon /> Excluir…
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <p className="px-2 py-1 text-xs text-muted-foreground" suppressHydrationWarning>
-              Editada em {new Date(nota.atualizadoEm).toLocaleString("pt-BR")}
-            </p>
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
+      </>
+    ),
+  })
 
+  return (
+    <div className={cn("-mx-4 -my-8 min-h-[calc(100dvh-var(--spacing-topbar))] md:-mx-10 md:-my-12", fundo !== "nenhum" && `fundo-${fundo}`)}>
       <CapaNota key={JSON.stringify(visual.capa)} nota={nota} altura={visual.alturaCapa} aoTrocar={() => setEscolhendoCapa(true)} />
 
-      {/* Documento */}
-      <div
-        className={cn("documento min-w-0 px-4 pb-24 md:px-6", classeLargura[visual.largura], classeFonte[visual.fonte])}
-        data-destaque={visual.corDestaque ? "" : undefined}
-        data-espacamento={visual.espacamento}
-        style={{ fontSize: `${tamanho}px`, ...(visual.corDestaque ? ({ "--destaque": visual.corDestaque } as React.CSSProperties) : {}) }}
-      >
-        <div className={cn("group/cabecalho", temCapa && !visual.ocultarIcone ? "-mt-10" : "pt-10", visual.tituloCentralizado && "text-center")}>
-          {!visual.ocultarIcone && (
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                aria-label="Trocar ícone"
-                className={cn(
-                  "relative flex size-[4.5rem] items-center justify-center rounded-xl text-muted-foreground transition-colors hover:text-foreground",
-                  temCapa ? "border bg-background shadow-sm" : "hover:bg-muted",
-                  visual.tituloCentralizado && "mx-auto"
-                )}
-              >
-                <Icone nome={nota.icone} className="size-10" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-auto">
-                <div className="grid max-h-72 grid-cols-8 gap-0.5 overflow-y-auto">
-                  {iconesNota.map((icone) => (
-                    <DropdownMenuItem key={icone} onClick={() => atualizarNota(nota.id, { icone })} className="justify-center" aria-label={icone}>
-                      <Icone nome={icone} />
-                    </DropdownMenuItem>
-                  ))}
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+      <div className="flex justify-center gap-12 px-4 md:px-10">
+        <article
+          ref={setDocumento}
+          className={cn("documento min-w-0 flex-1 pb-24", visual.largura === "normal" ? "max-w-reading" : visual.largura === "larga" ? "max-w-content" : "max-w-none", classeFonte[visual.fonte])}
+          data-espacamento={visual.espacamento}
+          style={{ fontSize: `${tamanho}px` }}
+        >
+          <div className={cn("group/cabecalho", temCapa && !visual.ocultarIcone ? "-mt-10" : "pt-12", visual.tituloCentralizado && "text-center")}>
+            {!visual.ocultarIcone && nota.icone && nota.icone !== "nota" ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  aria-label="Trocar ícone"
+                  className={cn("relative mb-3 flex size-14 items-center justify-center rounded-lg text-ink-soft hover:text-paper", temCapa ? "border border-line-strong bg-night" : "hover:bg-raised", visual.tituloCentralizado && "mx-auto")}
+                >
+                  <Icone nome={nota.icone} className="size-8" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-auto">
+                  <div className="grid max-h-72 grid-cols-8 gap-0.5 overflow-y-auto">
+                    {iconesNota.map((icone) => (
+                      <DropdownMenuItem key={icone} onClick={() => atualizarNota(nota.id, { icone })} className="justify-center" aria-label={icone}>
+                        <Icone nome={icone} />
+                      </DropdownMenuItem>
+                    ))}
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : null}
 
-          {/* Atalhos que aparecem ao passar o mouse, como no Notion */}
-          <div className={cn("mt-2 flex h-7 gap-1 opacity-0 transition-opacity group-hover/cabecalho:opacity-100 focus-within:opacity-100", visual.tituloCentralizado && "justify-center")}>
-            {!temCapa && (
-              <Button variant="ghost" size="xs" className="text-muted-foreground" onClick={() => setEscolhendoCapa(true)}>
-                <ImageIcon /> Adicionar capa
-              </Button>
-            )}
+            <CampoTitulo key={nota.id} nota={nota} centralizado={visual.tituloCentralizado} aoConfirmar={() => setPedidoFocoTexto((valor) => valor + 1)} />
+
+            <dl className="mt-6 grid grid-cols-[7rem_1fr] items-center gap-x-4 gap-y-2.5 border-b border-line pb-6 font-sans text-ui">
+              <dt className="text-ink-soft">Caderno</dt>
+              <dd className="text-paper">{livro ? <Link href={`/notas?livro=${livro.id}`} className="hover:underline hover:underline-offset-4">{livro.titulo}</Link> : "Sem caderno"}</dd>
+              <dt className="text-ink-soft">Tags</dt>
+              <dd>
+                <LinhaTags nota={nota} />
+              </dd>
+              <dt className="text-ink-soft">Editada</dt>
+              <dd className="text-paper" suppressHydrationWarning>
+                {editadaTexto}
+              </dd>
+            </dl>
           </div>
 
-          <CampoTitulo key={nota.id} nota={nota} centralizado={visual.tituloCentralizado} aoConfirmar={() => setPedidoFocoTexto((valor) => valor + 1)} />
-          <div className={cn("mt-3 font-sans text-sm", visual.tituloCentralizado && "flex justify-center")}>
-            <LinhaTags nota={nota} />
+          <div className="mt-8 md:-ml-14">
+            {/* Rafael Marques - 23/10/2026: editor novo (texto formatado ao digitar, estilo Notion) */}
+            <EditorNotas key={nota.id} nota={nota} pedidoFocoInicio={pedidoFocoTexto} />
           </div>
-        </div>
+        </article>
 
-        <div className="mt-5 md:-ml-14">
-          {/* Rafael Marques - 23/10/2026: editor novo (texto formatado ao digitar, estilo Notion) */}
-          <EditorNotas key={nota.id} nota={nota} pedidoFocoInicio={pedidoFocoTexto} />
-        </div>
+        <aside aria-label="Sobre esta nota" className="sticky top-24 hidden h-fit w-64 shrink-0 space-y-8 pt-28 xl:block">
+          <NestaNota titulos={titulos} ativo={ativo} />
+          <Ligacoes nota={nota} />
+        </aside>
       </div>
 
       <Sheet open={conexoesAbertas} onOpenChange={setConexoesAbertas}>
         <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-md">
           <SheetHeader>
-            <SheetTitle>Conexões</SheetTitle>
+            <SheetTitle>Ligações</SheetTitle>
             <SheetDescription>Tudo que liga “{nota.titulo}” ao resto da biblioteca.</SheetDescription>
           </SheetHeader>
-          <div className="px-4 pb-6">
+          <div className="space-y-8 px-4 pb-6">
+            <NestaNota titulos={titulos} ativo={ativo} />
             <PainelConexoes nota={nota} aoFechar={() => setConexoesAbertas(false)} />
           </div>
         </SheetContent>
@@ -473,15 +474,15 @@ function TelaQuadro({ nota }: { nota: Nota }) {
   const livro = livros.find((item) => item.id === nota.livroId)
 
   return (
-    <div className="-mx-4 -mt-4 flex h-[calc(100svh-3rem)] min-h-[28rem] flex-col md:-mx-6 md:-mt-6">
+    <div className="-mx-4 -my-8 flex h-[calc(100dvh-var(--spacing-topbar))] min-h-[28rem] flex-col md:-mx-10 md:-my-12">
       <div className="flex h-12 shrink-0 items-center gap-2 px-4 text-sm md:px-6">
         <nav aria-label="Caminho" className="flex min-w-0 items-center gap-1 text-muted-foreground max-sm:hidden">
           {livro ? (
-            <Link href={`/livros/${livro.id}`} className="flex max-w-40 min-w-0 items-center gap-1 rounded px-1 hover:bg-muted hover:text-foreground">
+            <Link href={`/notas?livro=${livro.id}`} className="flex max-w-40 min-w-0 items-center gap-1 rounded px-1 hover:bg-muted hover:text-foreground">
               <Icone nome={livro.icone} className="size-3.5 shrink-0" /> <span className="truncate">{livro.titulo}</span>
             </Link>
           ) : (
-            <Link href="/notas" className="shrink-0 rounded px-1 hover:bg-muted hover:text-foreground">Notas soltas</Link>
+            <Link href="/notas" className="shrink-0 rounded px-1 hover:bg-muted hover:text-foreground">Sem caderno</Link>
           )}
           <ChevronRightIcon className="size-3.5 shrink-0" />
         </nav>
@@ -503,7 +504,7 @@ function TelaQuadro({ nota }: { nota: Nota }) {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger><BookIcon /> Mover para o livro</DropdownMenuSubTrigger>
+              <DropdownMenuSubTrigger><BookIcon /> Mover para o caderno</DropdownMenuSubTrigger>
               <DropdownMenuSubContent className="w-52">
                 {livros.map((item) => (
                   <DropdownMenuItem key={item.id} onClick={() => moverNota(nota.id, item.id, null)}>
@@ -513,13 +514,13 @@ function TelaQuadro({ nota }: { nota: Nota }) {
                 ))}
                 {livros.length > 0 && <DropdownMenuSeparator />}
                 <DropdownMenuItem onClick={() => moverNota(nota.id, null, null)}>
-                  Notas soltas {nota.livroId === null && <CheckIcon className="ml-auto" />}
+                  Sem caderno {nota.livroId === null && <CheckIcon className="ml-auto" />}
                 </DropdownMenuItem>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
             <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive" onClick={() => setExcluindo(true)}>
-              <Trash2Icon /> Excluir quadro
+            <DropdownMenuItem onClick={() => setExcluindo(true)}>
+              <Trash2Icon /> Excluir quadro…
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <p className="px-2 py-1 text-xs text-muted-foreground" suppressHydrationWarning>

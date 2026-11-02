@@ -154,7 +154,7 @@ function Convites({ equipe }: { equipe: Equipe }) {
           </Button>
         </div>
       )}
-      {erro && <p role="alert" className="text-xs text-destructive">{erro}</p>}
+      {erro && <p role="alert" className="text-xs text-paper">{erro}</p>}
       {convites && convites.length > 0 && (
         <ul className="divide-y rounded-lg border">
           {convites.map((convite) => (
@@ -261,7 +261,7 @@ export function CartaoEquipe({ equipe, meuId }: { equipe: Equipe; meuId: string 
               {souDono && (
                 <>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem variant="destructive" onClick={() => setConfirmacao({ tipo: "excluir" })}><Trash2Icon /> Excluir equipe</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setConfirmacao({ tipo: "excluir" })}><Trash2Icon /> Excluir equipe</DropdownMenuItem>
                 </>
               )}
             </DropdownMenuContent>
@@ -271,7 +271,7 @@ export function CartaoEquipe({ equipe, meuId }: { equipe: Equipe; meuId: string 
 
       {/* Rafael Marques - 29/10/2026: conteúdo em abas, para a janela não virar uma coluna comprida. */}
       <CardContent>
-        {erro && <p role="alert" className="mb-3 text-sm text-destructive">{erro}</p>}
+        {erro && <p role="alert" className="mb-3 text-sm text-paper">{erro}</p>}
         <Tabs defaultValue="quadros">
           <TabsList variant="line" className="mb-3 w-full justify-start border-b">
             <TabsTrigger value="quadros" className="flex-none">Quadros <span className="text-xs text-muted-foreground">{equipe.quadros.length}</span></TabsTrigger>
@@ -337,7 +337,7 @@ export function CartaoEquipe({ equipe, meuId }: { equipe: Equipe; meuId: string 
                   )}
                   {souDono && (
                     membro.id !== meuId ? (
-                      <Button size="icon-sm" variant="ghost" className="shrink-0 text-muted-foreground hover:text-destructive" aria-label={`Remover ${membro.nome}`} onClick={() => setConfirmacao({ tipo: "remover", membro })}>
+                      <Button size="icon-sm" variant="ghost" className="shrink-0 text-muted-foreground hover:text-paper" aria-label={`Remover ${membro.nome}`} onClick={() => setConfirmacao({ tipo: "remover", membro })}>
                         <UserMinusIcon />
                       </Button>
                     ) : (

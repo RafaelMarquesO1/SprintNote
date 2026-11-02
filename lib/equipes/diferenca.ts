@@ -22,7 +22,7 @@ export function fotografarQuadro(quadroId: string, estado: Estado): FotoQuadro |
 export const clonarFoto = (foto: FotoQuadro): FotoQuadro => structuredClone(foto)
 
 const chaveColuna = (coluna: ColunaKanban, ordem: number) =>
-  JSON.stringify([coluna.titulo, coluna.cor, coluna.limite, coluna.concluida, coluna.recolhida, ordem])
+  JSON.stringify([coluna.titulo, coluna.cor, coluna.limite, coluna.concluida, coluna.recolhida, coluna.forma ?? null, ordem])
 
 const chaveCartao = (cartao: CartaoKanban, ordem: number) =>
   JSON.stringify([

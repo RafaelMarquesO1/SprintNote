@@ -10,12 +10,13 @@
 // "x-versao-base" a versão em que a mudança foi feita ("" = a área ainda não existia).
 // Se o servidor já tiver outra versão, nada é gravado: responde 409 com o que está
 // no banco, e o app junta as mudanças e manda de novo.
+//
+// Redesign v2: a lógica foi para lib/servidor/dados.ts (a mesma das Server Actions).
+// Esta rota continua com o mesmo contrato; o app a usa só para o envio com "keepalive" ao fechar a aba.
 
-import { banco } from "@/lib/servidor/banco"
+import { gravarArea, lerDadosDaConta, lerVersoesDaConta } from "@/lib/servidor/dados"
 import { usuarioAtual } from "@/lib/servidor/sessao"
-import { PREFIXO_DADOS } from "@/lib/tipos-conta"
 
-const TAMANHO_MAXIMO = 20 * 1024 * 1024 // 20 MB por área (notas com imagens)
 const semCache = { "Cache-Control": "no-store" }
 
 const naoAutorizado = () => Response.json({ erro: "Entre na sua conta." }, { status: 401, headers: semCache })
@@ -23,18 +24,10 @@ const naoAutorizado = () => Response.json({ erro: "Entre na sua conta." }, { sta
 export async function GET(requisicao: Request) {
   const usuario = await usuarioAtual()
   if (!usuario) return naoAutorizado()
-  const sql = banco()
-
   if (new URL(requisicao.url).searchParams.has("versoes")) {
-    const linhas = await sql`SELECT chave, atualizado_em::text AS versao FROM dados_usuario WHERE usuario_id = ${usuario.id}`
-    const versoes = Object.fromEntries(linhas.map((linha) => [String(linha.chave), String(linha.versao)]))
-    return Response.json({ versoes }, { headers: semCache })
+    return Response.json({ versoes: await lerVersoesDaConta(usuario.id) }, { headers: semCache })
   }
-
-  const linhas = await sql`SELECT chave, valor, atualizado_em::text AS versao FROM dados_usuario WHERE usuario_id = ${usuario.id}`
-  const dados = Object.fromEntries(linhas.map((linha) => [String(linha.chave), linha.valor]))
-  const versoes = Object.fromEntries(linhas.map((linha) => [String(linha.chave), String(linha.versao)]))
-  return Response.json({ dados, versoes }, { headers: semCache })
+  return Response.json(await lerDadosDaConta(usuario.id), { headers: semCache })
 }
 
 export async function PUT(requisicao: Request) {
@@ -42,53 +35,10 @@ export async function PUT(requisicao: Request) {
   if (!usuario) return naoAutorizado()
 
   const chave = new URL(requisicao.url).searchParams.get("chave") ?? ""
-  if (!chave.startsWith(PREFIXO_DADOS) || chave.length > 64) {
-    return Response.json({ erro: "Chave inválida." }, { status: 400, headers: semCache })
+  const resultado = await gravarArea(usuario.id, chave, await requisicao.text(), requisicao.headers.get("x-versao-base"))
+  if (resultado.ok) return Response.json({ ok: true, versao: resultado.versao }, { headers: semCache })
+  if (resultado.erro === "conflito") {
+    return Response.json({ erro: "conflito", valor: resultado.valor, versao: resultado.versao }, { status: 409, headers: semCache })
   }
-
-  const texto = await requisicao.text()
-  if (texto.length > TAMANHO_MAXIMO) return Response.json({ erro: "Dados grandes demais." }, { status: 413, headers: semCache })
-  try {
-    JSON.parse(texto)
-  } catch {
-    return Response.json({ erro: "JSON inválido." }, { status: 400, headers: semCache })
-  }
-
-  const sql = banco()
-  const versaoBase = requisicao.headers.get("x-versao-base")
-
-  // Abas abertas antes desta atualização não mandam a versão: gravam como antes.
-  if (versaoBase === null) {
-    const [linha] = await sql`
-      INSERT INTO dados_usuario (usuario_id, chave, valor, atualizado_em)
-      VALUES (${usuario.id}, ${chave}, ${texto}::jsonb, now())
-      ON CONFLICT (usuario_id, chave) DO UPDATE SET valor = EXCLUDED.valor, atualizado_em = now()
-      RETURNING atualizado_em::text AS versao
-    `
-    return Response.json({ ok: true, versao: String(linha.versao) }, { headers: semCache })
-  }
-
-  const gravadas =
-    versaoBase === ""
-      ? await sql`
-          INSERT INTO dados_usuario (usuario_id, chave, valor, atualizado_em)
-          VALUES (${usuario.id}, ${chave}, ${texto}::jsonb, now())
-          ON CONFLICT (usuario_id, chave) DO NOTHING
-          RETURNING atualizado_em::text AS versao
-        `
-      : await sql`
-          UPDATE dados_usuario SET valor = ${texto}::jsonb, atualizado_em = now()
-          WHERE usuario_id = ${usuario.id} AND chave = ${chave} AND atualizado_em = ${versaoBase}::timestamptz
-          RETURNING atualizado_em::text AS versao
-        `
-  if (gravadas.length > 0) return Response.json({ ok: true, versao: String(gravadas[0].versao) }, { headers: semCache })
-
-  // Outro aparelho salvou antes: devolve o que está no banco para o app juntar.
-  const [atual] = await sql`
-    SELECT valor, atualizado_em::text AS versao FROM dados_usuario WHERE usuario_id = ${usuario.id} AND chave = ${chave}
-  `
-  return Response.json(
-    { erro: "conflito", valor: atual?.valor ?? null, versao: atual ? String(atual.versao) : null },
-    { status: 409, headers: semCache }
-  )
+  return Response.json({ erro: resultado.mensagem }, { status: resultado.erro === "grande" ? 413 : 400, headers: semCache })
 }

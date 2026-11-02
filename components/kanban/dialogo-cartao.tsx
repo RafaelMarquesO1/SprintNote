@@ -26,7 +26,6 @@ import {
   ListChecksIcon,
   MessageSquareIcon,
   NotebookPenIcon,
-  PaintBucketIcon,
   PaperclipIcon,
   PlusIcon,
   RepeatIcon,
@@ -43,7 +42,7 @@ import { useEquipes } from "@/lib/estado/equipes"
 import { estilosPrioridade } from "@/components/kanban/cartao-kanban"
 import { Secao } from "@/components/kanban/blocos-cartao"
 import { BarrasComplexidade, CampoRepetir, SecaoAnexos, SeletorComplexidade } from "@/components/kanban/extras-cartao"
-import { SeletorCor } from "@/components/kanban/dialogos-quadro"
+import { EtiquetaChip, paletaEtiquetas, PontoTinta } from "@/components/ui/etiqueta"
 import { classeSelect } from "@/components/tarefas/dialogo-tarefa"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -55,7 +54,6 @@ import { EditorCartao } from "@/components/kanban/editor-cartao"
 import { Icone } from "@/components/icone"
 import { notasQueCitamCartao } from "@/components/notas/editor/extensoes/citacao-cartao"
 import { useAgora, tempoRelativo } from "@/hooks/use-hoje"
-import { paletaCores } from "@/lib/cores"
 import { gerarId } from "@/lib/gerar-id"
 import { complexidadeDe, complexidades } from "@/lib/kanban/complexidade"
 import { descreverRecorrencia } from "@/lib/kanban/recorrencia"
@@ -69,6 +67,48 @@ const iniciaisDe = (nome: string) =>
 
 type MudancasCartao = Parameters<ReturnType<typeof useKanban.getState>["atualizarCartao"]>[1]
 type Atualizar = (mudancas: MudancasCartao, atividade?: string) => void
+
+// Redesign v2 ("tinta de etiqueta"): o cartão não tem mais capa colorida. Quem tinha uma cor escolhe
+// levá-la para uma etiqueta (que pode marcar outros cartões) ou tirá-la. Nada some sem a pessoa decidir.
+function CorAntiga({ cartao, quadroId, atualizar }: { cartao: CartaoKanban; quadroId: string | null; atualizar: Atualizar }) {
+  const criarEtiqueta = useKanban((estado) => estado.criarEtiqueta)
+  const [nome, setNome] = useState("")
+  const [nomeando, setNomeando] = useState(false)
+  if (!cartao.cor) return null
+  return (
+    <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-line px-6 py-3 text-small text-ink-soft">
+      <PontoTinta cor={cartao.cor} className="size-3" />
+      <span className="min-w-0 flex-1">Este cartão tinha uma cor de capa. Agora as cores ficam nas etiquetas.</span>
+      {nomeando && quadroId ? (
+        <form
+          className="flex items-center gap-2"
+          onSubmit={(evento) => {
+            evento.preventDefault()
+            if (!nome.trim()) return
+            const etiqueta = criarEtiqueta(quadroId, nome.trim(), cartao.cor!)
+            atualizar({ etiquetas: [...cartao.etiquetas, etiqueta.id], cor: null }, "levou a cor da capa para uma etiqueta")
+          }}
+        >
+          <Input autoFocus inputSize="sm" value={nome} onChange={(evento) => setNome(evento.target.value)} placeholder="Nome da etiqueta" aria-label="Nome da etiqueta" className="w-40" />
+          <Button type="submit" size="sm" disabled={!nome.trim()}>
+            Criar
+          </Button>
+        </form>
+      ) : (
+        <>
+          {quadroId ? (
+            <Button variant="secondary" size="sm" onClick={() => setNomeando(true)}>
+              Virar etiqueta
+            </Button>
+          ) : null}
+          <Button variant="ghost" size="sm" onClick={() => atualizar({ cor: null }, "removeu a cor da capa")}>
+            Remover cor
+          </Button>
+        </>
+      )}
+    </div>
+  )
+}
 
 // Botão da lateral que abre um pequeno menu (como no Trello).
 function MenuLateral({ icone: IconeBotao, rotulo, titulo, children, largura = "w-64" }: { icone: React.ElementType; rotulo: string; titulo?: string; children: ReactNode; largura?: string }) {
@@ -128,9 +168,7 @@ function EscolherEtiquetas({ cartao, atualizar }: { cartao: CartaoKanban; atuali
                 <span className={cn("flex size-4 shrink-0 items-center justify-center rounded border", ativa && "border-foreground bg-foreground text-background")}>
                   {ativa && <CheckIcon className="size-3" />}
                 </span>
-                <span className="min-w-0 flex-1 truncate rounded px-2 py-1 text-xs font-medium text-white" style={{ background: etiqueta.cor }}>
-                  {etiqueta.nome}
-                </span>
+                <EtiquetaChip nome={etiqueta.nome} cor={etiqueta.cor} className="min-w-0 truncate" />
               </button>
             </li>
           )
@@ -141,7 +179,7 @@ function EscolherEtiquetas({ cartao, atualizar }: { cartao: CartaoKanban; atuali
         onSubmit={(evento) => {
           evento.preventDefault()
           if (!nova.trim()) return
-          const cor = paletaCores[quadro.etiquetas.length % paletaCores.length].valor
+          const cor = paletaEtiquetas[quadro.etiquetas.length % paletaEtiquetas.length].valor
           const etiqueta = criarEtiqueta(quadro.id, nova, cor)
           atualizar({ etiquetas: [...cartao.etiquetas, etiqueta.id] })
           setNova("")
@@ -248,7 +286,7 @@ function Comentarios({ cartao }: { cartao: CartaoKanban }) {
                       onClick={() => excluirComentario(cartao.id, comentario.id)}
                       aria-label="Excluir comentário"
                       title="Excluir comentário"
-                      className="ml-auto rounded p-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive focus-visible:opacity-100 max-md:opacity-100"
+                      className="ml-auto rounded p-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-paper focus-visible:opacity-100 max-md:opacity-100"
                     >
                       <Trash2Icon className="size-3.5" />
                     </button>
@@ -391,8 +429,8 @@ function FormularioCartao({ cartao, aoFechar }: { cartao: CartaoKanban; aoFechar
 
   return (
     <>
-      {/* Capa */}
-      {cartao.cor && <div className="h-14 shrink-0" style={{ background: cartao.cor }} />}
+      {/* Redesign v2: a capa colorida saiu. Cartão com cor antiga oferece levar a cor para uma etiqueta. */}
+      {cartao.cor && <CorAntiga cartao={cartao} quadroId={quadro?.id ?? null} atualizar={atualizar} />}
 
       {/* Cabeçalho */}
       <header className="shrink-0 space-y-1 px-6 pt-5 pr-14 pb-2">
@@ -438,9 +476,7 @@ function FormularioCartao({ cartao, aoFechar }: { cartao: CartaoKanban; aoFechar
               {etiquetasDoCartao.length > 0 && (
                 <Resumo titulo="Etiquetas">
                   {etiquetasDoCartao.map((etiqueta) => (
-                    <span key={etiqueta.id} className="h-8 rounded px-3 text-sm leading-8 font-medium text-white" style={{ background: etiqueta.cor }}>
-                      {etiqueta.nome}
-                    </span>
+                    <EtiquetaChip key={etiqueta.id} nome={etiqueta.nome} cor={etiqueta.cor} tamanho="md" />
                   ))}
                   <Popover>
                     <PopoverTrigger render={<Button variant="secondary" size="icon" aria-label="Escolher etiquetas" />}>
@@ -633,9 +669,6 @@ function FormularioCartao({ cartao, aoFechar }: { cartao: CartaoKanban; aoFechar
             <Button variant="secondary" size="sm" className="w-full justify-start" onClick={() => setMostrarAnexos(true)}>
               <PaperclipIcon /> Anexo
             </Button>
-            <MenuLateral icone={PaintBucketIcon} rotulo="Capa" titulo="Cor da capa">
-              <SeletorCor valor={cartao.cor} aoMudar={(cor) => atualizar({ cor })} permitirNenhuma />
-            </MenuLateral>
             {!equipe && (
               <MenuLateral icone={FileTextIcon} rotulo="Nota" titulo="Nota vinculada" largura="w-72">
                 <select value={cartao.notaId ?? ""} onChange={(evento) => atualizar({ notaId: evento.target.value || null })} className={classeSelect} aria-label="Nota vinculada">
@@ -712,7 +745,7 @@ function FormularioCartao({ cartao, aoFechar }: { cartao: CartaoKanban; aoFechar
             <Button
               variant="secondary"
               size="sm"
-              className="w-full justify-start hover:bg-destructive/15 hover:text-destructive"
+              className="w-full justify-start hover:border border-line-strong hover:text-paper"
               onClick={() => {
                 excluirCartao(cartao.id)
                 aoFechar()

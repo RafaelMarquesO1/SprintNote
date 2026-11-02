@@ -123,6 +123,8 @@ export type ColunaKanban = {
   // Cartões nesta coluna contam como concluídos (progresso da sprint).
   concluida: boolean
   recolhida: boolean
+  // Redesign v2: forma do status (StatusIcon). Sem valor, deduz pelo nome (lib/domain/quadros.ts).
+  forma?: "backlog" | "paused" | "todo" | "doing" | "done" | null
 }
 
 export type ItemChecklist = {
@@ -248,7 +250,8 @@ export type ItemRotina = {
 
 // Como a tela de rotina é exibida (escolhido em "Personalizar").
 export type ExibicaoRotina = {
-  visao: "linha" | "cartoes" | "semana"
+  // Redesign v2: "calendario" (mês). "cartoes" é antigo e aparece como lista.
+  visao: "linha" | "cartoes" | "semana" | "calendario"
   // Como a cor de cada atividade aparece.
   estiloCor: "icone" | "fundo"
   mostrarDias: boolean

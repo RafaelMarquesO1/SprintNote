@@ -101,7 +101,7 @@ export function DialogoImagem({ aberto, aoMudarAberto, aoInserir }: { aberto: bo
           </form>
 
           <Input value={descricao} onChange={(evento) => setDescricao(evento.target.value)} placeholder="Descrição da imagem (opcional)" aria-label="Descrição da imagem" />
-          {erro && <p role="alert" className="text-sm text-destructive">{erro}</p>}
+          {erro && <p role="alert" className="text-sm text-paper">{erro}</p>}
         </div>
       </DialogContent>
     </Dialog>

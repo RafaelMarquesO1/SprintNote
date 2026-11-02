@@ -57,7 +57,7 @@ export function DialogoExcluirNota({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
-          <AlertDialogAction variant="destructive" onClick={confirmarExclusao}>
+          <AlertDialogAction variant="danger" onClick={confirmarExclusao}>
             Excluir
           </AlertDialogAction>
         </AlertDialogFooter>

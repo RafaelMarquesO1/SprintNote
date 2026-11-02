@@ -1,76 +1,41 @@
-import type { Metadata } from "next";
-import { Caveat, Geist, Geist_Mono, Literata } from "next/font/google";
-import "./globals.css";
+import type { Metadata, Viewport } from "next"
 
-import { AppSidebar } from "@/components/app-sidebar";
-import { BotaoBusca, DialogoBusca } from "@/components/busca";
-import { PortaoConta } from "@/components/conta/portao-conta";
-import { CartaoNovidades } from "@/components/novidades/cartao-novidades";
-import { InlineScript } from "@/components/inline-script";
-import { themeScript } from "@/lib/theme";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
+import "./globals.css"
+import { classesFontes } from "./fonts"
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-// Rafael Marques - 21/10/2026
-// Fonte serifada opcional das notas (Personalizar → Fonte → Serifada).
-const literata = Literata({
-  variable: "--font-literata",
-  subsets: ["latin"],
-});
-
-// Fonte manuscrita opcional das notas (Personalizar → Fonte → Manuscrita).
-const caveat = Caveat({
-  variable: "--font-caveat",
-  subsets: ["latin"],
-});
+import { InlineScript } from "@/components/inline-script"
+import { MotionProvider } from "@/components/motion/motion-provider"
+import { Toaster } from "@/components/ui/toast"
+import { themeScript } from "@/lib/theme"
 
 export const metadata: Metadata = {
-  title: "SprintNote",
-  description: "Notas estilo Notion + Obsidian",
-};
+  title: { default: "SprintNote", template: "%s · SprintNote" },
+  description: "Notas, tarefas e projetos que conversam entre si. Escreva uma nota, cite o cartão do projeto e veja seu dia numa tela.",
+  applicationName: "SprintNote",
+}
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+  ],
+  viewportFit: "cover",
+}
+
+// Redesign v2: o layout raiz só cuida de fontes, tema, motion e toasts.
+// O app (menu, conta e dados) fica em app/(app)/layout.tsx; páginas públicas ficam fora dele.
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="pt-BR"
-      className={`${geistSans.variable} ${geistMono.variable} ${literata.variable} ${caveat.variable} h-full antialiased`}
-      suppressHydrationWarning
-    >
+    <html lang="pt-BR" data-theme="dark" className={`${classesFontes} dark h-full antialiased`} suppressHydrationWarning>
       <head>
         <InlineScript html={themeScript} />
       </head>
       <body className="min-h-full">
-        {/* Rafael Marques - 21/10/2026 - abertura, login/cadastro e sincronização com o banco */}
-        {/* Rafael Marques - 23/10/2026: cartão de novidades depois do login */}
-        <PortaoConta depoisDeEntrar={<><DialogoBusca /><CartaoNovidades /></>}>
-        <SidebarProvider>
-          <AppSidebar />
-          <SidebarInset className="min-w-0">
-            <header className="sticky top-0 z-10 flex h-12 items-center gap-2 border-b bg-background/80 px-4 backdrop-blur">
-              <SidebarTrigger />
-              <span className="text-sm text-muted-foreground">SprintNote</span>
-              <div className="ml-auto">
-                <BotaoBusca />
-              </div>
-            </header>
-            <div className="min-w-0 flex-1 p-4 md:p-6">{children}</div>
-          </SidebarInset>
-        </SidebarProvider>
-        </PortaoConta>
+        <MotionProvider>
+          {children}
+          <Toaster />
+        </MotionProvider>
       </body>
     </html>
-  );
+  )
 }
