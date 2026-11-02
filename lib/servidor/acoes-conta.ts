@@ -87,7 +87,7 @@ export async function entrar(_anterior: EstadoFormularioConta, formulario: FormD
     const valida = await conferirSenha(senha, linha ? String(linha.senha_hash) : HASH_FALSO)
     if (!linha || !valida) {
       await sql`INSERT INTO tentativas_login (email) VALUES (${email})`
-      return { erro: "E-mail ou senha incorretos.", email }
+      return { erro: "E-mail ou senha incorretos. Confira e tente de novo.", email }
     }
     await sql`DELETE FROM tentativas_login WHERE email = ${email}`
     const usuario = { id: String(linha.id), nome: String(linha.nome), email: String(linha.email) }

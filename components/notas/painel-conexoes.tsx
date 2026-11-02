@@ -124,7 +124,7 @@ export function PainelConexoes({ nota, aoFechar }: { nota: Nota; aoFechar: () =>
 
       <Secao titulo={`Links desta nota (${links.length})`} icone={ArrowRightIcon}>
         {links.length === 0 ? (
-          <p className="text-xs text-muted-foreground">Digite <code>[[</code> no texto para ligar esta nota a outra nota ou a um livro.</p>
+          <p className="text-xs text-muted-foreground">Digite <code>[[</code> no texto para ligar esta nota a outra nota ou a um caderno.</p>
         ) : (
           <ul>
             {links.map(({ alvo, destino }) => (

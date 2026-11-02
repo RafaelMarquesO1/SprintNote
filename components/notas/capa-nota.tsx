@@ -150,7 +150,7 @@ export function DialogoCapa({ nota, aberto, aoMudarAberto }: { nota: Nota; abert
             <Button type="submit">Usar</Button>
           </form>
         )}
-        {erro && <p className="text-sm text-destructive">{erro}</p>}
+        {erro && <p className="text-sm text-paper">{erro}</p>}
       </DialogContent>
     </Dialog>
   )

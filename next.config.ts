@@ -17,7 +17,10 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["172.18.100.103"],
   experimental: {
     agentFeedback: true,
+    // Redesign v2: as áreas de dados vão por Server Action; o limite acompanha o da rota /api/dados (20 MB).
+    serverActions: { bodySizeLimit: "20mb" },
   },
+  reactCompiler: true,
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {

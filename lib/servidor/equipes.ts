@@ -35,6 +35,8 @@ export class ErroEquipe extends Error {
 const formatoUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const formatoId = /^[A-Za-z0-9_-]{1,64}$/
 const formatoData = /^\d{4}-\d{2}-\d{2}$/
+// Redesign v2 (db/005): formas de status aceitas numa coluna.
+const FORMAS = new Set(["backlog", "paused", "todo", "doing", "done"])
 
 export const ehUuid = (valor: unknown): valor is string => typeof valor === "string" && formatoUuid.test(valor)
 
@@ -405,7 +407,7 @@ export async function baixarQuadro(
 
   const sql = banco()
   const [colunas, etiquetas, cartoes, comentarios, atividade] = await Promise.all([
-    sql`SELECT id, titulo, cor, limite, concluida, recolhida FROM colunas_equipe WHERE quadro_id = ${quadroId} ORDER BY ordem, id`,
+    sql`SELECT id, titulo, cor, limite, concluida, recolhida, forma FROM colunas_equipe WHERE quadro_id = ${quadroId} ORDER BY ordem, id`,
     sql`SELECT id, nome, cor FROM etiquetas_equipe WHERE quadro_id = ${quadroId} ORDER BY ordem, id`,
     sql`SELECT * FROM cartoes_equipe WHERE quadro_id = ${quadroId} ORDER BY ordem, criado_em, id`,
     sql`SELECT id, cartao_id, autor_id, autor_nome, texto, criado_em FROM comentarios_cartao WHERE quadro_id = ${quadroId} ORDER BY criado_em, id`,
@@ -459,6 +461,7 @@ export async function baixarQuadro(
         limite: linha.limite === null ? null : Number(linha.limite),
         concluida: Boolean(linha.concluida),
         recolhida: Boolean(linha.recolhida),
+        forma: FORMAS.has(String(linha.forma)) ? (String(linha.forma) as ColunaKanban["forma"]) : null,
       })
     ),
     cartoes: cartoes.map((linha) => converterCartao(linha, mapaComentarios, mapaAtividade)),
@@ -565,18 +568,19 @@ export async function aplicarOperacoes(quadroId: string, usuario: Usuario, bruto
       limite: typeof c.limite === "number" && Number.isFinite(c.limite) ? Math.max(0, Math.min(999, Math.round(c.limite))) : null,
       concluida: c.concluida === true,
       recolhida: c.recolhida === true,
+      forma: FORMAS.has(String(c.forma)) ? String(c.forma) : null,
       ordem: numero(c.ordem),
     }
   })
   if (colunasGravar.length > 0) {
     consultas.push(sql`
-      INSERT INTO colunas_equipe (quadro_id, id, titulo, cor, limite, concluida, recolhida, ordem)
-      SELECT ${quadroId}, c.id, c.titulo, c.cor, c.limite, c.concluida, c.recolhida, c.ordem
+      INSERT INTO colunas_equipe (quadro_id, id, titulo, cor, limite, concluida, recolhida, forma, ordem)
+      SELECT ${quadroId}, c.id, c.titulo, c.cor, c.limite, c.concluida, c.recolhida, c.forma, c.ordem
       FROM jsonb_to_recordset(${JSON.stringify(colunasGravar)}::jsonb)
-        AS c(id text, titulo text, cor text, limite integer, concluida boolean, recolhida boolean, ordem double precision)
+        AS c(id text, titulo text, cor text, limite integer, concluida boolean, recolhida boolean, forma text, ordem double precision)
       ON CONFLICT (quadro_id, id) DO UPDATE SET
         titulo = EXCLUDED.titulo, cor = EXCLUDED.cor, limite = EXCLUDED.limite,
-        concluida = EXCLUDED.concluida, recolhida = EXCLUDED.recolhida, ordem = EXCLUDED.ordem
+        concluida = EXCLUDED.concluida, recolhida = EXCLUDED.recolhida, forma = EXCLUDED.forma, ordem = EXCLUDED.ordem
     `)
   }
 

@@ -154,7 +154,7 @@ export function SecaoAnexos({ cartao, atualizar }: { cartao: CartaoKanban; atual
         </div>
       )}
       {aviso && (
-        <p role="alert" className="text-xs text-destructive">
+        <p role="alert" className="text-xs text-paper">
           {aviso}
         </p>
       )}

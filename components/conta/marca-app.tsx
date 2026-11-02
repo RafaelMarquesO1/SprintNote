@@ -1,18 +1,6 @@
-import { NotebookPenIcon } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { LogoMark } from "@/components/brand/logo"
 
-// Rafael Marques - 21/10/2026
-// Ícone do SprintNote num quadrado com a cor principal (abertura e login).
+// Ícone do SprintNote (abertura, login, novidades). Redesign v2: usa o logotipo novo.
 export function IconeApp({ tamanho = "md", className }: { tamanho?: "md" | "lg"; className?: string }) {
-  return (
-    <span
-      className={cn(
-        "flex shrink-0 items-center justify-center bg-primary text-primary-foreground shadow-lg shadow-primary/25",
-        tamanho === "lg" ? "size-20 rounded-3xl [&_svg]:size-10" : "size-9 rounded-xl [&_svg]:size-5",
-        className
-      )}
-    >
-      <NotebookPenIcon aria-hidden />
-    </span>
-  )
+  return <LogoMark size={tamanho === "lg" ? 72 : 36} className={className} />
 }

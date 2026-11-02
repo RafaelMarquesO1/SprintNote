@@ -75,6 +75,8 @@ export function GrafoConexoes({
   const idPadrao = useId()
   const svgRef = useRef<SVGSVGElement>(null)
   const livros = useNotas((estado) => estado.livros)
+  // Nota mexida por último (anel Brasa no grafo).
+  const notaRecenteId = useNotas((estado) => estado.notas.reduce<{ id: string | null; em: number }>((maior, nota) => (nota.atualizadoEm > maior.em ? { id: nota.id, em: nota.atualizadoEm } : maior), { id: null, em: -1 }).id)
   const pontos = useRef(new Map<string, Ponto>())
   const calor = useRef(1)
   const visaoRef = useRef<Visao>({ x: 0, y: 0, escala: 1 })
@@ -344,7 +346,7 @@ export function GrafoConexoes({
       <svg
         ref={svgRef}
         role="img"
-        aria-label="Grafo de conexões entre livros e notas"
+        aria-label="Grafo de conexões entre cadernos e notas"
         className="size-full cursor-grab touch-none select-none active:cursor-grabbing"
         onPointerDown={(evento) => aoPressionar(evento)}
         onPointerMove={aoMover}
@@ -425,6 +427,8 @@ export function GrafoConexoes({
                 ) : (
                   <circle r={r} fill={corNo} fillOpacity={no.tipo === "tag" ? 0.55 : 1} />
                 )}
+                {/* Redesign v2 (8.11): a nota aberta mais recentemente é o "agora" da biblioteca — anel Brasa. */}
+                {no.id === `nota:${notaRecenteId}` && <circle r={r + 4} fill="none" stroke="var(--color-ember)" strokeWidth={2} />}
                 {/* Área de toque maior que o desenho */}
                 <circle r={Math.max(r, 9)} fill="transparent" />
                 {mostrarNome && (

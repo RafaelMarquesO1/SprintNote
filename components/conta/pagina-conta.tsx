@@ -1,10 +1,9 @@
 "use client"
 
-import { useActionState, useEffect, useId, useRef, useState } from "react"
+import { useActionState, useEffect, useId, useRef, useState, useSyncExternalStore } from "react"
 import { useShallow } from "zustand/react/shallow"
 import {
   CameraIcon,
-  CircleUserRoundIcon,
   DatabaseBackupIcon,
   DownloadIcon,
   FileArchiveIcon,
@@ -26,6 +25,8 @@ import {
 import { LinkDocumento } from "@/components/conta/documentos-legais"
 import { useConta } from "@/components/conta/portao-conta"
 import { CabecalhoPagina, Pagina } from "@/components/pagina"
+import { Segmented } from "@/components/ui/segmented"
+import { definirTema, lerPreferenciaTema, type PreferenciaTema } from "@/lib/theme"
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -59,8 +60,8 @@ import { baixarTudoEmMarkdown, exportarLivroZip, lerBackup, restaurarBackup, typ
 import { alterarSenha, atualizarNome, excluirConta, sairDeTodosOsAparelhos, type EstadoAcaoConta } from "@/lib/servidor/acoes-conta"
 
 function Aviso({ estado }: { estado: EstadoAcaoConta }) {
-  if (estado?.erro) return <p role="alert" className="text-sm text-destructive">{estado.erro}</p>
-  if (estado?.ok) return <p role="status" className="text-sm text-emerald-600 dark:text-emerald-400">{estado.ok}</p>
+  if (estado?.erro) return <p role="alert" className="text-sm text-paper">{estado.erro}</p>
+  if (estado?.ok) return <p role="status" className="text-sm text-paper dark:text-paper">{estado.ok}</p>
   return null
 }
 
@@ -115,7 +116,7 @@ function FotoPerfil() {
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp"
-              className="sr-only"
+              hidden aria-label="Escolher foto de perfil" tabIndex={-1}
               onChange={(evento) => {
                 escolher(evento.target.files?.[0])
                 evento.target.value = ""
@@ -129,7 +130,7 @@ function FotoPerfil() {
           )}
         </div>
         {erro ? (
-          <p role="alert" className="text-xs text-destructive">{erro}</p>
+          <p role="alert" className="text-xs text-paper">{erro}</p>
         ) : (
           <p className="text-xs text-muted-foreground">Opcional. Fica só na sua conta e entra no “Baixar meus dados”.</p>
         )}
@@ -178,11 +179,15 @@ function CartaoPerfil() {
               <Input id={`${id}-email`} value={conta.usuario.email} disabled readOnly />
               <FieldDescription>Usado para entrar na conta.</FieldDescription>
             </Field>
+            <Field>
+              <FieldLabel>Tema</FieldLabel>
+              <EscolhaTema />
+            </Field>
           </FieldGroup>
         </CardContent>
         <CardFooter className="mt-auto justify-between gap-3">
           <Aviso estado={estado} />
-          <Button type="submit" className="ml-auto" disabled={enviando}>{enviando && <Spinner />} Salvar</Button>
+          <Button type="submit" className="ml-auto" disabled={enviando}>{enviando && <Spinner />} Salvar alterações</Button>
         </CardFooter>
       </form>
     </Card>
@@ -280,7 +285,7 @@ function CartaoDados() {
         <p className="flex items-center gap-2"><MapPinIcon className="size-4 shrink-0" /> Armazenados no Brasil (São Paulo), sem compartilhamento com terceiros.</p>
         <p className="flex items-center gap-2"><ShieldCheckIcon className="size-4 shrink-0" /> Senha guardada só como hash; conexões criptografadas.</p>
         {mensagem && (
-          <p role="status" className={mensagem.tipo === "erro" ? "text-destructive" : "text-emerald-600 dark:text-emerald-400"}>{mensagem.texto}</p>
+          <p role="status" className={mensagem.tipo === "erro" ? "text-paper" : "text-paper dark:text-paper"}>{mensagem.texto}</p>
         )}
       </CardContent>
       <CardFooter className="mt-auto flex-wrap gap-2">
@@ -322,7 +327,7 @@ function CartaoDados() {
         <input
           ref={entradaPasta}
           type="file"
-          className="sr-only"
+          hidden aria-label="Escolher pasta do cofre do Obsidian"
           {...{ webkitdirectory: "", directory: "" }}
           onChange={(evento) => {
             const arquivos = evento.target.files
@@ -334,7 +339,7 @@ function CartaoDados() {
           ref={entradaZip}
           type="file"
           accept=".zip,application/zip"
-          className="sr-only"
+          hidden aria-label="Escolher arquivo .zip do cofre"
           onChange={(evento) => {
             const arquivo = evento.target.files?.[0]
             if (arquivo) void escolherCofre(() => lerCofreDeZip(arquivo))
@@ -346,7 +351,7 @@ function CartaoDados() {
           type="file"
           accept=".md,text/markdown"
           multiple
-          className="sr-only"
+          hidden aria-label="Escolher notas em Markdown"
           onChange={(evento) => {
             const arquivos = evento.target.files
             if (arquivos?.length) void escolherCofre(() => lerCofreDeArquivos(arquivos))
@@ -358,7 +363,7 @@ function CartaoDados() {
           <input
             type="file"
             accept="application/json,.json"
-            className="sr-only"
+            hidden aria-label="Escolher arquivo de backup"
             onChange={(evento) => {
               void escolherArquivo(evento.target.files?.[0])
               evento.target.value = ""
@@ -399,14 +404,14 @@ function CartaoDados() {
           <AlertDialogHeader>
             <AlertDialogTitle>Importar este backup?</AlertDialogTitle>
             <AlertDialogDescription>
-              {lido && `Backup de ${lido.resumo.data}: ${descreverResumo(lido.resumo)}.`} Livros, notas, tarefas, hábitos, rotina e Kanban da conta
+              {lido && `Backup de ${lido.resumo.data}: ${descreverResumo(lido.resumo)}.`} Cadernos, notas, tarefas, hábitos, rotina e Kanban da conta
               serão substituídos. Se quiser, baixe seus dados antes.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <Button
-              variant="destructive"
+              variant="danger"
               onClick={() => {
                 if (!lido) return
                 restaurarBackup(lido.backup)
@@ -481,13 +486,13 @@ function CartaoExcluir() {
   }, [estado, encerrar])
 
   return (
-    <Card className="ring-destructive/30">
+    <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-destructive"><Trash2Icon className="size-4" /> Excluir conta</CardTitle>
+        <CardTitle className="flex items-center gap-2"><Trash2Icon className="size-4" /> Excluir conta</CardTitle>
         <CardDescription>Apaga a conta e todo o conteúdo (notas, tarefas, hábitos, rotina, Kanban) na hora, sem cópia guardada. Nas equipes, a propriedade passa para outro membro e seus comentários viram “Ex-membro”. Não dá para desfazer.</CardDescription>
       </CardHeader>
       <CardFooter>
-        <Button variant="destructive" onClick={() => setAberto(true)}><Trash2Icon /> Excluir minha conta</Button>
+        <Button variant="danger" onClick={() => setAberto(true)}><Trash2Icon /> Excluir conta…</Button>
       </CardFooter>
 
       <AlertDialog open={aberto} onOpenChange={setAberto}>
@@ -506,12 +511,35 @@ function CartaoExcluir() {
             </Field>
             <AlertDialogFooter>
               <AlertDialogCancel type="button">Cancelar</AlertDialogCancel>
-              <Button type="submit" variant="destructive" disabled={enviando}>{enviando && <Spinner />} Excluir para sempre</Button>
+              <Button type="submit" variant="irreversible" loading={enviando}>Excluir conta e dados</Button>
             </AlertDialogFooter>
           </form>
         </AlertDialogContent>
       </AlertDialog>
     </Card>
+  )
+}
+
+// Tema (8.13): Escuro, Claro ou Sistema — o mesmo do menu do avatar.
+function EscolhaTema() {
+  // Lido do navegador sem diferença de hidratação; a escolha feita aqui vale na hora.
+  const salvo = useSyncExternalStore(() => () => {}, lerPreferenciaTema, () => "escuro" as PreferenciaTema)
+  const [escolhido, setTema] = useState<PreferenciaTema | null>(null)
+  const tema = escolhido ?? salvo
+  return (
+    <Segmented
+      label="Tema"
+      value={tema}
+      onChange={(valor) => {
+        setTema(valor)
+        definirTema(valor)
+      }}
+      options={[
+        { value: "escuro", label: "Escuro" },
+        { value: "claro", label: "Claro" },
+        { value: "sistema", label: "Sistema" },
+      ]}
+    />
   )
 }
 
@@ -523,8 +551,6 @@ export function PaginaConta() {
   return (
     <Pagina>
       <CabecalhoPagina
-        secao="Conta"
-        icone={CircleUserRoundIcon}
         titulo="Minha conta"
         descricao={conta ? `Conectado como ${conta.usuario.email}` : undefined}
       />

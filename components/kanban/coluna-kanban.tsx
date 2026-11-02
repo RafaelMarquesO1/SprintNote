@@ -5,14 +5,12 @@ import { useDraggable, useDroppable } from "@dnd-kit/core"
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
-  CheckCheckIcon,
-  CheckIcon,
   ChevronsLeftRightIcon,
   GaugeIcon,
   GripVerticalIcon,
   LayoutTemplateIcon,
   MoreHorizontalIcon,
-  PaletteIcon,
+  ShapesIcon,
   PencilIcon,
   PlusIcon,
   Trash2Icon,
@@ -37,7 +35,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
-import { estiloFaixa, paletaCores } from "@/lib/cores"
+import { StatusIcon } from "@/components/ui/status-icon"
+import { FORMAS_STATUS, formaDaColuna } from "@/lib/domain/quadros"
 import { useKanban } from "@/lib/estado/kanban"
 import type { CartaoKanban, ColunaKanban, EtiquetaKanban, ExibicaoCartao } from "@/lib/tipos"
 
@@ -57,12 +56,12 @@ function NovoCartao({ colunaId }: { colunaId: string }) {
   if (!aberto) {
     return (
       <div className="flex items-center gap-1">
-        <Button variant="ghost" size="sm" className="flex-1 justify-start text-muted-foreground" onClick={() => setAberto(true)}>
+        <Button variant="ghost" size="sm" className="flex-1 justify-start" onClick={() => setAberto(true)}>
           <PlusIcon /> Adicionar cartão
         </Button>
         {/* Rafael Marques - 29/10/2026: criar a partir de um modelo de cartão. */}
         <DropdownMenu>
-          <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label="Criar a partir de um modelo" title="Criar a partir de um modelo" />}>
+          <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Criar a partir de um modelo" title="Criar a partir de um modelo" />}>
             <LayoutTemplateIcon />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-60">
@@ -81,7 +80,7 @@ function NovoCartao({ colunaId }: { colunaId: string }) {
                       evento.stopPropagation()
                       excluirModeloCartao(modelo.id)
                     }}
-                    className="rounded p-0.5 text-muted-foreground opacity-0 group-hover/modelo:opacity-100 hover:text-destructive"
+                    className="rounded p-0.5 text-muted-foreground opacity-0 group-hover/modelo:opacity-100 hover:text-paper"
                   >
                     <Trash2Icon className="size-3.5" />
                   </button>
@@ -136,7 +135,7 @@ function TituloColuna({ coluna, editando, aoEditar }: { coluna: ColunaKanban; ed
           aoEditar(true)
         }}
         title="Clique para renomear"
-        className="min-w-0 truncate rounded px-1 text-left text-sm font-semibold hover:bg-foreground/5"
+        className="min-w-0 truncate rounded-xs text-left text-ui font-semibold text-paper hover:underline hover:underline-offset-4"
       >
         {coluna.titulo}
       </button>
@@ -157,7 +156,7 @@ function TituloColuna({ coluna, editando, aoEditar }: { coluna: ColunaKanban; ed
         if (evento.key === "Enter" || evento.key === "Escape") evento.currentTarget.blur()
       }}
       aria-label="Nome da coluna"
-      className="h-7 min-w-0 flex-1 rounded-md bg-background px-1.5 text-sm font-semibold outline-none ring-1 ring-ring/40"
+      className="h-7 min-w-0 flex-1 rounded-xs border border-paper bg-transparent px-1.5 text-ui font-semibold text-paper outline-none"
     />
   )
 }
@@ -203,19 +202,26 @@ export function Coluna({
 
   const passouDoLimite = coluna.limite !== null && cartoes.length > coluna.limite
 
-  // Coluna recolhida: só uma faixa fina com o nome e a contagem.
+  const forma = formaDaColuna(coluna)
+
+  // Coluna recolhida (8.8): 44px, texto vertical, um botão que diz como abrir.
   if (coluna.recolhida) {
     return (
-      <section ref={definirAlvo} aria-label={coluna.titulo} className={cn("shrink-0", isOver && "ring-2 ring-primary/30 rounded-xl")}>
+      <section ref={definirAlvo} aria-label={coluna.titulo} className="shrink-0">
         <button
           type="button"
           onClick={() => atualizarColuna(coluna.id, { recolhida: false })}
-          title="Expandir coluna"
-          className={cn("flex h-64 w-10 flex-col items-center gap-2 rounded-xl py-3 text-sm font-semibold", vidro ? "border border-foreground/10 bg-card/90 backdrop-blur-xl hover:bg-card/95" : "bg-muted/60 hover:bg-muted")}
+          aria-label={`${coluna.titulo}, ${cartoes.length} ${cartoes.length === 1 ? "cartão" : "cartões"}. Expandir`}
+          className={cn(
+            "flex h-80 w-11 flex-col items-center gap-3 rounded-lg border py-3 text-ui font-semibold text-paper hover:bg-raised",
+            isOver ? "border-paper" : "border-line-strong",
+            vidro && "bg-panel/90 backdrop-blur-xl"
+          )}
         >
-          {coluna.cor && <span className="size-2.5 rounded-full" style={{ background: coluna.cor }} />}
-          <span className="text-xs text-muted-foreground tabular-nums">{cartoes.length}</span>
-          <span className="[writing-mode:vertical-rl]">{coluna.titulo}</span>
+          <StatusIcon status={forma} />
+          <span className="[writing-mode:vertical-rl]">
+            {coluna.titulo} <span className="text-ink-muted tabular-nums">{cartoes.length}</span>
+          </span>
         </button>
       </section>
     )
@@ -229,52 +235,46 @@ export function Coluna({
       }}
       aria-label={coluna.titulo}
       className={cn(
-        "animacao-entrar flex w-[80vw] max-w-72 shrink-0 flex-col gap-2 rounded-xl p-2 transition-colors sm:w-72",
-        vidro ? "border border-foreground/10 bg-card/90 shadow-sm backdrop-blur-xl" : "bg-muted/60 backdrop-blur-sm",
-        isOver && (vidro ? "bg-card/95 ring-2 ring-primary/30" : "bg-muted ring-2 ring-primary/20"),
+        "flex w-[80vw] max-w-column shrink-0 snap-start flex-col gap-2.5 rounded-xl transition-colors duration-fast sm:w-column",
+        vidro && "border border-line-strong bg-panel/90 p-2 backdrop-blur-xl",
         isDragging && "opacity-40"
       )}
-      style={{ ...(coluna.cor ? estiloFaixa(coluna.cor) : {}), ["--ordem" as string]: posicao }}
     >
-      <header className="flex items-center gap-1 px-1 pt-1">
+      <header className="flex h-control items-center gap-2 px-1">
         {!raia && <button
           type="button"
           aria-label={`Arrastar a coluna ${coluna.titulo}`}
           title="Arraste para reordenar"
-          className="flex size-6 shrink-0 cursor-grab touch-none items-center justify-center rounded text-muted-foreground hover:bg-foreground/5 active:cursor-grabbing"
+          className="-ml-1 flex size-6 shrink-0 cursor-grab touch-none items-center justify-center rounded-xs text-ink-muted hover:bg-raised hover:text-paper active:cursor-grabbing"
           {...listeners}
           {...attributes}
         >
           <GripVerticalIcon className="size-4" />
         </button>}
-        {coluna.cor && <span className="size-2.5 shrink-0 rounded-full" style={{ background: coluna.cor }} />}
+        <StatusIcon status={forma} />
         <TituloColuna coluna={coluna} editando={editando} aoEditar={setEditando} />
-        {coluna.concluida && <CheckCheckIcon className="size-3.5 shrink-0 text-muted-foreground" aria-label="Coluna de concluídos" />}
         <span
-          className={cn("ml-auto shrink-0 rounded-full bg-background px-2 text-xs text-muted-foreground tabular-nums", passouDoLimite && "bg-destructive/15 font-medium text-destructive")}
+          className={cn("ml-auto shrink-0 text-small text-ink-muted tabular-nums", passouDoLimite && "font-semibold text-paper underline decoration-dotted underline-offset-4")}
           title={coluna.limite !== null ? `Limite: ${coluna.limite} cartões` : undefined}
         >
           {cartoes.length}{coluna.limite !== null && `/${coluna.limite}`}
         </span>
         <DropdownMenu>
-          <DropdownMenuTrigger aria-label={`Opções da coluna ${coluna.titulo}`} className="flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-foreground/5 hover:text-foreground">
+          <DropdownMenuTrigger aria-label={`Opções da coluna ${coluna.titulo}`} className="flex size-7 shrink-0 items-center justify-center rounded-xs text-ink-soft hover:bg-raised hover:text-paper">
             <MoreHorizontalIcon className="size-4" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuItem onClick={() => setEditando(true)}><PencilIcon /> Renomear</DropdownMenuItem>
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger><PaletteIcon /> Cor</DropdownMenuSubTrigger>
-              <DropdownMenuSubContent className="w-44">
-                <DropdownMenuItem onClick={() => atualizarColuna(coluna.id, { cor: null })}>
-                  <span className="size-3.5 rounded-full border" /> Sem cor
-                  {!coluna.cor && <CheckIcon className="ml-auto" />}
-                </DropdownMenuItem>
-                {paletaCores.map((cor) => (
-                  <DropdownMenuItem key={cor.id} onClick={() => atualizarColuna(coluna.id, { cor: cor.valor })}>
-                    <span className="size-3.5 rounded-full" style={{ background: cor.valor }} /> {cor.nome}
-                    {coluna.cor === cor.valor && <CheckIcon className="ml-auto" />}
-                  </DropdownMenuItem>
-                ))}
+              <DropdownMenuSubTrigger><ShapesIcon /> Forma do status</DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="w-48">
+                <DropdownMenuRadioGroup value={forma} onValueChange={(valor) => atualizarColuna(coluna.id, { forma: valor as typeof forma })}>
+                  {FORMAS_STATUS.map((item) => (
+                    <DropdownMenuRadioItem key={item.valor} value={item.valor}>
+                      <StatusIcon status={item.valor} /> {item.rotulo}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
             <DropdownMenuSub>
@@ -299,12 +299,17 @@ export function Coluna({
             <DropdownMenuItem disabled={posicao === total - 1} onClick={() => aoMover(1)}><ArrowRightIcon /> Mover para a direita</DropdownMenuItem>
             <DropdownMenuItem onClick={() => atualizarColuna(coluna.id, { recolhida: true })}><ChevronsLeftRightIcon /> Recolher</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive" onClick={aoExcluir}><Trash2Icon /> Excluir coluna</DropdownMenuItem>
+            <DropdownMenuItem onClick={aoExcluir}><Trash2Icon /> Excluir coluna…</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </header>
 
       <div className="flex min-h-16 flex-col gap-2">
+        {cartoes.length === 0 ? (
+          <div className={cn("flex h-32 items-center justify-center rounded-lg border border-dashed text-small text-ink-soft transition-colors duration-fast", isOver ? "border-paper text-paper" : "border-line-strong")}>
+            Arraste um cartão para cá
+          </div>
+        ) : null}
         {cartoes.map((cartao, indice) => (
           <Cartao key={cartao.id} ordem={indice} cartao={cartao} etiquetas={etiquetas} concluido={coluna.concluida} exibicao={exibicao} aoAbrir={() => aoAbrirCartao(cartao)} />
         ))}

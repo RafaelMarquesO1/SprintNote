@@ -37,7 +37,7 @@ export function DialogoExcluirLivro({ livro, aoMudarAberto }: { livro: Livro | n
     <AlertDialog open={livro !== null} onOpenChange={aoMudarAberto}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Excluir o livro “{livro?.titulo}”?</AlertDialogTitle>
+          <AlertDialogTitle>Excluir o caderno “{livro?.titulo}”?</AlertDialogTitle>
           <AlertDialogDescription>
             {totalNotas > 0
               ? `Ele tem ${totalNotas} nota(s). Você pode mantê-las como notas soltas ou excluir tudo.`
@@ -51,7 +51,7 @@ export function DialogoExcluirLivro({ livro, aoMudarAberto }: { livro: Livro | n
               Manter notas
             </Button>
           )}
-          <Button variant="destructive" onClick={() => excluir(false)}>
+          <Button variant="danger" onClick={() => excluir(false)}>
             {totalNotas > 0 ? "Excluir tudo" : "Excluir"}
           </Button>
         </AlertDialogFooter>

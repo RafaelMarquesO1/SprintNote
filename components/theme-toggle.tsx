@@ -10,7 +10,10 @@ export function ThemeToggle() {
     <Button
       variant="ghost"
       size="icon-sm"
-      onClick={alternarTema}
+      onClick={(evento) => {
+        const caixa = evento.currentTarget.getBoundingClientRect()
+        alternarTema({ x: caixa.left + caixa.width / 2, y: caixa.top + caixa.height / 2 })
+      }}
       aria-label="Alternar tema"
     >
       <SunIcon className="hidden dark:block" />

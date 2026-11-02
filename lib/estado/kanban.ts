@@ -43,7 +43,7 @@ export function exibicaoDoQuadro(quadro: QuadroKanban | undefined): ExibicaoCart
 type MudancasCartao = Partial<
   Pick<CartaoKanban, "titulo" | "descricao" | "notaId" | "etiquetas" | "prazo" | "cor" | "checklist" | "prioridade" | "responsavelId" | "anexos" | "recorrencia" | "bloqueadoPor" | "estimativa">
 >
-type MudancasColuna = Partial<Pick<ColunaKanban, "titulo" | "cor" | "limite" | "concluida" | "recolhida">>
+type MudancasColuna = Partial<Pick<ColunaKanban, "titulo" | "cor" | "limite" | "concluida" | "recolhida" | "forma">>
 
 type EstadoKanban = {
   quadros: QuadroKanban[]

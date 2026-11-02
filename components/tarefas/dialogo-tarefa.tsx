@@ -79,7 +79,7 @@ function FormularioTarefa({ tarefa, listas, aoFechar }: { tarefa: Tarefa; listas
       <DialogFooter className="sm:justify-between">
         <Button
           type="button"
-          variant="destructive"
+          variant="danger"
           onClick={() => {
             excluirTarefa(tarefa.id)
             aoFechar()

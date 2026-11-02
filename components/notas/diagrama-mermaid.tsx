@@ -17,7 +17,11 @@ async function desenhar(codigo: string, escuro: boolean) {
   mermaid.initialize({
     startOnLoad: false,
     // Preto e branco, como o resto do app; "strict" impede scripts e cliques no diagrama.
-    theme: escuro ? "dark" : "neutral",
+    // Redesign v2 (8.10): monocromático — caixas sem preenchimento, bordas e linhas em cinza.
+    theme: "base",
+    themeVariables: escuro
+      ? { background: "#0a0a0a", primaryColor: "#0a0a0a", primaryTextColor: "#f5f5f5", primaryBorderColor: "#a3a3a3", lineColor: "#525252", secondaryColor: "#111111", tertiaryColor: "#111111", fontSize: "15px" }
+      : { background: "#fafafa", primaryColor: "#fafafa", primaryTextColor: "#0a0a0a", primaryBorderColor: "#525252", lineColor: "#a3a3a3", secondaryColor: "#f4f4f4", tertiaryColor: "#f4f4f4", fontSize: "15px" },
     securityLevel: "strict",
     fontFamily: "inherit",
   })

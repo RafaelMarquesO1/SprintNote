@@ -86,7 +86,7 @@ const larguraAntiga = { compacto: 220, normal: 300, grande: 420 }
 
 const opcoesMostrar: { chave: keyof PreferenciasBiblioteca; rotulo: string }[] = [
   { chave: "mostrarNumeros", rotulo: "Números da coleção" },
-  { chave: "mostrarCapa", rotulo: "Capa dos livros" },
+  { chave: "mostrarCapa", rotulo: "Capa dos cadernos" },
   { chave: "mostrarDescricao", rotulo: "Descrição" },
   { chave: "mostrarTags", rotulo: "Contadores e tags" },
   { chave: "mostrarTarefas", rotulo: "Progresso das tarefas" },
@@ -135,11 +135,11 @@ function MenuLivro({ resumo, aoNovaNota, aoExcluir, className }: { resumo: Resum
   const { livro, cor } = resumo
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant="secondary" size="icon-sm" aria-label={`Opções do livro ${livro.titulo}`} className={className} />}>
+      <DropdownMenuTrigger render={<Button variant="secondary" size="icon-sm" aria-label={`Opções do caderno ${livro.titulo}`} className={className} />}>
         <MoreHorizontalIcon />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">
-        <DropdownMenuItem render={<Link href={`/livros/${livro.id}`} />}><ExternalLinkIcon /> Abrir livro</DropdownMenuItem>
+        <DropdownMenuItem render={<Link href={`/livros/${livro.id}`} />}><ExternalLinkIcon /> Abrir caderno</DropdownMenuItem>
         <DropdownMenuItem onClick={aoNovaNota}><PlusIcon /> Nova nota</DropdownMenuItem>
         <DropdownMenuItem onClick={() => atualizarLivro(livro.id, { fixado: !livro.fixado })}>
           {livro.fixado ? <><PinOffIcon /> Desafixar</> : <><PinIcon /> Fixar no topo</>}
@@ -149,7 +149,7 @@ function MenuLivro({ resumo, aoNovaNota, aoExcluir, className }: { resumo: Resum
           <DropdownMenuSubTrigger><PaletteIcon /> Cor</DropdownMenuSubTrigger>
           <DropdownMenuSubContent className="w-auto p-2">
             <SeletorCor valor={livro.cor ?? null} aoMudar={(nova) => atualizarLivro(livro.id, { cor: nova })} permitirNenhuma />
-            <p className="mt-2 max-w-44 text-xs text-muted-foreground">Também muda a cor do livro no grafo.</p>
+            <p className="mt-2 max-w-44 text-xs text-muted-foreground">Também muda a cor do caderno no grafo.</p>
           </DropdownMenuSubContent>
         </DropdownMenuSub>
         <DropdownMenuSub>
@@ -176,7 +176,7 @@ function MenuLivro({ resumo, aoNovaNota, aoExcluir, className }: { resumo: Resum
           </DropdownMenuSubContent>
         </DropdownMenuSub>
         <DropdownMenuSeparator />
-        <DropdownMenuItem variant="destructive" onClick={aoExcluir}><Trash2Icon /> Excluir livro</DropdownMenuItem>
+        <DropdownMenuItem onClick={aoExcluir}><Trash2Icon /> Excluir caderno</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )
@@ -314,7 +314,7 @@ function CartaoLivro({
         </HoverCard>
         {preferencias.mostrarDescricao && (
           <CardDescription className="line-clamp-2 min-h-10">
-            {livro.descricao || <span className="italic opacity-70">Sem descrição — adicione uma na página do livro.</span>}
+            {livro.descricao || <span className="text-ink-soft">Sem descrição. Adicione uma na página do caderno</span>}
           </CardDescription>
         )}
       </CardHeader>
@@ -353,7 +353,7 @@ function CartaoLivro({
             {recentes.length > 4 && <AvatarGroupCount>+{recentes.length - 4}</AvatarGroupCount>}
           </AvatarGroup>
         ) : (
-          <span className="text-xs text-muted-foreground">Livro vazio</span>
+          <span className="text-xs text-muted-foreground">Caderno vazio</span>
         )}
         <div className="flex items-center gap-1">
           <span className="mr-1 text-xs text-muted-foreground">{tempoRelativo(resumo.atualizadoEm, agora)}</span>
@@ -560,15 +560,15 @@ export function ListaNotas() {
       <CabecalhoPagina
         secao="Biblioteca"
         icone={LibraryIcon}
-        titulo="Todos os livros"
-        descricao={<>Livros reúnem notas sobre um assunto. Conecte tudo com <code>[[</code>.</>}
+        titulo="Todos os cadernos"
+        descricao={<>Cadernos reúnem notas sobre um assunto. Conecte tudo com <code>[[</code>.</>}
         acoes={
           <>
           <Button variant="outline" nativeButton={false} render={<Link href="/grafo" />}>
             <NetworkIcon /> Grafo
           </Button>
           <Button onClick={() => router.push(`/livros/${criarLivro().id}`)}>
-            <BookPlusIcon /> Novo livro
+            <BookPlusIcon /> Novo caderno
           </Button>
           </>
         }
@@ -596,7 +596,7 @@ export function ListaNotas() {
           <div className="flex flex-wrap items-center gap-2">
             <Tabs value={aba} onValueChange={(valor) => setAba(valor as Aba)}>
               <TabsList>
-                <TabsTrigger value="livros">Livros <Badge variant="secondary" className="ml-1 h-4 px-1.5">{livros.length}</Badge></TabsTrigger>
+                <TabsTrigger value="livros">Cadernos <Badge variant="secondary" className="ml-1 h-4 px-1.5">{livros.length}</Badge></TabsTrigger>
                 <TabsTrigger value="notas">Todas as notas <Badge variant="secondary" className="ml-1 h-4 px-1.5">{notas.length}</Badge></TabsTrigger>
                 <TabsTrigger value="soltas">Soltas <Badge variant="secondary" className="ml-1 h-4 px-1.5">{totalSoltas}</Badge></TabsTrigger>
               </TabsList>
@@ -604,7 +604,7 @@ export function ListaNotas() {
             {/* No celular a busca ocupa a linha toda (antes sobrava um vão à esquerda) */}
             <div className="relative min-w-0 max-sm:flex-[1_1_12rem] sm:ml-auto">
               <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input value={busca} onChange={(evento) => setBusca(evento.target.value)} placeholder={aba === "livros" ? "Buscar livros…" : "Buscar notas…"} aria-label="Buscar" className="w-full pl-8 sm:w-56" />
+              <Input value={busca} onChange={(evento) => setBusca(evento.target.value)} placeholder={aba === "livros" ? "Buscar cadernos" : "Buscar notas…"} aria-label="Buscar" className="w-full pl-8 sm:w-56" />
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger render={<Button variant="outline" size="sm" />}>
@@ -639,7 +639,7 @@ export function ListaNotas() {
           {aba === "livros" ? (
             livrosVisiveis.length === 0 ? (
               <Card className="items-center py-10 text-center text-sm text-muted-foreground">
-                {livros.length === 0 ? "Nenhum livro ainda — crie um no botão “Novo livro”." : "Nenhum livro encontrado."}
+                {livros.length === 0 ? "Nenhum caderno ainda. Crie um em “Novo caderno”." : "Nenhum caderno encontrado."}
               </Card>
             ) : visao === "grade" ? (
               <div
@@ -668,7 +668,7 @@ export function ListaNotas() {
                     "hover:border-primary/40 hover:bg-muted/30 hover:text-foreground"
                   )}
                 >
-                  <BookPlusIcon className="size-6" /> Novo livro
+                  <BookPlusIcon className="size-6" /> Novo caderno
                 </button>
               </div>
             ) : (
@@ -687,7 +687,7 @@ export function ListaNotas() {
             )
           ) : notasVisiveis.length === 0 ? (
             <Card className="items-center py-10 text-center text-sm text-muted-foreground">
-              {aba === "soltas" && totalSoltas === 0 ? "Nenhuma nota solta: todas estão em livros." : "Nenhuma nota encontrada."}
+              {aba === "soltas" && totalSoltas === 0 ? "Todas as notas estão em cadernos." : "Nenhuma nota encontrada."}
             </Card>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

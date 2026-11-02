@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react"
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react"
 
 import { definirAutorAtividade } from "@/lib/estado/kanban"
 import { TelaAbertura } from "@/components/conta/tela-abertura"
@@ -9,13 +9,11 @@ import { TelaEntrada, type Modo } from "@/components/conta/tela-entrada"
 import { iniciarSincronizacaoEquipes } from "@/lib/estado/sincronizacao-equipes"
 import { carregarDadosDaConta, enviarPendentes, iniciarSincronizacao, limparDadosLocais } from "@/lib/estado/sincronizacao"
 import { sair as acaoSair } from "@/lib/servidor/acoes-conta"
+import type { DadosDaConta } from "@/lib/servidor/dados"
 import type { Usuario } from "@/lib/tipos-conta"
 
 // abertura → apresentação → entrada (login/cadastro) → carregando → pronto
 type Fase = "abertura" | "apresentacao" | "entrada" | "carregando" | "pronto" | "falha"
-
-// Tempo mínimo da tela de abertura, para ela não "piscar".
-const ABERTURA_MINIMA = 1200
 
 type Conta = {
   usuario: Usuario
@@ -33,16 +31,26 @@ export function useConta() {
   return useContext(ContextoConta)
 }
 
-const esperar = (ms: number) => new Promise((resolver) => setTimeout(resolver, ms))
-
 // Rafael Marques - 21/10/2026 (equipes em 23/10/2026)
 // Porta de entrada do app: abertura → (login/cadastro) → carrega os dados
 // da conta → mostra o app e mantém tudo salvo no banco.
-export function PortaoConta({ children, depoisDeEntrar }: { children: React.ReactNode; depoisDeEntrar?: React.ReactNode }) {
-  const [fase, setFase] = useState<Fase>("abertura")
-  const [usuario, setUsuario] = useState<Usuario | null>(null)
-  const [erro, setErro] = useState<string | null>(null)
-  const [tentativa, setTentativa] = useState(0)
+// Redesign v2: a conta e os dados chegam lidos no servidor (app/(app)/layout.tsx), sem tela de espera.
+export function PortaoConta({
+  children,
+  depoisDeEntrar,
+  usuarioInicial,
+  dadosIniciais,
+  falhouNoServidor = false,
+}: {
+  children: React.ReactNode
+  depoisDeEntrar?: React.ReactNode
+  usuarioInicial: Usuario | null
+  dadosIniciais: DadosDaConta | null
+  falhouNoServidor?: boolean
+}) {
+  const [fase, setFase] = useState<Fase>(falhouNoServidor ? "falha" : usuarioInicial ? "carregando" : "apresentacao")
+  const [usuario, setUsuario] = useState<Usuario | null>(usuarioInicial)
+  const [erro, setErro] = useState<string | null>(falhouNoServidor ? "Não foi possível conectar. Verifique sua internet." : null)
   const [modoEntrada, setModoEntrada] = useState<Modo>("entrar")
 
   // Rafael Marques - 29/10/2026: assina o histórico dos cartões com quem está logado.
@@ -50,31 +58,20 @@ export function PortaoConta({ children, depoisDeEntrar }: { children: React.Reac
     definirAutorAtividade(usuario ? { id: usuario.id, nome: usuario.nome || usuario.email } : null)
   }, [usuario])
 
+  // Coloca nos estados os dados que vieram do servidor (junta o que ficou pendente neste navegador).
+  // Só uma vez por conta: depois de entrar, o servidor renderiza de novo, mas os dados já foram carregados.
+  const carregada = useRef<string | null>(null)
   useEffect(() => {
-    let ativo = true
-    const minimo = esperar(ABERTURA_MINIMA)
-    ;(async () => {
-      try {
-        const resposta = await fetch("/api/conta", { cache: "no-store" })
-        if (!resposta.ok) throw new Error()
-        const { usuario: atual } = (await resposta.json()) as { usuario: Usuario | null }
-        // Rafael Marques - 30/10/2026: o id separa o que ficou pendente de cada conta.
-        if (atual) await carregarDadosDaConta(atual.id)
-        await minimo
-        if (!ativo) return
-        setUsuario(atual)
-        setFase(atual ? "pronto" : "apresentacao")
-      } catch {
-        await minimo
-        if (!ativo) return
-        setErro("Não foi possível conectar. Verifique sua internet.")
+    if (!usuarioInicial || !dadosIniciais || carregada.current === usuarioInicial.id) return
+    carregada.current = usuarioInicial.id
+    // Sem cancelar na limpeza: no modo estrito o efeito roda duas vezes e a segunda é ignorada pela trava acima.
+    carregarDadosDaConta(usuarioInicial.id, dadosIniciais)
+      .then(() => setFase("pronto"))
+      .catch(() => {
+        setErro("Não foi possível carregar seus dados.")
         setFase("falha")
-      }
-    })()
-    return () => {
-      ativo = false
-    }
-  }, [tentativa])
+      })
+  }, [usuarioInicial, dadosIniciais])
 
   useEffect(() => {
     if (fase !== "pronto") return
@@ -88,6 +85,7 @@ export function PortaoConta({ children, depoisDeEntrar }: { children: React.Reac
   }, [fase])
 
   const aoEntrar = useCallback(async (novo: Usuario) => {
+    carregada.current = novo.id
     setUsuario(novo)
     setFase("carregando")
     try {
@@ -132,11 +130,7 @@ export function PortaoConta({ children, depoisDeEntrar }: { children: React.Reac
     tela = (
       <TelaAbertura
         erro={erro}
-        aoTentarDeNovo={() => {
-          setErro(null)
-          setFase("abertura")
-          setTentativa((valor) => valor + 1)
-        }}
+        aoTentarDeNovo={() => window.location.reload()}
       />
     )
   else if (!pronto) tela = <TelaAbertura mensagem={fase === "carregando" ? "Carregando seus dados…" : undefined} />

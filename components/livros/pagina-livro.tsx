@@ -45,7 +45,7 @@ function TituloLivro({ livro }: { livro: Livro }) {
       onKeyDown={(evento) => {
         if (evento.key === "Enter") evento.currentTarget.blur()
       }}
-      aria-label="Título do livro"
+      aria-label="Título do caderno"
       className={classeTituloEditavel}
     />
   )
@@ -177,13 +177,13 @@ export function PaginaLivro({ id }: { id: string }) {
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 pb-10">
       <header className="space-y-3">
-        <Link href="/notas" className="inline-flex items-center gap-1.5 text-xs font-medium tracking-wider text-muted-foreground uppercase hover:text-foreground">
+        <Link href="/notas" className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground">
           <LibraryIcon className="size-3.5" /> Biblioteca
         </Link>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex min-w-0 flex-[1_1_20rem] items-center gap-3">
             <DropdownMenu>
-              <DropdownMenuTrigger aria-label="Trocar ícone do livro" className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-muted text-foreground hover:bg-muted/70">
+              <DropdownMenuTrigger aria-label="Trocar ícone do caderno" className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-muted text-foreground hover:bg-muted/70">
                 <Icone nome={livro.icone} className="size-7" />
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-auto">
@@ -203,7 +203,7 @@ export function PaginaLivro({ id }: { id: string }) {
                 onChange={(evento) => atualizarLivro(livro.id, { descricao: evento.target.value })}
                 rows={1}
                 placeholder="Sobre o que é este livro? (opcional)"
-                aria-label="Descrição do livro"
+                aria-label="Descrição do caderno"
                 className="field-sizing-content mt-0.5 block w-full resize-none bg-transparent text-sm text-muted-foreground outline-none placeholder:text-muted-foreground/60"
               />
             </div>
@@ -216,12 +216,12 @@ export function PaginaLivro({ id }: { id: string }) {
               <FilePlusIcon /> Nova nota
             </Button>
             <DropdownMenu>
-              <DropdownMenuTrigger render={<Button variant="ghost" size="icon" aria-label="Mais opções do livro" className="text-muted-foreground" />}>
+              <DropdownMenuTrigger render={<Button variant="ghost" size="icon" aria-label="Mais opções do caderno" className="text-muted-foreground" />}>
                 <MoreHorizontalIcon />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem variant="destructive" onClick={() => setExcluindo(true)}>
-                  <Trash2Icon /> Excluir livro
+                <DropdownMenuItem onClick={() => setExcluindo(true)}>
+                  <Trash2Icon /> Excluir caderno
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -236,20 +236,20 @@ export function PaginaLivro({ id }: { id: string }) {
           ))}
           {notasDoLivro.length > 0 && <span>· editado {tempoRelativo(ultimaEdicao, agora)}</span>}
         </p>
-        {/* Rafael Marques - 29/10/2026 (sugestão do Kaíke): escolher se as tarefas das notas deste livro entram em Tarefas */}
+        {/* Rafael Marques - 29/10/2026 (sugestão do Kaíke): escolher se as tarefas das notas deste caderno entram em Tarefas */}
         <label className="flex w-fit max-w-full cursor-pointer items-center gap-2.5 rounded-lg border px-3 py-2 text-sm">
           <Switch
             size="sm"
             checked={livro.vincularTarefas !== false}
             onCheckedChange={(valor) => atualizarLivro(livro.id, { vincularTarefas: valor })}
-            aria-label="Vincular as tarefas deste livro à página de Tarefas"
+            aria-label="Vincular as tarefas deste caderno à página de Tarefas"
           />
           <span className="min-w-0">
             <span className="font-medium">Vincular às tarefas</span>
             <span className="block text-xs text-muted-foreground">
               {livro.vincularTarefas !== false
-                ? "As caixinhas “- [ ]” das notas deste livro aparecem em Tarefas, no Início e nos avisos de prazo."
-                : "As caixinhas das notas deste livro ficam só nas notas, fora de Tarefas."}
+                ? "As caixinhas “- [ ]” das notas deste caderno aparecem em Tarefas, no Início e nos avisos de prazo."
+                : "As caixinhas das notas deste caderno ficam só nas notas, fora de Tarefas."}
             </span>
           </span>
         </label>
@@ -301,9 +301,9 @@ export function PaginaLivro({ id }: { id: string }) {
           )}
         </div>
 
-        <aside className="space-y-3" aria-label="Conexões do livro">
+        <aside className="space-y-3" aria-label="Conexões do caderno">
           <div className="flex items-center justify-between">
-            <h2 className="flex items-center gap-1.5 text-sm font-semibold"><NetworkIcon className="size-4" /> Conexões do livro</h2>
+            <h2 className="flex items-center gap-1.5 text-sm font-semibold"><NetworkIcon className="size-4" /> Conexões do caderno</h2>
             <Link href="/grafo" className="text-xs text-muted-foreground hover:text-foreground">Abrir grafo completo</Link>
           </div>
           <GrafoConexoes

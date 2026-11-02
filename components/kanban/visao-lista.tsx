@@ -14,6 +14,7 @@ import { complexidadeDe, rotuloComplexidade } from "@/lib/kanban/complexidade"
 import { rotuloPrazo } from "@/lib/tarefas-notas"
 import type { CartaoKanban, ColunaKanban, EtiquetaKanban, Prioridade } from "@/lib/tipos"
 import { cn } from "@/lib/utils"
+import { EtiquetaChip } from "@/components/ui/etiqueta"
 
 type Chave = "titulo" | "coluna" | "prioridade" | "prazo" | "estimativa"
 const pesoPrioridade: Record<Prioridade, number> = { alta: 3, media: 2, baixa: 1 }
@@ -107,13 +108,11 @@ export function VisaoLista({
                 <tr key={cartao.id} className="animacao-entrar border-b last:border-0 hover:bg-muted/50">
                   <td className="max-w-80 px-3 py-2">
                     <button type="button" onClick={() => aoAbrir(cartao)} className="flex w-full min-w-0 flex-col items-start gap-1 text-left">
-                      <span className={cn("max-w-full truncate font-medium", concluido && "text-muted-foreground line-through")}>{cartao.titulo}</span>
+                      <span className={cn("max-w-full truncate font-medium", concluido ? "text-ink-soft" : "text-paper")}>{cartao.titulo}</span>
                       {(doCartao.length > 0 || cartao.anexos.length > 0 || cartao.recorrencia) && (
                         <span className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
                           {doCartao.map((etiqueta) => (
-                            <span key={etiqueta.id} className="rounded px-1.5 py-0.5 text-[11px] leading-none font-medium" style={{ background: `color-mix(in oklch, ${etiqueta.cor} 22%, transparent)`, color: etiqueta.cor }}>
-                              {etiqueta.nome}
-                            </span>
+                            <EtiquetaChip key={etiqueta.id} nome={etiqueta.nome} cor={etiqueta.cor} />
                           ))}
                           {cartao.anexos.length > 0 && (
                             <span className="flex items-center gap-0.5"><PaperclipIcon className="size-3" /> {cartao.anexos.length}</span>
@@ -148,7 +147,7 @@ export function VisaoLista({
                   </td>
                   <td className="px-3 py-2">
                     {cartao.prazo && hoje ? (
-                      <span className={cn("flex items-center gap-1 text-xs whitespace-nowrap", atrasado ? "font-medium text-destructive" : "text-muted-foreground")}>
+                      <span className={cn("flex items-center gap-1 text-xs whitespace-nowrap", atrasado ? "font-medium text-paper" : "text-muted-foreground")}>
                         <CalendarIcon className="size-3" /> {rotuloPrazo(cartao.prazo, hoje)}
                       </span>
                     ) : (
