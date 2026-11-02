@@ -17,6 +17,7 @@ export function PainelPersonalizar({
   descricao,
   aoRestaurar,
   tamanhoBotao = "default",
+  rotuloBotao = "Personalizar",
   aberto,
   aoMudarAberto,
   children,
@@ -25,6 +26,8 @@ export function PainelPersonalizar({
   descricao?: string
   aoRestaurar?: () => void
   tamanhoBotao?: "default" | "sm"
+  // Redesign v2: nome por contexto ("Opções do quadro", "Aparência da nota").
+  rotuloBotao?: string
   // Rafael Marques - 26/10/2026: opcional, para a tela fechar o painel (ex.: ao ajustar a foto do Kanban).
   aberto?: boolean
   aoMudarAberto?: (aberto: boolean) => void
@@ -32,8 +35,8 @@ export function PainelPersonalizar({
 }) {
   return (
     <Popover {...(aberto !== undefined ? { open: aberto } : {})} onOpenChange={aoMudarAberto}>
-      <PopoverTrigger render={<Button variant="outline" size={tamanhoBotao} />}>
-        <SlidersHorizontalIcon /> <span className="max-sm:hidden">Personalizar</span>
+      <PopoverTrigger render={<Button variant="secondary" size={tamanhoBotao === "sm" ? "sm" : "md"} />}>
+        <SlidersHorizontalIcon /> <span className="max-sm:hidden">{rotuloBotao}</span>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 gap-0 p-0">
         <PopoverHeader className="border-b px-4 py-3">
@@ -56,7 +59,7 @@ export function PainelPersonalizar({
 export function SecaoPersonalizar({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
     <section className="space-y-2">
-      <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{titulo}</h3>
+      <h3 className="text-xs font-medium text-muted-foreground">{titulo}</h3>
       {children}
     </section>
   )

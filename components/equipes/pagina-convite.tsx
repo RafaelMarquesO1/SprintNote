@@ -53,7 +53,7 @@ export function PaginaConvite({ token }: { token: string }) {
       {!previa && !erro && <Skeleton className="h-40 w-full" />}
       {erro && !previa && (
         <div className="space-y-3 rounded-xl border p-6">
-          <p role="alert" className="text-sm text-destructive">{erro}</p>
+          <p role="alert" className="text-sm text-paper">{erro}</p>
           <Button variant="outline" nativeButton={false} render={<Link href="/kanban" />}>Ir para o Kanban</Button>
         </div>
       )}
@@ -74,7 +74,7 @@ export function PaginaConvite({ token }: { token: string }) {
             Ao entrar, os membros da equipe passam a ver seu nome, e-mail e foto de perfil, e os comentários que você fizer nos cartões. Você pode sair da
             equipe quando quiser, no botão Equipes do Kanban.
           </p>
-          {erro && <p role="alert" className="text-sm text-destructive">{erro}</p>}
+          {erro && <p role="alert" className="text-sm text-paper">{erro}</p>}
           <div className="flex gap-2">
             <Button onClick={aceitar} disabled={entrando}>{entrando && <Spinner />} Entrar na equipe</Button>
             <Button variant="ghost" nativeButton={false} render={<Link href="/" />}>Agora não</Button>

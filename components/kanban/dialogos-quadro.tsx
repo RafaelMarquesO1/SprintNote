@@ -19,11 +19,25 @@ import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { classeSelect } from "@/components/tarefas/dialogo-tarefa"
 import { ehCorPersonalizada, paletaCores } from "@/lib/cores"
+import { paletaEtiquetas, PontoTinta, tintaEtiqueta } from "@/components/ui/etiqueta"
 import { useKanban } from "@/lib/estado/kanban"
 import type { ColunaKanban, QuadroKanban } from "@/lib/tipos"
 
 // Seletor de cor em bolinhas (usado nas etiquetas e no cartão).
-export function SeletorCor({ valor, aoMudar, permitirNenhuma = false }: { valor: string | null; aoMudar: (cor: string | null) => void; permitirNenhuma?: boolean }) {
+export function SeletorCor({
+  valor,
+  aoMudar,
+  permitirNenhuma = false,
+  paleta = paletaCores,
+  tinta = false,
+}: {
+  valor: string | null
+  aoMudar: (cor: string | null) => void
+  permitirNenhuma?: boolean
+  paleta?: typeof paletaCores
+  // Mostra as bolinhas já como "tinta de etiqueta" (cor suavizada).
+  tinta?: boolean
+}) {
   return (
     <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Cor">
       {permitirNenhuma && (
@@ -42,7 +56,7 @@ export function SeletorCor({ valor, aoMudar, permitirNenhuma = false }: { valor:
           <BanIcon className="size-3.5" />
         </button>
       )}
-      {paletaCores.map((cor) => (
+      {paleta.map((cor) => (
         <button
           key={cor.id}
           type="button"
@@ -52,7 +66,7 @@ export function SeletorCor({ valor, aoMudar, permitirNenhuma = false }: { valor:
           title={cor.nome}
           onClick={() => aoMudar(cor.valor)}
           className={cn("size-6 rounded-full ring-offset-2 ring-offset-background", valor === cor.valor && "ring-2 ring-ring")}
-          style={{ background: cor.valor }}
+          style={{ background: tinta ? (tintaEtiqueta(cor.valor) ?? cor.valor) : cor.valor }}
         />
       ))}
       {/* Rafael Marques - 29/10/2026: qualquer cor, pelo seletor do sistema. */}
@@ -125,7 +139,7 @@ export function DialogoExcluirColuna({
             </Button>
           )}
           <Button
-            variant="destructive"
+            variant="danger"
             onClick={() => {
               if (coluna) excluirColuna(coluna.id, null)
               aoFechar()
@@ -145,7 +159,7 @@ export function DialogoEtiquetas({ quadro, aberto, aoMudarAberto }: { quadro: Qu
   const atualizarEtiqueta = useKanban((estado) => estado.atualizarEtiqueta)
   const excluirEtiqueta = useKanban((estado) => estado.excluirEtiqueta)
   const [nome, setNome] = useState("")
-  const [cor, setCor] = useState<string>(paletaCores[0].valor)
+  const [cor, setCor] = useState<string>(paletaEtiquetas[0].valor)
 
   return (
     <Dialog open={aberto} onOpenChange={aoMudarAberto}>
@@ -168,10 +182,10 @@ export function DialogoEtiquetas({ quadro, aberto, aoMudarAberto }: { quadro: Qu
                     title="Trocar a cor"
                     className="flex size-7 shrink-0 items-center justify-center rounded-md hover:bg-background"
                   >
-                    <span className="size-3.5 rounded-full" style={{ background: etiqueta.cor }} />
+                    <PontoTinta cor={etiqueta.cor} className="size-3.5" />
                   </PopoverTrigger>
                   <PopoverContent align="start" className="w-auto">
-                    <SeletorCor valor={etiqueta.cor} aoMudar={(nova) => nova && atualizarEtiqueta(quadro.id, etiqueta.id, { cor: nova })} />
+                    <SeletorCor paleta={paletaEtiquetas} tinta valor={etiqueta.cor} aoMudar={(nova) => nova && atualizarEtiqueta(quadro.id, etiqueta.id, { cor: nova })} />
                   </PopoverContent>
                 </Popover>
                 <Input
@@ -185,7 +199,7 @@ export function DialogoEtiquetas({ quadro, aberto, aoMudarAberto }: { quadro: Qu
                   size="icon-sm"
                   aria-label={`Excluir a etiqueta ${etiqueta.nome}`}
                   onClick={() => excluirEtiqueta(quadro.id, etiqueta.id)}
-                  className="text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-destructive max-sm:opacity-100"
+                  className="text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-paper max-sm:opacity-100"
                 >
                   <Trash2Icon />
                 </Button>
@@ -217,7 +231,7 @@ export function DialogoEtiquetas({ quadro, aberto, aoMudarAberto }: { quadro: Qu
             <Input value={nome} onChange={(evento) => setNome(evento.target.value)} placeholder="Ex.: Urgente" aria-label="Nome da nova etiqueta" className="bg-background" />
             <Button type="submit" disabled={!nome.trim()}><PlusIcon /> Criar</Button>
           </div>
-          <SeletorCor valor={cor} aoMudar={(nova) => nova && setCor(nova)} />
+          <SeletorCor paleta={paletaEtiquetas} tinta valor={cor} aoMudar={(nova) => nova && setCor(nova)} />
         </form>
       </DialogContent>
     </Dialog>

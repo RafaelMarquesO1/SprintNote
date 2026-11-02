@@ -28,7 +28,7 @@ function Barra({ valor, total, className }: { valor: number; total: number; clas
 function Bloco({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
     <section className="space-y-2 rounded-xl border p-3.5">
-      <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">{titulo}</h3>
+      <h3 className="text-xs font-semibold text-muted-foreground">{titulo}</h3>
       {children}
     </section>
   )
@@ -111,7 +111,7 @@ export function DialogoResumo({
               { valor: atrasados.length, texto: atrasados.length === 1 ? "atrasado" : "atrasados", alerta: atrasados.length > 0 },
             ].map((item) => (
               <div key={item.texto} className="rounded-xl border p-3 text-center">
-                <p className={cn("text-2xl font-semibold tabular-nums", item.alerta && "text-destructive")}>{item.valor}</p>
+                <p className={cn("text-2xl font-semibold tabular-nums", item.alerta && "text-paper")}>{item.valor}</p>
                 <p className="text-xs text-muted-foreground">{item.texto}</p>
               </div>
             ))}
@@ -144,7 +144,7 @@ export function DialogoResumo({
                   <li key={coluna.id} className="space-y-1">
                     <div className="flex items-center justify-between text-sm">
                       <span>{coluna.titulo}{coluna.limite !== null && <span className="text-xs text-muted-foreground"> · limite {coluna.limite}</span>}</span>
-                      <span className={cn("tabular-nums", coluna.limite !== null && total > coluna.limite && "font-medium text-destructive")}>{total}</span>
+                      <span className={cn("tabular-nums", coluna.limite !== null && total > coluna.limite && "font-medium text-paper")}>{total}</span>
                     </div>
                     <Barra valor={total} total={Math.max(1, cartoes.length)} />
                   </li>
@@ -162,7 +162,7 @@ export function DialogoResumo({
                       <li key={cartao.id}>
                         <button type="button" onClick={() => aoAbrirCartao(cartao)} className="flex w-full items-baseline justify-between gap-2 text-left text-sm hover:underline">
                           <span className="truncate">{cartao.titulo}</span>
-                          <span className="shrink-0 text-xs text-destructive">{cartao.prazo!.split("-").reverse().slice(0, 2).join("/")}</span>
+                          <span className="shrink-0 text-xs text-paper">{cartao.prazo!.split("-").reverse().slice(0, 2).join("/")}</span>
                         </button>
                       </li>
                     ))}

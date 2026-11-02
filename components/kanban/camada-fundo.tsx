@@ -35,8 +35,8 @@ export function CamadaFundo({
   if (!foto && !resolvido) return null
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-      {/* Do tamanho da tela e grudado no topo enquanto o quadro rola. */}
-      <div className="sticky top-0 h-svh w-full overflow-hidden">
+      {/* Do tamanho da tela e grudado logo abaixo da barra superior enquanto o quadro rola (não passa por baixo dela). */}
+      <div className="sticky top-topbar h-[calc(100svh-var(--spacing-topbar))] w-full overflow-hidden">
         <div key={foto ? foto.imagem.slice(-48) : resolvido!.tipo === "modelo" ? resolvido!.id : "x"} className="animacao-fundo absolute inset-0">
           {foto ? (
             <FotoDeFundo imagem={foto.imagem} ajuste={foto.ajuste} automatico={automatico} />

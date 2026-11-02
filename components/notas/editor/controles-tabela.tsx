@@ -51,7 +51,7 @@ export function ControlesTabela({ editor }: { editor: Editor }) {
               aria-label={acao.rotulo}
               onMouseDown={(evento) => evento.preventDefault()}
               onClick={() => acao.executar(editor)}
-              className={`flex h-7 items-center gap-1 rounded-md px-1.5 text-xs hover:bg-muted ${acao.destrutiva ? "text-destructive" : "text-muted-foreground hover:text-foreground"}`}
+              className={`flex h-7 items-center gap-1 rounded-md px-1.5 text-xs hover:bg-muted ${acao.destrutiva ? "text-paper" : "text-muted-foreground hover:text-foreground"}`}
             >
               <acao.icone className="size-4" />
               {acao.destrutiva && <span className="max-sm:hidden">{acao.rotulo.replace("Excluir ", "")}</span>}

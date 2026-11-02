@@ -8,11 +8,14 @@ import { cn } from "@/lib/utils"
 
 export type TipoDocumento = "privacidade" | "termos"
 
-const dataVersao = new Date(`${VERSAO_DOCUMENTOS}T12:00:00`).toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" })
+export const dataVersao = new Date(`${VERSAO_DOCUMENTOS}T12:00:00`).toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" })
+
+// Redesign v2: cada seção tem âncora, para o índice "Nesta página" de /termos e /privacidade.
+export const ancoraDe = (titulo: string) => titulo.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
 
 function Secao({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
-    <section className="space-y-2">
+    <section id={ancoraDe(titulo)} className="scroll-mt-24 space-y-2">
       <h3 className="font-semibold text-foreground">{titulo}</h3>
       {children}
     </section>
@@ -23,7 +26,7 @@ const contato = CONTROLADOR.emailEncarregado || "e-mail a ser definido pelo cont
 
 // Rafael Marques - 22/10/2026
 // Política de Privacidade com os itens do Art. 9º da LGPD.
-function PoliticaPrivacidade() {
+export function PoliticaPrivacidade() {
   return (
     <>
       <Secao titulo="1. Quem cuida dos seus dados">
@@ -115,7 +118,7 @@ function PoliticaPrivacidade() {
   )
 }
 
-function TermosUso() {
+export function TermosUso() {
   return (
     <>
       <Secao titulo="1. O serviço">
@@ -172,7 +175,7 @@ export function LinkDocumento({ tipo, className, children }: { tipo: TipoDocumen
   const [aberto, setAberto] = useState(false)
   return (
     <>
-      <button type="button" className={cn("font-medium text-foreground underline underline-offset-4 hover:text-primary", className)} onClick={() => setAberto(true)}>
+      <button type="button" className={cn("font-medium text-paper underline underline-offset-4", className)} onClick={() => setAberto(true)}>
         {children}
       </button>
       <DialogoDocumento tipo={tipo} aberto={aberto} aoMudar={setAberto} />

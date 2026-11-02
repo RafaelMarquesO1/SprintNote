@@ -177,7 +177,7 @@ export function BarraFlutuante({ editor }: { editor: Editor }) {
                   editor.chain().focus().extendMarkRange("link").unsetLink().run()
                   setModo("botoes")
                 }}
-                className="flex size-7 items-center justify-center rounded-md text-destructive hover:bg-muted"
+                className="flex size-7 items-center justify-center rounded-md text-paper hover:bg-muted"
               >
                 <Trash2Icon className="size-4" />
               </button>

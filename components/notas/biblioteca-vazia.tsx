@@ -57,9 +57,9 @@ function Tecla({ children }: { children: React.ReactNode }) {
 }
 
 const passos = [
-  { titulo: "Crie um livro", texto: "Um assunto, matéria ou projeto.", teclas: null },
+  { titulo: "Crie um caderno", texto: "Um assunto, matéria ou projeto.", teclas: null },
   { titulo: "Escreva notas", texto: "Blocos e tags enquanto digita.", teclas: ["/", "#"] },
-  { titulo: "Conecte", texto: "Ligue notas e livros entre si.", teclas: ["[["] },
+  { titulo: "Conecte", texto: "Ligue notas e cadernos entre si.", teclas: ["[["] },
 ]
 
 export function BibliotecaVazia({ aoCriarLivro }: { aoCriarLivro: () => void }) {
@@ -72,7 +72,7 @@ export function BibliotecaVazia({ aoCriarLivro }: { aoCriarLivro: () => void }) 
       <div className="space-y-6">
         <div className="space-y-1.5">
           <h2 className="text-2xl font-semibold tracking-tight">Sua estante está vazia</h2>
-          <p className="text-sm text-muted-foreground">Comece por um livro. Em três passos suas ideias passam a se conectar.</p>
+          <p className="text-sm text-muted-foreground">Comece por um caderno. Em três passos suas ideias passam a se conectar.</p>
         </div>
 
         <ol className="relative space-y-4">
