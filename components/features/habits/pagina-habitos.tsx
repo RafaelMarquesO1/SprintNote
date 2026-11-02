@@ -151,8 +151,19 @@ export function PaginaHabitos() {
                                 onCheckedChange={() => alternar(habito.id, dia)}
                                 label={`${habito.nome}, ${nomesDiasCompletos[diaDaSemana(dia)].toLowerCase()} ${lerChave(dia).getDate()}`}
                               />
+                            ) : vale ? (
+                              // Rafael Marques - 02/11/2026: dia programado que ainda não chegou: caixa tracejada do
+                              // tamanho da caixa de marcar (antes era o mesmo "–" dos dias sem o hábito).
+                              <span
+                                role="img"
+                                aria-label={`${habito.nome}, ${nomesDiasCompletos[diaDaSemana(dia)].toLowerCase()} ${lerChave(dia).getDate()}: ainda não chegou`}
+                                title="Programado. Ainda não chegou."
+                                className="mx-auto flex size-11 items-center justify-center"
+                              >
+                                <span className="size-9 rounded-md border border-dashed border-line-strong" />
+                              </span>
                             ) : (
-                              <span className="text-ink-muted" aria-label={vale ? "Ainda não chegou" : "Não programado"}>
+                              <span className="text-ink-muted" aria-label="Não programado">
                                 –
                               </span>
                             )}
