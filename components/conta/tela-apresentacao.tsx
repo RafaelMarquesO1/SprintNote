@@ -3,6 +3,7 @@
 import Link from "next/link"
 
 import { Logo } from "@/components/brand/logo"
+import { TelasApresentacao } from "@/components/conta/telas-apresentacao"
 import { VitrineApresentacao } from "@/components/conta/vitrine-apresentacao"
 import { Button } from "@/components/ui/button"
 
@@ -40,6 +41,9 @@ export function TelaApresentacao({ aoEscolher }: { aoEscolher: (modo: "entrar" |
           </div>
           <VitrineApresentacao />
         </section>
+
+        {/* Rafael Marques - 03/11/2026: prints reais do app, animadas com a rolagem. */}
+        <TelasApresentacao />
 
         <section aria-labelledby="titulo-recursos" className="border-t border-line">
           <div className="mx-auto max-w-content px-4 py-24 md:px-10">

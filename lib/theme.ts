@@ -48,12 +48,16 @@ export function definirTema(preferencia: PreferenciaTema, origem?: { x: number; 
   const tema = temaEfetivo(preferencia)
   if (document.documentElement.dataset.theme === tema) return
   const reduzido = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  if (!document.startViewTransition || reduzido) return aplicar(tema)
+  // Rafael Marques - 03/11/2026: com a aba oculta o navegador recusa a transição; aplica o tema direto.
+  if (!document.startViewTransition || reduzido || document.visibilityState !== "visible") return aplicar(tema)
   if (origem) {
     document.documentElement.style.setProperty("--tema-x", `${origem.x}px`)
     document.documentElement.style.setProperty("--tema-y", `${origem.y}px`)
   }
-  document.startViewTransition(() => aplicar(tema))
+  const transicao = document.startViewTransition(() => aplicar(tema))
+  // Se a aba sumir no meio, a transição é cancelada (o tema já foi aplicado); não vira erro solto.
+  transicao.ready.catch(() => {})
+  transicao.finished.catch(() => {})
 }
 
 // Alterna entre claro e escuro (botão de sol/lua).

@@ -33,6 +33,18 @@ export const ordemTipos: TipoNovidade[] = ["novo", "melhorado", "corrigido"]
 
 // Mais recente primeiro.
 export const NOVIDADES: Novidade[] = [
+  // Rafael Marques - 03/11/2026: versão 1.5 (tela de apresentação com prints reais e animações de rolagem).
+  {
+    id: "2026-11-03-b",
+    versao: "1.5",
+    data: "03/11/2026",
+    titulo: "Uma tela de apresentação mais moderna",
+    resumo: "Dei uma modernizada na landing page com um visual mais interativo, permitindo que o usuário que for adentrar ao sistema consiga ter uma noção de como é o sistema antes mesmo de usar.",
+    itens: [
+      { tipo: "novo", titulo: "Veja por dentro", texto: "Prints reais do app (Hoje, Tarefas, Hábitos, Rotina, Quadro e Nota) que entram e se empilham conforme a rolagem." },
+      { tipo: "corrigido", titulo: "Aviso de erro ao trocar de aba", texto: "Sair da aba no meio de uma animação de página ou da troca de tema não mostra mais o erro \"Transition was aborted\"." },
+    ],
+  },
   // Rafael Marques - 03/11/2026: versão 1.4c (atalho "Atribuídos a mim" e filtros do quadro agrupados, ideia da Paulinha).
   {
     id: "2026-11-03",
