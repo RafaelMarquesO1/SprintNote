@@ -3,10 +3,12 @@
 import { useRouter } from "next/navigation"
 import { useEffect, useEffectEvent, useState } from "react"
 
+import { useConta } from "@/components/conta/portao-conta"
 import { alternarPaleta } from "@/components/shell/command-palette"
 import { abrirCriar, useShell } from "@/components/shell/estado"
 import { Kbd } from "@/components/ui/kbd"
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog"
+import { alternarFiltroPorResponsavel, aplicarFiltroAtribuidosAMim, useFiltroAtribuidos } from "@/lib/estado/filtro-atribuidos"
 import { useNotas } from "@/lib/estado/notas"
 
 // Atalhos globais (7.3). Os de uma tecla não disparam em campos de texto nem no editor.
@@ -22,12 +24,28 @@ export function Atalhos() {
   const alternarMenu = useShell((estado) => estado.alternarRecolhido)
   const criarNota = useNotas((estado) => estado.criarNota)
   const [ajuda, setAjuda] = useState(false)
+  // Rafael Marques - 03/11/2026: id de quem está logado, para o atalho "Atribuídos a mim".
+  const meuId = useConta()?.usuario.id ?? null
 
   const aoTeclar = useEffectEvent((evento: KeyboardEvent) => {
     const mod = evento.ctrlKey || evento.metaKey
     if (mod && evento.key.toLowerCase() === "k") {
       evento.preventDefault()
       alternarPaleta()
+      return
+    }
+    // Rafael Marques - 03/11/2026: Mod+Shift+U liga o filtro "Atribuídos a mim" e abre os Quadros
+    // (o mesmo que a busca faz); se o filtro já estiver ligado para mim, desliga.
+    // Ctrl+Shift+A e Ctrl+Shift+Q são do navegador.
+    if (mod && evento.shiftKey && !evento.altKey && evento.code === "KeyU") {
+      evento.preventDefault()
+      if (!meuId) return
+      if (useFiltroAtribuidos.getState().responsavelId === meuId) {
+        alternarFiltroPorResponsavel(meuId, "você")
+        return
+      }
+      aplicarFiltroAtribuidosAMim(meuId)
+      router.push("/kanban")
       return
     }
     if (mod && (evento.key === "\\" || evento.code === "Backslash" || evento.code === "IntlBackslash")) {
@@ -75,6 +93,7 @@ export function Atalhos() {
         {[
           ["Mod K", "Buscar ou criar"],
           ["Mod \\", "Recolher ou expandir o menu"],
+          ["Mod Shift U", "Ligar ou desligar \"Atribuídos a mim\""],
           ["C", "Criar"],
           ["G H", "Ir para Hoje"],
           ["G T", "Ir para Tarefas"],

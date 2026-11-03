@@ -33,6 +33,19 @@ export const ordemTipos: TipoNovidade[] = ["novo", "melhorado", "corrigido"]
 
 // Mais recente primeiro.
 export const NOVIDADES: Novidade[] = [
+  // Rafael Marques - 03/11/2026: versão 1.4c (atalho "Atribuídos a mim" e filtros do quadro agrupados, ideia da Paulinha).
+  {
+    id: "2026-11-03",
+    versao: "1.4c",
+    data: "03/11/2026",
+    titulo: "Um atalho para os seus cartões e filtros mais limpos",
+    resumo: "Ctrl+Shift+U leva direto aos cartões atribuídos a você, e os filtros do quadro cabem em dois botões.",
+    itens: [
+      { tipo: "novo", titulo: "Atalho", texto: "Ctrl+Shift+U (Cmd+Shift+U no Mac) liga o filtro \"Atribuídos a mim\" e abre os Quadros; apertando de novo, o filtro sai." },
+      { tipo: "melhorado", titulo: "Botão Atribuídos a mim", texto: "Mostra a contagem e as teclas do atalho no próprio botão." },
+      { tipo: "melhorado", titulo: "Filtros do quadro", texto: "Atrasados, Prioridade e Responsável ficam juntos no menu do olho, e as etiquetas, num menu só. Ideia da Paulinha." },
+    ],
+  },
   // Rafael Marques - 02/11/2026: versão 1.4a (fundos, colunas, animações e correções depois do redesign).
   {
     id: "2026-11-02-b",

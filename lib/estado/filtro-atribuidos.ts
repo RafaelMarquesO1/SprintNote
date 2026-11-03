@@ -1,6 +1,7 @@
 // Rafael Marques - 23/10/2026
 // Filtro do quadro por pessoa responsável. Liga de três jeitos: clicando na inicial/foto da
-// pessoa dentro de um cartão, no botão "Atribuídos a mim" do cabeçalho ou pela busca (Ctrl+K).
+// pessoa dentro de um cartão, no botão "Atribuídos a mim" do cabeçalho, pela busca (Ctrl+K)
+// ou pelo atalho Ctrl+Shift+U (Rafael Marques - 03/11/2026, em components/shell/atalhos.tsx).
 // Cada vez que o filtro é aplicado, aparece um aviso com "Remover filtro". Não é salvo.
 
 import { create } from "zustand"

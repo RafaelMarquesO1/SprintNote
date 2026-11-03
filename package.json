@@ -1,7 +1,7 @@
 {
   "name": "sprintnote",
-  "version": "1.4.1",
-  "versaoExibida": "1.4a",
+  "version": "1.4.3",
+  "versaoExibida": "1.4c",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -45,6 +45,7 @@
     "next": "16.4.2",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "react-hotkeys-hook": "^5.3.3",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
     "shadcn": "^4.22.1",

@@ -20,6 +20,7 @@ import {
   ChartColumnIcon,
   CheckIcon,
   DownloadIcon,
+  EyeIcon,
   LayoutTemplateIcon,
   Rows3Icon,
   UploadIcon,
@@ -61,7 +62,7 @@ import {
 import { Button, IconButton } from "@/components/ui/button"
 import { TopbarSlot } from "@/components/shell/estado"
 import { AvatarStack } from "@/components/ui/avatar-stack"
-import { chipVariants, ToggleChip } from "@/components/ui/chip"
+import { chipVariants } from "@/components/ui/chip"
 import { PontoTinta } from "@/components/ui/etiqueta"
 import { Segmented } from "@/components/ui/segmented"
 import { StatList } from "@/components/ui/stat-list"
@@ -78,6 +79,7 @@ import {
   DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
+import { Kbd, KbdGroup } from "@/components/ui/kbd"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Interruptor, OpcoesLadoALado, PainelPersonalizar, SecaoPersonalizar } from "@/components/painel-personalizar"
 import { useHidratado } from "@/hooks/use-hidratado"
@@ -184,6 +186,7 @@ export function QuadroKanban() {
   const papelDoQuadro = useEquipes((estado) => estado.papelDoQuadro)
   const avisoEquipe = useEquipes((estado) => estado.aviso)
   // Rafael Marques - 23/10/2026: filtro por pessoa responsável (inicial no cartão, botão do cabeçalho ou busca).
+  // 03/11/2026 - Quero fazer um atalho para facilitar nos comandos desse 
   const filtroResp = useFiltroAtribuidos((estado) => estado.responsavelId)
   const [compartilhando, setCompartilhando] = useState(false)
   const [erroEquipe, setErroEquipe] = useState<string | null>(null)
@@ -494,7 +497,9 @@ export function QuadroKanban() {
     </DropdownMenu>
   )
 
-  const filtrosAtivos = filtroEtiquetas.length + filtroPrioridades.length + (soAtrasados ? 1 : 0)
+  // Rafael Marques - 03/11/2026: quantos filtros estão ligados no menu do olho (atrasados, prioridade, responsável).
+  const filtrosDoOlho = filtroPrioridades.length + (soAtrasados ? 1 : 0) + (responsavelFiltrado ? 1 : 0)
+  const filtrosAtivos = filtroEtiquetas.length + filtrosDoOlho
 
   return (
     // Rafael Marques - 26/10/2026: fundo numa camada própria (sem fundo = night liso) e animações de entrada.
@@ -505,14 +510,30 @@ export function QuadroKanban() {
         acoes={
           <>
             {quadro.equipeId && (
+              // Rafael Marques - 03/11/2026: um botão só com rótulo, contagem e o atalho (Ctrl+Shift+U, ⌘ no Mac).
+              // O atalho some no celular (sem teclado).
               <Button
                 variant={filtroEMeu ? "primary" : "secondary"}
                 size="sm"
                 aria-pressed={filtroEMeu}
+                aria-keyshortcuts="Control+Shift+U Meta+Shift+U"
+                title={filtroEMeu ? "Mostrar todos os cartões" : "Mostrar só os cartões atribuídos a mim"}
                 onClick={() => meuId && alternarFiltroPorResponsavel(meuId, "você")}
               >
-                <UserCheckIcon className="sm:hidden" /> <span className="max-sm:hidden">Atribuídos a mim</span>
-                {atribuidosAMim > 0 && <span className="text-micro tabular-nums opacity-70">{atribuidosAMim}</span>}
+                <UserCheckIcon />
+                <span className="max-sm:hidden">Atribuídos a mim</span>
+                {atribuidosAMim > 0 && (
+                  <span className="rounded-full bg-current/10 px-1.5 text-micro leading-5 font-medium tabular-nums">{atribuidosAMim}</span>
+                )}
+                {/* Rafael Marques - 03/11/2026: linha fina separa a contagem das teclas. */}
+                <span aria-hidden="true" className="mx-0.5 h-3.5 w-px bg-current/25 max-md:hidden" />
+                <KbdGroup className="max-md:hidden" aria-hidden>
+                  {["Mod", "Shift", "U"].map((tecla) => (
+                    // Rafael Marques - 03/11/2026: cada tecla com o fundo na cor contrária à do botão, um pouco
+                    // apagado para não chamar mais atenção que o rótulo.
+                    <Kbd key={tecla} className={cn("h-4.5 min-w-4.5 border-transparent px-1", filtroEMeu ? "bg-night/75 text-paper" : "bg-ink text-night")}>{tecla}</Kbd>
+                  ))}
+                </KbdGroup>
               </Button>
             )}
             {menuTrocarQuadro}
@@ -628,55 +649,71 @@ export function QuadroKanban() {
             <FilterIcon /> Filtros {filtrosAtivos > 0 && <span className="tabular-nums">{filtrosAtivos}</span>}
           </Button>
           <div className={cn("contents", !mostrarFiltros && "max-md:hidden")}>
-            {quadro.etiquetas.length > 0 && <span aria-hidden="true" className="mx-1 h-6 w-px bg-line-strong" />}
-            {quadro.etiquetas.map((etiqueta) => {
-              const ativa = filtroEtiquetas.some((filtro) => idDaEtiqueta(filtro) === etiqueta.id)
-              return (
-                <ToggleChip
-                  key={etiqueta.id}
-                  pressed={ativa}
-                  onPressedChange={(ligar) => setFiltroEtiquetas(ligar ? [...filtroEtiquetas, etiqueta.id] : filtroEtiquetas.filter((filtro) => idDaEtiqueta(filtro) !== etiqueta.id))}
-                >
-                  <PontoTinta cor={etiqueta.cor} />
-                  {etiqueta.nome}
-                </ToggleChip>
-              )
-            })}
+            {/* Rafael Marques - 03/11/2026: ideia da Paulinha. As etiquetas viraram um menu só, e Atrasados,
+                Prioridade e Responsável ficam juntos no menu do olho, para a barra de filtros ficar limpa. */}
             <span aria-hidden="true" className="mx-1 h-6 w-px bg-line-strong" />
-            <ToggleChip pressed={soAtrasados} onPressedChange={setSoAtrasados}>
-              Atrasados
-            </ToggleChip>
-            <DropdownMenu>
-              <DropdownMenuTrigger render={<button type="button" aria-pressed={filtroPrioridades.length > 0} className={cn(chipVariants({ variant: "filter" }), "cursor-pointer")} />}>
-                Prioridade{filtroPrioridades.length > 0 && <span className="tabular-nums">{filtroPrioridades.length}</span>}
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-44">
-                {(["alta", "media", "baixa"] as const).map((prioridade) => (
-                  <DropdownMenuCheckboxItem
-                    key={prioridade}
-                    checked={filtroPrioridades.includes(prioridade)}
-                    onCheckedChange={(ligar) => setFiltroPrioridades(ligar ? [...filtroPrioridades, prioridade] : filtroPrioridades.filter((item) => item !== prioridade))}
-                  >
-                    <PriorityIcon priority={prioridade} /> {estilosPrioridade[prioridade].titulo}
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            {equipeDoQuadro && (
+            {quadro.etiquetas.length > 0 && (
               <DropdownMenu>
-                <DropdownMenuTrigger render={<button type="button" aria-pressed={Boolean(responsavelFiltrado)} className={cn(chipVariants({ variant: "filter" }), "cursor-pointer")} />}>
-                  {responsavelFiltrado ? (responsavelFiltrado.id === meuId ? "Responsável: você" : `Responsável: ${responsavelFiltrado.nome}`) : "Responsável"}
+                <DropdownMenuTrigger render={<button type="button" aria-pressed={filtroEtiquetas.length > 0} className={cn(chipVariants({ variant: "filter" }), "cursor-pointer")} />}>
+                  <TagIcon /> Etiquetas{filtroEtiquetas.length > 0 && <span className="tabular-nums">{filtroEtiquetas.length}</span>}
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-56">
-                  {equipeDoQuadro.membros.map((membro) => (
-                    <DropdownMenuItem key={membro.id} onClick={() => alternarFiltroPorResponsavel(membro.id, membro.id === meuId ? "você" : membro.nome)}>
-                      <AvatarPessoa nome={membro.nome} foto={membro.foto} tamanho="sm" /> {membro.nome}
-                      {responsavelFiltrado?.id === membro.id && <CheckIcon className="ml-auto" />}
-                    </DropdownMenuItem>
+                  {quadro.etiquetas.map((etiqueta) => (
+                    <DropdownMenuCheckboxItem
+                      key={etiqueta.id}
+                      checked={filtroEtiquetas.some((filtro) => idDaEtiqueta(filtro) === etiqueta.id)}
+                      onCheckedChange={(ligar) => setFiltroEtiquetas(ligar ? [...filtroEtiquetas, etiqueta.id] : filtroEtiquetas.filter((filtro) => idDaEtiqueta(filtro) !== etiqueta.id))}
+                    >
+                      <PontoTinta cor={etiqueta.cor} /> {etiqueta.nome}
+                    </DropdownMenuCheckboxItem>
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                title="Mostrar cartões: atrasados, prioridade e responsável"
+                render={<button type="button" aria-pressed={filtrosDoOlho > 0} className={cn(chipVariants({ variant: "filter" }), "cursor-pointer")} />}
+              >
+                {/* Rafael Marques - 03/11/2026: "Mostrar" ao lado do olho, como Etiquetas e Raias. */}
+                <EyeIcon /> Mostrar{filtrosDoOlho > 0 && <span className="tabular-nums">{filtrosDoOlho}</span>}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuCheckboxItem checked={soAtrasados} onCheckedChange={setSoAtrasados}>
+                  Só atrasados
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>Prioridade</DropdownMenuLabel>
+                  {(["alta", "media", "baixa"] as const).map((prioridade) => (
+                    <DropdownMenuCheckboxItem
+                      key={prioridade}
+                      checked={filtroPrioridades.includes(prioridade)}
+                      onCheckedChange={(ligar) => setFiltroPrioridades(ligar ? [...filtroPrioridades, prioridade] : filtroPrioridades.filter((item) => item !== prioridade))}
+                    >
+                      <PriorityIcon priority={prioridade} /> {estilosPrioridade[prioridade].titulo}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuGroup>
+                {equipeDoQuadro && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuGroup>
+                      <DropdownMenuLabel>Responsável</DropdownMenuLabel>
+                      {equipeDoQuadro.membros.map((membro) => (
+                        <DropdownMenuCheckboxItem
+                          key={membro.id}
+                          checked={responsavelFiltrado?.id === membro.id}
+                          onCheckedChange={() => alternarFiltroPorResponsavel(membro.id, membro.id === meuId ? "você" : membro.nome)}
+                        >
+                          <AvatarPessoa nome={membro.nome} foto={membro.foto} tamanho="sm" /> {membro.id === meuId ? `${membro.nome} (você)` : membro.nome}
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                    </DropdownMenuGroup>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
             {visao === "quadro" && (
               <DropdownMenu>
                 <DropdownMenuTrigger render={<button type="button" aria-pressed={raia !== "nenhuma"} className={cn(chipVariants({ variant: "filter" }), "cursor-pointer")} />}>
