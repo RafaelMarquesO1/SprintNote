@@ -23,7 +23,7 @@ import { EditorNotas } from "@/components/notas/editor/editor-notas"
 import { QuadroEditor } from "@/components/quadro/quadro-editor"
 import { LinhaTags } from "@/components/notas/linha-tags"
 import { PainelConexoes, useTotalConexoes } from "@/components/notas/painel-conexoes"
-import { Interruptor, MiniaturasOpcoes, OpcoesLadoALado, PainelPersonalizar, SecaoPersonalizar } from "@/components/painel-personalizar"
+import { Interruptor, MiniaturasOpcoes, OpcoesLadoALado, PainelPersonalizar, SecaoPersonalizar, SeletorCores } from "@/components/painel-personalizar"
 import { Ligacoes, NestaNota, useTitulosDaNota } from "@/components/features/library/trilho-nota"
 import { useDefinirTopbar } from "@/components/shell/estado"
 import { useTextoSincronizacao } from "@/components/shell/sync-status"
@@ -176,7 +176,7 @@ export function aparenciaCompleta(aparencia: AparenciaNota = {}) {
 
 // Título editável: cada letra já atualiza a sidebar, o caminho e os
 // [[links]] das outras notas.
-function CampoTitulo({ nota, centralizado, aoConfirmar }: { nota: Nota; centralizado: boolean; aoConfirmar: () => void }) {
+function CampoTitulo({ nota, centralizado, fonte, aoConfirmar }: { nota: Nota; centralizado: boolean; fonte: FonteNota; aoConfirmar: () => void }) {
   const renomearNota = useNotas((estado) => estado.renomearNota)
   const [rascunho, setRascunho] = useState(nota.titulo === "Sem título" ? "" : nota.titulo)
 
@@ -206,7 +206,10 @@ function CampoTitulo({ nota, centralizado, aoConfirmar }: { nota: Nota; centrali
       aria-label="Título da nota"
       className={cn(
         // Rafael Marques - 29/10/2026: título comprido (ou palavra enorme) quebra de linha em vez de cortar.
-        "field-sizing-content block w-full max-w-full min-w-0 resize-none overflow-hidden bg-transparent [overflow-wrap:anywhere] break-words whitespace-pre-wrap font-display text-4xl leading-tight font-bold tracking-tight text-paper outline-none placeholder:text-ink-muted md:text-5xl",
+        "field-sizing-content block w-full max-w-full min-w-0 resize-none overflow-hidden bg-transparent [overflow-wrap:anywhere] break-words whitespace-pre-wrap text-4xl leading-tight font-bold tracking-tight text-paper outline-none placeholder:text-ink-muted md:text-5xl",
+        // A fonte escolhida na "Aparência" vale também para o título (a Padrão usa a Bricolage).
+        fonte === "padrao" ? "font-display" : classeFonte[fonte],
+        fonte === "manuscrita" && "text-5xl md:text-6xl",
         centralizado && "text-center"
       )}
     />
@@ -245,17 +248,60 @@ export function EditorNota({ id }: { id: string }) {
   return <TelaNota nota={nota} notas={biblioteca.notas} />
 }
 
+// Rafael Marques - 04/11/2026 (v1.5a): painel repaginado em três grupos (Texto, Página e Cabeçalho),
+// com prévias que mostram o efeito de cada opção, a cor de destaque (que existia só nos dados) e
+// "Voltar ao padrão" só quando algo foi mudado.
+const padraoAparencia = aparenciaCompleta()
+
+function PreviaLargura({ largura }: { largura: LarguraNota }) {
+  const coluna = largura === "normal" ? "w-1/3" : largura === "larga" ? "w-2/3" : "w-[88%]"
+  return (
+    <span className="flex size-full items-center justify-center">
+      <span className={cn("flex h-7 flex-col justify-center gap-1 rounded-[3px] bg-muted px-1", coluna)}>
+        <span className="h-[3px] w-full rounded-full bg-ink-muted" />
+        <span className="h-[3px] w-4/5 rounded-full bg-ink-muted" />
+        <span className="h-[3px] w-11/12 rounded-full bg-ink-muted" />
+      </span>
+    </span>
+  )
+}
+
+function PreviaEspaco({ espacamento }: { espacamento: Espacamento }) {
+  const espaco = espacamento === "compacto" ? "gap-[2px]" : espacamento === "normal" ? "gap-[4px]" : "gap-[7px]"
+  return (
+    <span className={cn("flex w-3/5 flex-col", espaco)}>
+      {[0, 1, 2].map((linha) => (
+        <span key={linha} className="h-[3px] w-full rounded-full bg-ink-muted" />
+      ))}
+    </span>
+  )
+}
+
+function GrupoAparencia({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-4">
+      <p className="text-[11px] font-semibold tracking-wide text-ink-muted uppercase">{titulo}</p>
+      {children}
+    </div>
+  )
+}
+
 function MenuPersonalizar({ nota, aoEscolherCapa }: { nota: Nota; aoEscolherCapa: () => void }) {
   const atualizarAparencia = useNotas((estado) => estado.atualizarAparencia)
   const visual = aparenciaCompleta(nota.aparencia)
   const mudar = (mudancas: Partial<AparenciaNota>) => atualizarAparencia(nota.id, mudancas)
+  const mudou = (["fonte", "tamanho", "espacamento", "largura", "corDestaque", "fundo", "tituloCentralizado", "ocultarIcone", "alturaCapa"] as const).some(
+    (campo) => visual[campo] !== padraoAparencia[campo]
+  )
 
   return (
     <PainelPersonalizar
       titulo="Aparência da nota"
-      rotuloBotao="Aparência da nota"
-      descricao="As mudanças aparecem na hora."
+      rotuloBotao="Aparência"
+      descricao="Vale só para esta nota. As mudanças aparecem na hora."
       tamanhoBotao="sm"
+      largura="w-[22rem]"
+      restaurarAtivo={mudou}
       aoRestaurar={() =>
         atualizarAparencia(nota.id, {
           fonte: undefined, tamanho: undefined, espacamento: undefined, largura: undefined, corDestaque: undefined,
@@ -264,94 +310,109 @@ function MenuPersonalizar({ nota, aoEscolherCapa }: { nota: Nota; aoEscolherCapa
         })
       }
     >
-      <SecaoPersonalizar titulo="Fonte">
-        <MiniaturasOpcoes
-          rotulo="Fonte"
-          colunas={4}
-          valor={visual.fonte}
-          aoMudar={(fonte) => mudar({ fonte })}
-          opcoes={opcoesFonte.map((opcao) => ({
-            valor: opcao.id,
-            rotulo: opcao.nome,
-            previa: <span className={cn("text-xl", classeFonte[opcao.id], opcao.id === "manuscrita" && "text-2xl")}>Aa</span>,
-          }))}
-        />
-      </SecaoPersonalizar>
+      <GrupoAparencia titulo="Texto">
+        <SecaoPersonalizar titulo="Fonte">
+          <MiniaturasOpcoes
+            rotulo="Fonte"
+            colunas={4}
+            valor={visual.fonte}
+            aoMudar={(fonte) => mudar({ fonte })}
+            opcoes={opcoesFonte.map((opcao) => ({
+              valor: opcao.id,
+              rotulo: opcao.nome,
+              previa: <span className={cn("text-xl", classeFonte[opcao.id], opcao.id === "padrao" && "font-display", opcao.id === "manuscrita" && "text-2xl")}>Aa</span>,
+            }))}
+          />
+        </SecaoPersonalizar>
 
-      <SecaoPersonalizar titulo="Tamanho do texto">
-        <OpcoesLadoALado
-          rotulo="Tamanho do texto"
-          valor={visual.tamanho}
-          aoMudar={(tamanho) => mudar({ tamanho, textoPequeno: undefined })}
-          opcoes={[
-            { valor: "pequeno", rotulo: "Pequeno" },
-            { valor: "normal", rotulo: "Normal" },
-            { valor: "grande", rotulo: "Grande" },
-          ]}
-        />
-      </SecaoPersonalizar>
-
-      <SecaoPersonalizar titulo="Espaço entre linhas">
-        <OpcoesLadoALado
-          rotulo="Espaço entre linhas"
-          valor={visual.espacamento}
-          aoMudar={(espacamento) => mudar({ espacamento })}
-          opcoes={[
-            { valor: "compacto", rotulo: "Compacto" },
-            { valor: "normal", rotulo: "Normal" },
-            { valor: "amplo", rotulo: "Amplo" },
-          ]}
-        />
-      </SecaoPersonalizar>
-
-      <SecaoPersonalizar titulo="Largura">
-        <OpcoesLadoALado
-          rotulo="Largura"
-          valor={visual.largura}
-          aoMudar={(largura) => mudar({ largura, larguraTotal: undefined })}
-          opcoes={[
-            { valor: "normal", rotulo: "Normal" },
-            { valor: "larga", rotulo: "Larga" },
-            { valor: "total", rotulo: "Tela toda" },
-          ]}
-        />
-      </SecaoPersonalizar>
-
-      <SecaoPersonalizar titulo="Fundo da página">
-        <MiniaturasOpcoes
-          rotulo="Fundo da página"
-          valor={visual.fundo}
-          aoMudar={(fundo) => mudar({ fundo })}
-          opcoes={opcoesFundo.map((opcao) => ({
-            valor: opcao.id,
-            rotulo: opcao.nome,
-            previa: <PreviaFundo fundo={opcao.id} />,
-          }))}
-        />
-      </SecaoPersonalizar>
-
-      <SecaoPersonalizar titulo="Capa">
-        <Button variant="outline" size="sm" className="w-full" onClick={aoEscolherCapa}>
-          <ImageIcon /> {visual.capa ? "Trocar capa" : "Adicionar capa"}
-        </Button>
-        {visual.capa && (
+        <SecaoPersonalizar titulo="Tamanho do texto">
           <OpcoesLadoALado
-            rotulo="Altura da capa"
-            valor={visual.alturaCapa}
-            aoMudar={(alturaCapa) => mudar({ alturaCapa })}
+            rotulo="Tamanho do texto"
+            valor={visual.tamanho}
+            aoMudar={(tamanho) => mudar({ tamanho, textoPequeno: undefined })}
             opcoes={[
-              { valor: "baixa", rotulo: "Baixa" },
-              { valor: "media", rotulo: "Média" },
-              { valor: "alta", rotulo: "Alta" },
+              { valor: "pequeno", rotulo: "Pequeno" },
+              { valor: "normal", rotulo: "Normal" },
+              { valor: "grande", rotulo: "Grande" },
             ]}
           />
-        )}
-      </SecaoPersonalizar>
+        </SecaoPersonalizar>
 
-      <SecaoPersonalizar titulo="Cabeçalho">
-        <Interruptor rotulo="Título centralizado" marcado={visual.tituloCentralizado} aoMudar={(marcado) => mudar({ tituloCentralizado: marcado })} />
-        <Interruptor rotulo="Mostrar ícone" marcado={!visual.ocultarIcone} aoMudar={(marcado) => mudar({ ocultarIcone: !marcado })} />
-      </SecaoPersonalizar>
+        <SecaoPersonalizar titulo="Espaço entre linhas">
+          <MiniaturasOpcoes
+            rotulo="Espaço entre linhas"
+            valor={visual.espacamento}
+            aoMudar={(espacamento) => mudar({ espacamento })}
+            opcoes={[
+              { valor: "compacto", rotulo: "Compacto", previa: <PreviaEspaco espacamento="compacto" /> },
+              { valor: "normal", rotulo: "Normal", previa: <PreviaEspaco espacamento="normal" /> },
+              { valor: "amplo", rotulo: "Amplo", previa: <PreviaEspaco espacamento="amplo" /> },
+            ]}
+          />
+        </SecaoPersonalizar>
+
+        <SecaoPersonalizar titulo="Cor de destaque">
+          <p className="-mt-1 text-xs text-muted-foreground">Caixas de tarefa, marcadores e links da nota.</p>
+          <SeletorCores valor={visual.corDestaque} cores={coresDestaque} aoMudar={(corDestaque) => mudar({ corDestaque: corDestaque ?? undefined })} />
+        </SecaoPersonalizar>
+      </GrupoAparencia>
+
+      <div className="border-t border-line" />
+
+      <GrupoAparencia titulo="Página">
+        <SecaoPersonalizar titulo="Largura">
+          <MiniaturasOpcoes
+            rotulo="Largura"
+            valor={visual.largura}
+            aoMudar={(largura) => mudar({ largura, larguraTotal: undefined })}
+            opcoes={[
+              { valor: "normal", rotulo: "Normal", previa: <PreviaLargura largura="normal" /> },
+              { valor: "larga", rotulo: "Larga", previa: <PreviaLargura largura="larga" /> },
+              { valor: "total", rotulo: "Tela toda", previa: <PreviaLargura largura="total" /> },
+            ]}
+          />
+        </SecaoPersonalizar>
+
+        <SecaoPersonalizar titulo="Fundo da página">
+          <MiniaturasOpcoes
+            rotulo="Fundo da página"
+            valor={visual.fundo}
+            aoMudar={(fundo) => mudar({ fundo })}
+            opcoes={opcoesFundo.map((opcao) => ({
+              valor: opcao.id,
+              rotulo: opcao.nome,
+              previa: <PreviaFundo fundo={opcao.id} />,
+            }))}
+          />
+          {visual.fundo === "foco" && <p className="text-xs text-muted-foreground">No Foco, a pauta aparece só no bloco onde você está escrevendo.</p>}
+        </SecaoPersonalizar>
+      </GrupoAparencia>
+
+      <div className="border-t border-line" />
+
+      <GrupoAparencia titulo="Capa e cabeçalho">
+        <div className="space-y-2">
+          <Button variant="outline" size="sm" className="w-full" onClick={aoEscolherCapa}>
+            <ImageIcon /> {visual.capa ? "Trocar capa" : "Adicionar capa"}
+          </Button>
+          {visual.capa && (
+            <OpcoesLadoALado
+              rotulo="Altura da capa"
+              valor={visual.alturaCapa}
+              aoMudar={(alturaCapa) => mudar({ alturaCapa })}
+              opcoes={[
+                { valor: "baixa", rotulo: "Baixa" },
+                { valor: "media", rotulo: "Média" },
+                { valor: "alta", rotulo: "Alta" },
+              ]}
+            />
+          )}
+        </div>
+        <div className="space-y-1">
+          <Interruptor rotulo="Título centralizado" marcado={visual.tituloCentralizado} aoMudar={(marcado) => mudar({ tituloCentralizado: marcado })} />
+          <Interruptor rotulo="Mostrar ícone" marcado={!visual.ocultarIcone} aoMudar={(marcado) => mudar({ ocultarIcone: !marcado })} />
+        </div>
+      </GrupoAparencia>
     </PainelPersonalizar>
   )
 }
@@ -387,7 +448,13 @@ function TelaNota({ nota, notas }: { nota: Nota; notas: Nota[] }) {
   const hojeTexto = new Date().toDateString() === editada.toDateString()
   const editadaTexto = `${hojeTexto ? "Hoje" : editada.toLocaleDateString("pt-BR", { day: "numeric", month: "short" })}, ${editada.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
 
+  // Rafael Marques - 04/11/2026 (v1.5a): a nota ocupa a largura toda do app (antes ficava presa na coluna
+  // de 1120px, e "Larga" e "Tela toda" não mudavam nada). O trilho lateral só aparece quando sobra espaço.
+  const classeTrilho = visual.largura === "normal" ? "xl:block" : visual.largura === "larga" ? "min-[1800px]:block" : ""
+  const classeMenuLigacoes = visual.largura === "normal" ? "xl:hidden" : visual.largura === "larga" ? "min-[1800px]:hidden" : ""
+
   useDefinirTopbar({
+    largura: "bleed",
     trilha: [
       livro ? { rotulo: livro.titulo, href: `/notas?livro=${livro.id}` } : { rotulo: "Sem caderno", href: "/notas" },
       ...caminho.map((item) => ({ rotulo: item.titulo, href: `/notas/${item.id}` })),
@@ -414,7 +481,7 @@ function TelaNota({ nota, notas }: { nota: Nota; notas: Nota[] }) {
             <MoreHorizontalIcon />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-60">
-            <DropdownMenuItem className="xl:hidden" onClick={() => setConexoesAbertas(true)}>
+            <DropdownMenuItem className={classeMenuLigacoes} onClick={() => setConexoesAbertas(true)}>
               <NetworkIcon /> Ligações{totalConexoes > 0 ? ` (${totalConexoes})` : ""}
             </DropdownMenuItem>
             <DropdownMenuSub>
@@ -452,7 +519,7 @@ function TelaNota({ nota, notas }: { nota: Nota; notas: Nota[] }) {
     <div
       ref={setPagina}
       className={cn(
-        "-mx-4 -my-8 min-h-[calc(100dvh-var(--spacing-topbar))] md:-mx-10 md:-my-12",
+        "-mx-4 -my-6 min-h-[calc(100dvh-var(--spacing-topbar))] md:-mx-6",
         // Fundos que pintam a página viram uma folha: borda fina nas laterais (sem sombra: só o que flutua tem sombra).
         (grade || fundo === "papel") && `fundo-${fundo} md:border-x md:border-line`
       )}
@@ -463,10 +530,12 @@ function TelaNota({ nota, notas }: { nota: Nota; notas: Nota[] }) {
       <div className="flex justify-center gap-12 px-4 md:px-10">
         <article
           ref={setDocumento}
-          className={cn("documento min-w-0 flex-1 pb-24", visual.largura === "normal" ? "max-w-reading" : visual.largura === "larga" ? "max-w-content" : "max-w-none", classeFonte[visual.fonte])}
+          className={cn("documento min-w-0 flex-1 pb-24", visual.largura === "normal" ? "max-w-reading" : visual.largura === "larga" ? "max-w-content" : "max-w-none md:px-6", classeFonte[visual.fonte])}
           data-espacamento={visual.espacamento}
           data-fundo={fundo}
-          style={{ fontSize: `${tamanho}px` }}
+          data-fonte={visual.fonte}
+          data-destaque={visual.corDestaque ? "" : undefined}
+          style={{ fontSize: `${tamanho}px`, ...(visual.corDestaque && ({ "--destaque": visual.corDestaque } as React.CSSProperties)) }}
         >
           <div className={cn("group/cabecalho", temCapa && !visual.ocultarIcone ? "-mt-10" : "pt-12", visual.tituloCentralizado && "text-center")}>
             {!visual.ocultarIcone && nota.icone && nota.icone !== "nota" ? (
@@ -489,20 +558,29 @@ function TelaNota({ nota, notas }: { nota: Nota; notas: Nota[] }) {
               </DropdownMenu>
             ) : null}
 
-            <CampoTitulo key={nota.id} nota={nota} centralizado={visual.tituloCentralizado} aoConfirmar={() => setPedidoFocoTexto((valor) => valor + 1)} />
+            <CampoTitulo key={nota.id} nota={nota} centralizado={visual.tituloCentralizado} fonte={visual.fonte} aoConfirmar={() => setPedidoFocoTexto((valor) => valor + 1)} />
 
-            <dl className="mt-6 grid grid-cols-[7rem_1fr] items-center gap-x-4 gap-y-2.5 border-b border-line pb-6 font-sans text-ui">
-              <dt className="text-ink-soft">Caderno</dt>
-              <dd className="text-paper">{livro ? <Link href={`/notas?livro=${livro.id}`} className="hover:underline hover:underline-offset-4">{livro.titulo}</Link> : "Sem caderno"}</dd>
-              <dt className="text-ink-soft">Tags</dt>
-              <dd>
-                <LinhaTags nota={nota} />
-              </dd>
-              <dt className="text-ink-soft">Editada</dt>
-              <dd className="text-paper" suppressHydrationWarning>
-                {editadaTexto}
-              </dd>
-            </dl>
+            {/* Rafael Marques - 04/11/2026 (v1.5a): com o título centralizado, as propriedades viram um
+                bloco centralizado (rótulos à direita, valores à esquerda) em vez de herdar o texto centralizado. */}
+            <div className="mt-6 border-b border-line pb-6">
+              <dl
+                className={cn(
+                  "grid items-center gap-x-4 gap-y-2.5 text-left font-sans text-ui",
+                  visual.tituloCentralizado ? "mx-auto w-fit max-w-full grid-cols-[auto_minmax(0,22rem)]" : "grid-cols-[7rem_1fr]"
+                )}
+              >
+                <dt className={cn("text-ink-soft", visual.tituloCentralizado && "text-right")}>Caderno</dt>
+                <dd className="text-paper">{livro ? <Link href={`/notas?livro=${livro.id}`} className="hover:underline hover:underline-offset-4">{livro.titulo}</Link> : "Sem caderno"}</dd>
+                <dt className={cn("text-ink-soft", visual.tituloCentralizado && "text-right")}>Tags</dt>
+                <dd>
+                  <LinhaTags nota={nota} />
+                </dd>
+                <dt className={cn("text-ink-soft", visual.tituloCentralizado && "text-right")}>Editada</dt>
+                <dd className="text-paper" suppressHydrationWarning>
+                  {editadaTexto}
+                </dd>
+              </dl>
+            </div>
           </div>
 
           <div className="mt-8 md:-ml-14">
@@ -511,7 +589,7 @@ function TelaNota({ nota, notas }: { nota: Nota; notas: Nota[] }) {
           </div>
         </article>
 
-        <aside aria-label="Sobre esta nota" className="sticky top-24 hidden h-fit w-64 shrink-0 space-y-8 pt-28 xl:block">
+        <aside aria-label="Sobre esta nota" className={cn("sticky top-24 hidden h-fit w-64 shrink-0 space-y-8 pt-28", classeTrilho)}>
           <NestaNota titulos={titulos} ativo={ativo} />
           <Ligacoes nota={nota} />
         </aside>

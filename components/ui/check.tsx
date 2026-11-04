@@ -35,7 +35,7 @@ export function CheckButton({
       className={cn(
         "group/check relative inline-flex shrink-0 items-center justify-center outline-none disabled:opacity-40",
         // Área clicável maior que o desenho.
-        habito ? "size-11" : "size-6 after:absolute after:-inset-2.5 after:content-['']",
+        habito ? "size-11 max-[360px]:size-10" : "size-6 after:absolute after:-inset-2.5 after:content-['']",
         className
       )}
     >
@@ -46,7 +46,7 @@ export function CheckButton({
         transition={spring.snappy}
         className={cn(
           "flex items-center justify-center border transition-colors duration-fast",
-          habito ? "size-9 rounded-md" : "size-4.5 rounded-xs",
+          habito ? "size-9 rounded-md max-[360px]:size-8" : "size-4.5 rounded-xs",
           checked ? "border-paper bg-paper text-night" : "border-line-strong bg-transparent text-transparent group-hover/check:border-ink-muted"
         )}
       >

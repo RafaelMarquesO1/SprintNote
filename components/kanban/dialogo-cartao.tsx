@@ -54,6 +54,7 @@ import { EditorCartao } from "@/components/kanban/editor-cartao"
 import { Icone } from "@/components/icone"
 import { notasQueCitamCartao } from "@/components/notas/editor/extensoes/citacao-cartao"
 import { useAgora, tempoRelativo } from "@/hooks/use-hoje"
+import { diasEntre } from "@/lib/datas"
 import { gerarId } from "@/lib/gerar-id"
 import { complexidadeDe, complexidades } from "@/lib/kanban/complexidade"
 import { descreverRecorrencia } from "@/lib/kanban/recorrencia"
@@ -137,9 +138,67 @@ function Resumo({ titulo, children }: { titulo: string; children: ReactNode }) {
 
 const classeChip = "flex h-8 items-center gap-1.5 rounded-md bg-muted px-3 text-sm"
 
-function formatarData(prazo: string) {
+function formatarData(prazo: string, comAno = true) {
   const [ano, mes, dia] = prazo.split("-").map(Number)
-  return new Date(ano, mes - 1, dia).toLocaleDateString("pt-BR", { day: "numeric", month: "short", year: "numeric" })
+  return new Date(ano, mes - 1, dia).toLocaleDateString("pt-BR", { day: "numeric", month: "short", ...(comAno && { year: "numeric" }) })
+}
+
+// Rafael Marques - 04/11/2026 (v1.5a): início (opcional) e entrega. O início nunca fica depois da
+// entrega: escolher um começo depois do prazo empurra o prazo junto (e vice-versa).
+function EscolherDatas({ cartao, atualizar, comInicio }: { cartao: CartaoKanban; atualizar: Atualizar; comInicio: boolean }) {
+  const inicio = cartao.inicio ?? null
+  const dias = inicio && cartao.prazo ? diasEntre(inicio, cartao.prazo) + 1 : 0
+  return (
+    <div className="space-y-3">
+      {comInicio && (
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-muted-foreground">Data de início</p>
+          <div className="flex gap-1">
+            <Input
+              type="date"
+              value={inicio ?? ""}
+              max={cartao.prazo ?? undefined}
+              onChange={(evento) => {
+                const valor = evento.target.value || null
+                atualizar(valor && cartao.prazo && valor > cartao.prazo ? { inicio: valor, prazo: valor } : { inicio: valor })
+              }}
+              aria-label="Data de início"
+            />
+            {inicio && (
+              <Button variant="ghost" size="icon" aria-label="Remover data de início" onClick={() => atualizar({ inicio: null })}>
+                <XIcon />
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+      <div className="space-y-1">
+        <p className="text-xs font-medium text-muted-foreground">Data de entrega</p>
+        <div className="flex gap-1">
+          <Input
+            type="date"
+            value={cartao.prazo ?? ""}
+            min={inicio ?? undefined}
+            onChange={(evento) => {
+              const valor = evento.target.value || null
+              atualizar(valor && inicio && valor < inicio ? { prazo: valor, inicio: valor } : { prazo: valor })
+            }}
+            aria-label="Data de entrega"
+          />
+          {cartao.prazo && (
+            <Button variant="ghost" size="icon" aria-label="Remover data de entrega" onClick={() => atualizar({ prazo: null })}>
+              <XIcon />
+            </Button>
+          )}
+        </div>
+      </div>
+      {comInicio && (
+        <p className="text-xs text-muted-foreground">
+          {dias > 1 ? `O cartão ocupa ${dias} dias no calendário do quadro.` : "Com início e entrega, o cartão aparece em todos os dias entre as duas datas no calendário."}
+        </p>
+      )}
+    </div>
+  )
 }
 
 // Etiquetas: marcar/desmarcar e criar uma nova (usado no topo e na lateral).
@@ -414,7 +473,7 @@ function FormularioCartao({ cartao, aoFechar }: { cartao: CartaoKanban; aoFechar
   const etiquetasDoCartao = (quadro?.etiquetas ?? []).filter((etiqueta) => cartao.etiquetas.includes(etiqueta.id))
   const responsavel = equipe?.membros.find((membro) => membro.id === cartao.responsavelId)
   const complexidade = complexidades.find((opcao) => opcao.id === complexidadeDe(cartao.estimativa))
-  const temResumo = Boolean(responsavel || etiquetasDoCartao.length > 0 || cartao.prazo || cartao.prioridade || complexidade || cartao.recorrencia)
+  const temResumo = Boolean(responsavel || etiquetasDoCartao.length > 0 || cartao.prazo || cartao.inicio || cartao.prioridade || complexidade || cartao.recorrencia)
 
   function mudarItem(id: string, mudancas: { texto?: string; feito?: boolean }) {
     atualizar({ checklist: cartao.checklist.map((item) => (item.id === id ? { ...item, ...mudancas } : item)) })
@@ -489,10 +548,15 @@ function FormularioCartao({ cartao, aoFechar }: { cartao: CartaoKanban; aoFechar
                   </Popover>
                 </Resumo>
               )}
-              {cartao.prazo && (
-                <Resumo titulo="Data de entrega">
+              {(cartao.prazo || cartao.inicio) && (
+                <Resumo titulo={cartao.inicio ? "Datas" : "Data de entrega"}>
                   <span className={classeChip}>
-                    <CalendarIcon className="size-4" /> {formatarData(cartao.prazo)}
+                    <CalendarIcon className="size-4" />
+                    {cartao.inicio && cartao.prazo
+                      ? `${formatarData(cartao.inicio, false)} → ${formatarData(cartao.prazo)}`
+                      : cartao.inicio
+                        ? `Começa em ${formatarData(cartao.inicio)}`
+                        : formatarData(cartao.prazo!)}
                   </span>
                 </Resumo>
               )}
@@ -600,10 +664,11 @@ function FormularioCartao({ cartao, aoFechar }: { cartao: CartaoKanban; aoFechar
           <Historico cartao={cartao} />
         </div>
 
-        {/* Lateral */}
-        <aside className="space-y-5">
-          <div className="space-y-1.5">
-            <p className="text-xs font-medium text-muted-foreground">Adicionar ao cartão</p>
+        {/* Lateral. Rafael Marques - 04/11/2026 (v1.5a): no celular "Adicionar ao cartão" sobe para o topo em duas
+            colunas (antes ficava depois dos comentários e do histórico) e "Ações" fica no fim, também em duas colunas. */}
+        <aside className="contents md:block md:space-y-5">
+          <div className="grid grid-cols-2 gap-1.5 max-md:order-first md:block md:space-y-1.5">
+            <p className="col-span-2 text-xs font-medium text-muted-foreground">Adicionar ao cartão</p>
             {equipe && (
               <MenuLateral icone={UserIcon} rotulo="Responsável">
                 <div className="grid max-h-60 gap-1 overflow-y-auto">
@@ -635,15 +700,8 @@ function FormularioCartao({ cartao, aoFechar }: { cartao: CartaoKanban; aoFechar
             <Button variant="secondary" size="sm" className="w-full justify-start" onClick={() => setMostrarChecklist(true)}>
               <ListChecksIcon /> Checklist
             </Button>
-            <MenuLateral icone={CalendarIcon} rotulo="Datas" titulo="Data de entrega">
-              <div className="flex gap-1">
-                <Input type="date" value={cartao.prazo ?? ""} onChange={(evento) => atualizar({ prazo: evento.target.value || null })} aria-label="Prazo" />
-                {cartao.prazo && (
-                  <Button variant="ghost" size="icon" aria-label="Remover prazo" onClick={() => atualizar({ prazo: null })}>
-                    <XIcon />
-                  </Button>
-                )}
-              </div>
+            <MenuLateral icone={CalendarIcon} rotulo="Datas" titulo="Datas">
+              <EscolherDatas cartao={cartao} atualizar={atualizar} comInicio={!quadro?.equipeId} />
             </MenuLateral>
             <MenuLateral icone={FlagIcon} rotulo="Prioridade" largura="w-52">
               <div className="grid gap-1">
@@ -692,8 +750,8 @@ function FormularioCartao({ cartao, aoFechar }: { cartao: CartaoKanban; aoFechar
             )}
           </div>
 
-          <div className="space-y-1.5">
-            <p className="text-xs font-medium text-muted-foreground">Ações</p>
+          <div className="grid grid-cols-2 gap-1.5 md:block md:space-y-1.5">
+            <p className="col-span-2 text-xs font-medium text-muted-foreground">Ações</p>
             <MenuLateral icone={ArrowRightIcon} rotulo="Mover" titulo="Mover cartão">
               {quadros.length > 1 && (
                 <label className="grid gap-1 text-xs text-muted-foreground">

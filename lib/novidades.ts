@@ -33,6 +33,33 @@ export const ordemTipos: TipoNovidade[] = ["novo", "melhorado", "corrigido"]
 
 // Mais recente primeiro.
 export const NOVIDADES: Novidade[] = [
+  // Rafael Marques - 04/11/2026: versão 1.5a (Aparência da nota, listas, prévia de cartões, data de início e dicas).
+  {
+    id: "2026-11-04",
+    versao: "1.5a",
+    data: "04/11/2026",
+    titulo: "Notas mais caprichadas, cartões que duram vários dias e um app melhor no celular",
+    resumo: "A Aparência da nota foi refeita e agora tudo nela funciona de verdade, as listas se comportam como no Notion, os cartões ganham prévia e data de início, e o app ficou bem melhor no celular.",
+    itens: [
+      { tipo: "novo", titulo: "Botão Mais no celular", texto: "A barra de baixo ganhou o Mais, com Biblioteca, Hábitos, Rotina, Grafo, Tags, a busca e a sua conta (antes não dava para chegar nessas telas pelo celular)." },
+      { tipo: "melhorado", titulo: "Calendário do quadro no celular", texto: "Os cartões viram barrinhas nos dias. Toque num dia para ver os cartões dele embaixo do calendário e criar um ali." },
+      { tipo: "melhorado", titulo: "Hábitos e Rotina no celular", texto: "A semana inteira cabe na tela, sem rolar de lado. O nome do hábito fica numa linha própria e os dias da semana não quebram mais em duas linhas." },
+      { tipo: "melhorado", titulo: "Tarefas e cartões no celular", texto: "As abas cabem na tela, o prazo vai para baixo do título (que não some mais), a lista do quadro mostra só o essencial e, no cartão, os botões de Adicionar ficam no topo." },
+      { tipo: "novo", titulo: "Data de início nos cartões", texto: "Em Datas, escolha quando o cartão começa. No calendário do quadro ele vira uma barra do início à entrega; com muitos cartões no mesmo dia, cada dia mostra três e um \"+N mais\"." },
+      { tipo: "novo", titulo: "Prévia dos cartões citados", texto: "Em Ligações, cada cartão citado na nota aparece com status, quadro, datas, prioridade, checklist e etiquetas. Um clique abre o cartão." },
+      { tipo: "novo", titulo: "Dicas de uso", texto: "De vez em quando, uma dica curta aparece no canto da tela mostrando um recurso do app. Dá para pedir uma em \"Dicas de uso\", no menu da conta, ou desligar as automáticas." },
+      { tipo: "novo", titulo: "Cor de destaque", texto: "A Aparência da nota ganhou a escolha da cor das caixas de tarefa, marcadores e links." },
+      { tipo: "melhorado", titulo: "Aparência da nota repaginada", texto: "Opções em três grupos (Texto, Página, Capa e cabeçalho) com prévias, e \"Voltar ao padrão\" só acende quando algo mudou." },
+      { tipo: "melhorado", titulo: "Fonte no título", texto: "Serifada, Mono e Manuscrita agora valem também para o título e os subtítulos da nota." },
+      { tipo: "corrigido", titulo: "Largura da nota", texto: "Larga e Tela toda não mudavam nada (a nota ficava presa numa coluna). Agora ocupam a tela, e o painel lateral sai quando apertaria o texto." },
+      { tipo: "corrigido", titulo: "Listas", texto: "Tab num item que não pode recuar não tira mais o cursor da nota, e Shift+Tab no primeiro nível não desfaz a lista." },
+      { tipo: "corrigido", titulo: "Menu / dentro de listas", texto: "O bloco escolhido nasce logo abaixo do item, e não mais depois da lista inteira. \"Transformar em\" funciona em itens de lista." },
+      { tipo: "corrigido", titulo: "Seleção de texto", texto: "Selecionar trechos da nota usa um azul suave, sem inverter as cores dos itens e marcadores." },
+      { tipo: "corrigido", titulo: "Tela de apresentação no celular", texto: "Os botões Entrar e Criar conta não encostam mais na borda da tela." },
+      { tipo: "corrigido", titulo: "Anotar no Hoje", texto: "Em celulares estreitos, o campo de anotar uma tarefa desce para uma linha própria e mostra o texto inteiro." },
+      { tipo: "corrigido", titulo: "Título centralizado", texto: "Caderno, Tags e Editada ficam num bloco alinhado abaixo do título, em vez de espalhados pela página." },
+    ],
+  },
   // Rafael Marques - 03/11/2026: versão 1.5 (tela de apresentação com prints reais e animações de rolagem).
   {
     id: "2026-11-03-b",

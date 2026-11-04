@@ -69,8 +69,9 @@ export function VisaoLista({
   }
 
   // Função comum (não componente): devolve o cabeçalho clicável de cada coluna da tabela.
-  const cabecalho = (chave: Chave, texto: string) => (
-    <th scope="col" aria-sort={ordem?.chave === chave ? (ordem.crescente ? "ascending" : "descending") : "none"} className="px-3 py-2 text-left font-medium">
+  // Rafael Marques - 04/11/2026 (v1.5a): no celular a lista fica com Cartão e Coluna (prazo e prioridade vão embaixo do título).
+  const cabecalho = (chave: Chave, texto: string, soNoComputador = false) => (
+    <th scope="col" aria-sort={ordem?.chave === chave ? (ordem.crescente ? "ascending" : "descending") : "none"} className={cn("px-3 py-2 text-left font-medium", soNoComputador && "max-sm:hidden")}>
       <button type="button" onClick={() => clicar(chave)} className="flex items-center gap-1 hover:text-foreground">
         {texto}
         {ordem?.chave === chave && (ordem.crescente ? <ArrowUpIcon className="size-3" /> : <ArrowDownIcon className="size-3" />)}
@@ -81,14 +82,14 @@ export function VisaoLista({
   return (
     <div className="px-4 pt-2 pb-6 md:px-6 md:pt-4">
       <div className={cn("overflow-x-auto rounded-xl border", vidro ? "bg-card/90 backdrop-blur-xl" : "bg-card")}>
-        <table className="w-full min-w-[44rem] text-sm">
+        <table className="w-full text-sm sm:min-w-[44rem]">
           <thead className="border-b text-xs text-muted-foreground">
             <tr>
               {cabecalho("titulo", "Cartão")}
               {cabecalho("coluna", "Coluna")}
-              {cabecalho("prioridade", "Prioridade")}
-              {cabecalho("prazo", "Prazo")}
-              {cabecalho("estimativa", "Complexidade")}
+              {cabecalho("prioridade", "Prioridade", true)}
+              {cabecalho("prazo", "Prazo", true)}
+              {cabecalho("estimativa", "Complexidade", true)}
             </tr>
           </thead>
           <tbody>
@@ -106,7 +107,7 @@ export function VisaoLista({
               const doCartao = etiquetas.filter((etiqueta) => cartao.etiquetas.includes(etiqueta.id))
               return (
                 <tr key={cartao.id} className="animacao-entrar border-b last:border-0 hover:bg-muted/50">
-                  <td className="max-w-80 px-3 py-2">
+                  <td className="max-w-80 px-3 py-2 max-sm:max-w-0 max-sm:w-full">
                     <button type="button" onClick={() => aoAbrir(cartao)} className="flex w-full min-w-0 flex-col items-start gap-1 text-left">
                       <span className={cn("max-w-full truncate font-medium", concluido ? "text-ink-soft" : "text-paper")}>{cartao.titulo}</span>
                       {(doCartao.length > 0 || cartao.anexos.length > 0 || cartao.recorrencia) && (
@@ -120,6 +121,20 @@ export function VisaoLista({
                           {cartao.recorrencia && <RepeatIcon className="size-3" aria-label="Se repete" />}
                         </span>
                       )}
+                      {(cartao.prazo || cartao.prioridade) && (
+                        <span className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground sm:hidden">
+                          {cartao.prazo && hoje && (
+                            <span className={cn("flex items-center gap-1", atrasado && "font-medium text-paper")}>
+                              <CalendarIcon className="size-3" /> {rotuloPrazo(cartao.prazo, hoje)}
+                            </span>
+                          )}
+                          {cartao.prioridade && (
+                            <span className={cn("flex items-center gap-1", estilosPrioridade[cartao.prioridade].classe)}>
+                              <FlagIcon className={cn("size-3", estilosPrioridade[cartao.prioridade].preenchida && "fill-current")} /> {estilosPrioridade[cartao.prioridade].titulo}
+                            </span>
+                          )}
+                        </span>
+                      )}
                     </button>
                   </td>
                   <td className="px-3 py-2">
@@ -127,7 +142,7 @@ export function VisaoLista({
                       aria-label={`Coluna de “${cartao.titulo}”`}
                       value={cartao.colunaId}
                       onChange={(evento) => moverCartao(cartao.id, evento.target.value, null)}
-                      className="h-7 max-w-40 rounded-md border bg-background px-1.5 text-xs"
+                      className="h-7 max-w-40 rounded-md border bg-background px-1.5 text-xs max-sm:max-w-28"
                     >
                       {colunas.map((opcao) => (
                         <option key={opcao.id} value={opcao.id}>
@@ -136,7 +151,7 @@ export function VisaoLista({
                       ))}
                     </select>
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-2 max-sm:hidden">
                     {cartao.prioridade ? (
                       <span className={cn("flex items-center gap-1 text-xs", estilosPrioridade[cartao.prioridade].classe)}>
                         <FlagIcon className={cn("size-3", estilosPrioridade[cartao.prioridade].preenchida && "fill-current")} /> {estilosPrioridade[cartao.prioridade].titulo}
@@ -145,7 +160,7 @@ export function VisaoLista({
                       <span className="text-xs text-muted-foreground">—</span>
                     )}
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-2 max-sm:hidden">
                     {cartao.prazo && hoje ? (
                       <span className={cn("flex items-center gap-1 text-xs whitespace-nowrap", atrasado ? "font-medium text-paper" : "text-muted-foreground")}>
                         <CalendarIcon className="size-3" /> {rotuloPrazo(cartao.prazo, hoje)}
@@ -154,7 +169,7 @@ export function VisaoLista({
                       <span className="text-xs text-muted-foreground">—</span>
                     )}
                   </td>
-                  <td className="px-3 py-2 text-xs text-muted-foreground">{rotuloComplexidade(cartao.estimativa) ?? "—"}</td>
+                  <td className="px-3 py-2 text-xs text-muted-foreground max-sm:hidden">{rotuloComplexidade(cartao.estimativa) ?? "—"}</td>
                 </tr>
               )
             })}

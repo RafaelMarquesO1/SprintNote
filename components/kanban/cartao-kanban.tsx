@@ -193,7 +193,13 @@ export function ConteudoCartao({
             {mostrarPrazo && (
               <span className={cn("flex items-center gap-1", venceHoje && "font-semibold text-ember", atrasado && "text-paper")}>
                 {atrasado ? <AlertCircleIcon className="size-3.5" /> : <CalendarIcon className="size-3.5" />}
-                {venceHoje ? "Hoje" : atrasado ? `Atrasado, ${rotuloPrazo(cartao.prazo!, hoje)}` : rotuloPrazo(cartao.prazo!, hoje)}
+                {venceHoje
+                  ? "Hoje"
+                  : atrasado
+                    ? `Atrasado, ${rotuloPrazo(cartao.prazo!, hoje)}`
+                    : cartao.inicio && cartao.inicio < cartao.prazo!
+                      ? `${rotuloPrazo(cartao.inicio, hoje)} → ${rotuloPrazo(cartao.prazo!, hoje)}`
+                      : rotuloPrazo(cartao.prazo!, hoje)}
               </span>
             )}
             {mostrarProgresso && (

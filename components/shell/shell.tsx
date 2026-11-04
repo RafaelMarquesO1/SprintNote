@@ -4,6 +4,7 @@ import { Suspense, ViewTransition } from "react"
 import { cn } from "@/lib/utils"
 
 import { useConta } from "@/components/conta/portao-conta"
+import { DicaOcasional } from "@/components/dicas/dica-ocasional"
 import { CartaoNovidades } from "@/components/novidades/cartao-novidades"
 import { Atalhos } from "@/components/shell/atalhos"
 import { BarraInferior } from "@/components/shell/barra-inferior"
@@ -46,6 +47,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <DialogoCriar />
       <Atalhos />
       {conta ? <CartaoNovidades /> : null}
+      {conta ? <DicaOcasional /> : null}
     </TooltipProvider>
   )
 }

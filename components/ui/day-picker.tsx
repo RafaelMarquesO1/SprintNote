@@ -30,8 +30,9 @@ export function DayPicker({
   className?: string
 }) {
   return (
-    <div className={cn("flex flex-wrap items-center gap-1.5", className)}>
-      <div role="group" aria-label={label} className="flex flex-wrap gap-1">
+    <div className={cn("flex flex-wrap items-center gap-1.5 max-sm:w-full", className)}>
+      {/* Rafael Marques - 04/11/2026 (v1.5a): no celular os sete dias ficam numa grade (antes o domingo caía sozinho na linha de baixo). */}
+      <div role="group" aria-label={label} className="flex flex-wrap gap-1 max-sm:grid max-sm:w-full max-sm:grid-cols-7">
         {ORDEM_DIAS.map((dia) => {
           const ligado = value.includes(dia)
           return (
@@ -42,7 +43,7 @@ export function DayPicker({
               aria-label={nomesDiasCompletos[dia]}
               aria-current={dia === today ? "date" : undefined}
               onPressedChange={(ligar) => onChange(ligar ? [...value, dia].sort() : value.filter((item) => item !== dia))}
-              className={cn(dia === today && !ligado && "border-ember")}
+              className={cn("max-sm:min-w-0 max-sm:px-0", dia === today && !ligado && "border-ember")}
             >
               {nomesDias[dia]}
             </ToggleChip>

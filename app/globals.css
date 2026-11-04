@@ -668,6 +668,8 @@ select optgroup {
   .editor-notas h3 { margin-top: 0.75rem; font-size: 1.25em; font-weight: 600; line-height: 1.35; }
   .editor-notas :is(h4, h5, h6) { margin-top: 0.75rem; font-size: 1.1em; font-weight: 600; line-height: 1.4; }
   .editor-notas > :is(h1, h2, h3):first-child { margin-top: 0; }
+  /* Rafael Marques - 04/11/2026 (v1.5a): a fonte escolhida na "Aparência" vale também para os títulos. */
+  .documento:not([data-fonte="padrao"]) .editor-notas :is(h1, h2, h3, h4, h5, h6) { font-family: inherit; }
 
   .editor-notas ul { list-style: disc; padding-left: 1.5rem; }
   .editor-notas ul ul { list-style: circle; }
@@ -676,6 +678,10 @@ select optgroup {
   .editor-notas li::marker { color: var(--destaque-suave); }
   .editor-notas li > p { min-height: 0; }
   .editor-notas li > :is(ul, ol) { margin-top: 0; }
+  /* Rafael Marques - 04/11/2026 (v1.5a): seleção como no Notion (azul translúcido, o texto mantém a cor).
+     A seleção invertida do resto do app pintava blocos inteiros e os marcadores das listas. */
+  .editor-notas ::selection { background: color-mix(in oklch, var(--destaque-info) 30%, transparent); color: inherit; }
+  .editor-notas ul ul, .editor-notas ol ol, .editor-notas ul ol, .editor-notas ol ul { padding-left: 1.6rem; }
 
   .editor-notas ul[data-type="taskList"] { list-style: none; padding-left: 0; }
   .editor-notas ul[data-type="taskList"] ul[data-type="taskList"] { padding-left: 1.5rem; }

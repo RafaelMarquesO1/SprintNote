@@ -96,7 +96,7 @@ export function PaginaRotina() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         {visao !== "calendario" ? (
           visao === "lista" ? (
-            <div role="tablist" aria-label="Dia da semana" className="flex flex-wrap gap-1">
+            <div role="tablist" aria-label="Dia da semana" className="flex flex-wrap gap-1 max-sm:grid max-sm:w-full max-sm:grid-cols-7">
               {ORDEM_DIAS.map((d) => (
                 <button
                   key={d}
@@ -106,7 +106,7 @@ export function PaginaRotina() {
                   aria-current={d === diaHoje ? "date" : undefined}
                   onClick={() => setDiaEscolhido(d)}
                   className={cn(
-                    "relative h-control min-w-12 rounded-sm px-3 text-small font-medium",
+                    "relative h-control min-w-12 rounded-sm px-3 text-small font-medium max-sm:min-w-0 max-sm:px-0",
                     d === dia ? "bg-paper text-night" : "text-ink-soft hover:bg-raised hover:text-paper"
                   )}
                 >
@@ -203,7 +203,7 @@ function VisaoSemana({ itens, diaHoje, aoAbrir }: { itens: ItemRotina[]; diaHoje
   const horas = Array.from({ length: 24 - inicio }, (_, i) => inicio + i)
   return (
     <div className="overflow-x-auto rounded-xl border border-line bg-panel">
-      <div className="grid min-w-3xl grid-cols-[3rem_repeat(7,1fr)]">
+      <div className="grid grid-cols-[2.25rem_repeat(7,minmax(0,1fr))] sm:min-w-3xl sm:grid-cols-[3rem_repeat(7,1fr)]">
         <div className="border-b border-line" />
         {ORDEM_DIAS.map((d) => (
           <div key={d} aria-current={d === diaHoje ? "date" : undefined} className={cn("border-b border-l border-line py-2 text-center text-small font-medium", d === diaHoje ? "border-t-2 border-t-ember bg-ember-wash text-ember" : "text-ink-soft")}>
@@ -212,7 +212,7 @@ function VisaoSemana({ itens, diaHoje, aoAbrir }: { itens: ItemRotina[]; diaHoje
         ))}
         <div className="relative" style={{ height: horas.length * PX_HORA }}>
           {horas.map((hora, i) => (
-            <span key={hora} className="absolute right-2 text-micro text-ink-muted tabular-nums" style={{ top: i * PX_HORA + 2 }}>
+            <span key={hora} className="absolute right-1 text-micro text-ink-muted tabular-nums sm:right-2" style={{ top: i * PX_HORA + 2 }}>
               {String(hora).padStart(2, "0")}h
             </span>
           ))}
@@ -230,11 +230,11 @@ function VisaoSemana({ itens, diaHoje, aoAbrir }: { itens: ItemRotina[]; diaHoje
                   key={item.id}
                   type="button"
                   onClick={() => aoAbrir(item.id)}
-                  className="absolute inset-x-1 overflow-hidden rounded-xs border border-line-strong bg-raised px-1.5 py-1 text-left text-micro text-paper hover:border-ink-muted"
+                  className="absolute inset-x-1 overflow-hidden rounded-xs border border-line-strong bg-raised px-1.5 py-1 text-left text-micro text-paper hover:border-ink-muted max-sm:inset-x-0.5 max-sm:px-0.5"
                   style={{ top: (ini / 60) * PX_HORA + 1, height: Math.max(22, ((fim > ini ? fim - ini : 45) / 60) * PX_HORA - 2) }}
                 >
-                  <span className="block truncate font-semibold">{item.titulo}</span>
-                  <span className="block text-ink-soft tabular-nums">{item.horario}</span>
+                  <span className="block font-semibold max-sm:break-all max-sm:leading-tight sm:truncate">{item.titulo}</span>
+                  <span className="block text-ink-soft tabular-nums max-sm:hidden">{item.horario}</span>
                 </button>
               )
             })}

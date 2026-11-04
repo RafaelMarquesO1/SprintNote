@@ -6,7 +6,7 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 
 import { oferecerDesfazer } from "@/lib/estado/desfazer-kanban"
-import { chaveHoje } from "@/lib/datas"
+import { chaveHoje, diasEntre, somarDias } from "@/lib/datas"
 import { gerarId } from "@/lib/gerar-id"
 import { montarQuadroDoModelo, type ModeloKanban } from "@/lib/kanban/modelos"
 import { numerarCartoes } from "@/lib/kanban/numeracao"
@@ -41,7 +41,7 @@ export function exibicaoDoQuadro(quadro: QuadroKanban | undefined): ExibicaoCart
 }
 
 type MudancasCartao = Partial<
-  Pick<CartaoKanban, "titulo" | "descricao" | "notaId" | "etiquetas" | "prazo" | "cor" | "checklist" | "prioridade" | "responsavelId" | "anexos" | "recorrencia" | "bloqueadoPor" | "estimativa">
+  Pick<CartaoKanban, "titulo" | "descricao" | "notaId" | "etiquetas" | "prazo" | "inicio" | "cor" | "checklist" | "prioridade" | "responsavelId" | "anexos" | "recorrencia" | "bloqueadoPor" | "estimativa">
 >
 type MudancasColuna = Partial<Pick<ColunaKanban, "titulo" | "cor" | "limite" | "concluida" | "recolhida" | "forma">>
 
@@ -307,6 +307,9 @@ export const useKanban = create<EstadoKanban>()(
             if ("prazo" in mudancas && mudancas.prazo !== cartao.prazo) {
               novo = comAtividade(novo, mudancas.prazo ? `Prazo definido para ${formatarPrazo(mudancas.prazo)}` : "Prazo removido")
             }
+            if ("inicio" in mudancas && (mudancas.inicio ?? null) !== (cartao.inicio ?? null)) {
+              novo = comAtividade(novo, mudancas.inicio ? `Início definido para ${formatarPrazo(mudancas.inicio)}` : "Início removido")
+            }
             if ("prioridade" in mudancas && mudancas.prioridade !== cartao.prioridade) {
               novo = comAtividade(novo, mudancas.prioridade ? `Prioridade ${rotulosPrioridade[mudancas.prioridade]}` : "Prioridade removida")
             }
@@ -423,6 +426,8 @@ export const useKanban = create<EstadoKanban>()(
                 colunaId: inicial.id,
                 criadoEm: Date.now(),
                 prazo,
+                // O início anda junto com o prazo (o cartão mantém a mesma duração).
+                inicio: cartao.inicio && cartao.prazo && prazo ? somarDias(cartao.inicio, diasEntre(cartao.prazo, prazo)) : null,
                 checklist: cartao.checklist.map((item) => ({ ...item, id: gerarId(), feito: false })),
                 anexos: cartao.anexos.map((anexo) => ({ ...anexo, id: gerarId() })),
                 bloqueadoPor: [],

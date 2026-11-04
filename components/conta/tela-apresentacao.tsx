@@ -13,13 +13,17 @@ import { Button } from "@/components/ui/button"
 export function TelaApresentacao({ aoEscolher }: { aoEscolher: (modo: "entrar" | "cadastro") => void }) {
   return (
     <div className="min-h-dvh bg-night text-paper">
-      <header className="mx-auto flex max-w-content items-center justify-between px-4 py-5 md:px-10">
-        <Logo />
-        <nav aria-label="Conta" className="flex items-center gap-2">
-          <Button variant="ghost" onClick={() => aoEscolher("entrar")}>
+      <header className="mx-auto flex max-w-content items-center justify-between gap-3 px-4 py-5 md:px-10">
+        <Logo className="max-[360px]:[&_.logo-wordmark]:hidden" />
+        {/* Rafael Marques - 04/11/2026 (v1.5a): no celular os botões encolhem para não encostar na borda. */}
+        <nav aria-label="Conta" className="flex shrink-0 items-center gap-1 sm:gap-2">
+          <Button variant="ghost" className="max-sm:px-3" onClick={() => aoEscolher("entrar")}>
             Entrar
           </Button>
-          <Button onClick={() => aoEscolher("cadastro")}>Criar conta grátis</Button>
+          <Button className="max-sm:px-3" onClick={() => aoEscolher("cadastro")}>
+            <span className="sm:hidden">Criar conta</span>
+            <span className="max-sm:hidden">Criar conta grátis</span>
+          </Button>
         </nav>
       </header>
 
@@ -73,7 +77,7 @@ export function TelaApresentacao({ aoEscolher }: { aoEscolher: (modo: "entrar" |
             </div>
 
             {/* M19: a linha do agora atravessa o dia enquanto a demonstração passa pela tela. */}
-            <div aria-hidden="true" className="demo-dia relative mt-16 overflow-hidden rounded-xl border border-line bg-panel p-6">
+            <div aria-hidden="true" className="demo-dia relative mt-16 overflow-hidden rounded-xl border border-line bg-panel p-4 md:p-6">
               <div className="grid grid-cols-6 text-micro text-ink-muted">
                 {["08h", "10h", "12h", "14h", "16h", "18h"].map((hora) => (
                   <span key={hora} className="border-l border-line pl-2">
@@ -82,9 +86,9 @@ export function TelaApresentacao({ aoEscolher }: { aoEscolher: (modo: "entrar" |
                 ))}
               </div>
               <div className="relative mt-4 h-16">
-                <span className="absolute top-0 left-[4%] h-7 w-[20%] rounded-sm border border-line-strong bg-raised px-2 py-1 text-small text-paper">Revisar textos</span>
-                <span className="absolute top-9 left-[38%] h-7 w-[16%] rounded-sm border border-line-strong bg-raised px-2 py-1 text-small text-paper">Almoço</span>
-                <span className="absolute top-0 left-[62%] h-7 w-[22%] rounded-sm border border-line-strong bg-raised px-2 py-1 text-small text-paper">Academia</span>
+                <span className="absolute top-0 left-[4%] h-7 w-[20%] truncate truncate rounded-sm border border-line-strong bg-raised px-2 py-1 text-small text-paper">Revisar textos</span>
+                <span className="absolute top-9 left-[38%] h-7 w-[16%] truncate truncate rounded-sm border border-line-strong bg-raised px-2 py-1 text-small text-paper">Almoço</span>
+                <span className="absolute top-0 left-[62%] h-7 w-[22%] truncate truncate truncate rounded-sm border border-line-strong bg-raised px-2 py-1 text-small text-paper">Academia</span>
                 <span className="demo-dia-agora absolute -top-2 -bottom-2 w-0.5 bg-ember" />
               </div>
             </div>

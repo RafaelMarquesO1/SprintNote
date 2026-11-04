@@ -14,6 +14,7 @@ import { ArrowDownIcon, ArrowUpIcon, CopyIcon, GripVerticalIcon, PlusIcon, Repea
 
 import { comandoPorId, comandosBarra } from "@/components/notas/editor/comandos-barra"
 import { moverNo } from "@/components/notas/editor/extensoes/atalhos"
+import { COMANDOS_DE_LISTA, itemDoCursor, sairDaLista } from "@/components/notas/editor/extensoes/listas"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -58,6 +59,17 @@ export function AlcaBloco({ editor }: { editor: Editor }) {
     const comando = comandoPorId(id)
     if (!node || !comando) return
     entrarNoBloco(editor, pos)
+    // Rafael Marques - 04/11/2026 (v1.5a): item de lista. Virar outra lista troca o tipo (sem desfazer a
+    // lista quando já é do mesmo tipo); virar texto, título, citação ou código tira o item da lista.
+    const item = itemDoCursor(editor)
+    if (item) {
+      const lista = COMANDOS_DE_LISTA[id]
+      if (lista) {
+        if (item.lista.type.name !== lista) (comando.aplicar(editor.chain().focus(), editor) ?? editor.chain()).run()
+        return
+      }
+      sairDaLista(editor)
+    }
     const cadeia = editor.chain().focus()
     if (!["texto", "h1", "h2", "h3", "codigo"].includes(id)) cadeia.setParagraph()
     ;(comando.aplicar(cadeia, editor) ?? cadeia).run()

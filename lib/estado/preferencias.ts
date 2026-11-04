@@ -41,6 +41,13 @@ type EstadoPreferencias = {
   // Rafael Marques - 23/10/2026: id da última novidade que a pessoa viu (null = ainda não viu nenhuma).
   novidadesVistas: string | null
   marcarNovidadesVistas: (id: string) => void
+  // Rafael Marques - 04/11/2026 (v1.5a): dicas de uso (lib/dicas.ts) já vistas, quando a última apareceu
+  // e se a pessoa desligou as dicas automáticas.
+  dicasVistas: string[]
+  ultimaDicaEm: number | null
+  dicasDesligadas: boolean
+  marcarDicaVista: (id: string) => void
+  definirDicasDesligadas: (desligadas: boolean) => void
 }
 
 export const usePreferencias = create<EstadoPreferencias>()(
@@ -51,6 +58,11 @@ export const usePreferencias = create<EstadoPreferencias>()(
       definirFotoPerfil: (foto) => set({ fotoPerfil: foto }),
       novidadesVistas: null,
       marcarNovidadesVistas: (id) => set({ novidadesVistas: id }),
+      dicasVistas: [],
+      ultimaDicaEm: null,
+      dicasDesligadas: false,
+      marcarDicaVista: (id) => set({ dicasVistas: [...new Set([...(get().dicasVistas ?? []), id])], ultimaDicaEm: Date.now() }),
+      definirDicasDesligadas: (desligadas) => set({ dicasDesligadas: desligadas }),
       definirBiblioteca: (mudancas) =>
         set({ biblioteca: { ...preferenciasBibliotecaPadrao, ...get().biblioteca, ...mudancas } }),
     }),

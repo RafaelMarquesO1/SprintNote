@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation"
 import { AnimatePresence, motion } from "motion/react"
-import { useState } from "react"
+import { Fragment, useState } from "react"
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -102,11 +102,11 @@ export function PaginaHabitos() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: direcao * -16 }}
                 transition={{ duration: dur.base, ease: ease.out }}
-                className="w-full min-w-xl border-collapse text-ui"
+                className="w-full border-collapse text-ui sm:min-w-xl"
               >
                 <thead>
                   <tr className="border-b border-line">
-                    <th scope="col" className="px-5 py-3 text-left font-normal text-ink-soft">
+                    <th scope="col" className="px-5 py-3 text-left font-normal text-ink-soft max-sm:hidden">
                       Hábito
                     </th>
                     {semana.map((dia) => {
@@ -116,22 +116,40 @@ export function PaginaHabitos() {
                           key={dia}
                           scope="col"
                           aria-current={ehHoje ? "date" : undefined}
-                          className={cn("w-16 border-t-2 py-3 text-center font-normal", ehHoje ? "border-ember bg-ember-wash text-ember" : "border-transparent text-ink-soft")}
+                          className={cn("border-t-2 py-3 text-center font-normal sm:w-16 max-sm:py-2", ehHoje ? "border-ember bg-ember-wash text-ember" : "border-transparent text-ink-soft")}
                         >
                           <span className="block text-small">{nomesDias[lerChave(dia).getDay()]}</span>
                           <span className={cn("block font-display text-section tabular-nums", ehHoje ? "text-ember" : "text-paper")}>{lerChave(dia).getDate()}</span>
                         </th>
                       )
                     })}
-                    <th scope="col" className="px-5 py-3 text-right font-normal text-ink-soft">
+                    <th scope="col" className="px-5 py-3 text-right font-normal text-ink-soft max-sm:hidden">
                       Sequência
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {habitos.map((habito) => (
-                    <tr key={habito.id} className="border-b border-line last:border-0">
-                      <th scope="row" className="px-5 py-3 text-left font-normal">
+                    <Fragment key={habito.id}>
+                    {/* Rafael Marques - 04/11/2026 (v1.5a): no celular o nome e a sequência ficam numa linha
+                        própria acima dos dias, e os sete dias cabem na tela sem rolar de lado. */}
+                    <tr className="sm:hidden">
+                      <td colSpan={7} className="px-4 pt-3 pb-1">
+                        <button type="button" onClick={() => setAberto(habito.id)} className="flex w-full items-baseline justify-between gap-3 rounded-xs text-left">
+                          <span className="min-w-0">
+                            <span className="block truncate font-semibold text-paper">{habito.nome}</span>
+                            <span className="block text-small text-ink-soft">
+                              {resumoDias(habito.dias)}. {percentualRecente(habito, hoje)}% em 30 dias
+                            </span>
+                          </span>
+                          <span className="shrink-0 text-small text-ink-soft">
+                            <span className="font-display text-section text-paper tabular-nums">{calcularSequencia(habito, hoje)}</span> seguidos
+                          </span>
+                        </button>
+                      </td>
+                    </tr>
+                    <tr className="border-b border-line last:border-0">
+                      <th scope="row" className="px-5 py-3 text-left font-normal max-sm:hidden">
                         <button type="button" onClick={() => setAberto(habito.id)} className="block rounded-xs text-left">
                           <span className="block font-semibold text-paper hover:underline hover:underline-offset-4">{habito.nome}</span>
                           <span className="block text-small text-ink-soft">
@@ -143,7 +161,7 @@ export function PaginaHabitos() {
                         const ehHoje = dia === hoje
                         const vale = valeNoDia(habito, dia)
                         return (
-                          <td key={dia} className={cn("p-0 text-center", ehHoje && "bg-ember-wash")}>
+                          <td key={dia} className={cn("p-0 text-center max-sm:pb-3", ehHoje && "bg-ember-wash")}>
                             {vale && dia <= hoje ? (
                               <CheckButton
                                 variant="habit"
@@ -158,9 +176,9 @@ export function PaginaHabitos() {
                                 role="img"
                                 aria-label={`${habito.nome}, ${nomesDiasCompletos[diaDaSemana(dia)].toLowerCase()} ${lerChave(dia).getDate()}: ainda não chegou`}
                                 title="Programado. Ainda não chegou."
-                                className="mx-auto flex size-11 items-center justify-center"
+                                className="mx-auto flex size-11 items-center justify-center max-[360px]:size-10"
                               >
-                                <span className="size-9 rounded-md border border-dashed border-line-strong" />
+                                <span className="size-9 rounded-md border border-dashed border-line-strong max-[360px]:size-8" />
                               </span>
                             ) : (
                               <span className="text-ink-muted" aria-label="Não programado">
@@ -170,10 +188,11 @@ export function PaginaHabitos() {
                           </td>
                         )
                       })}
-                      <td className="px-5 text-right font-display text-section text-paper">
+                      <td className="px-5 text-right font-display text-section text-paper max-sm:hidden">
                         <AnimatedNumber value={calcularSequencia(habito, hoje)} />
                       </td>
                     </tr>
+                    </Fragment>
                   ))}
                 </tbody>
               </motion.table>
@@ -228,7 +247,7 @@ function NovoHabito({ focar, hoje }: { focar: boolean; hoje: string }) {
             if (erro) setErro(null)
           }}
           placeholder="Novo hábito, por exemplo: meditar 10 min"
-          className="min-w-56 flex-1"
+          className="min-w-56 flex-1 max-sm:basis-full"
         />
         <DayPicker value={dias} onChange={setDias} today={diaDaSemana(hoje)} />
         <Button type="submit">Criar hábito</Button>

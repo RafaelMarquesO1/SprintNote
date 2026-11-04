@@ -20,6 +20,8 @@ export function PainelPersonalizar({
   rotuloBotao = "Personalizar",
   aberto,
   aoMudarAberto,
+  largura = "w-80",
+  restaurarAtivo = true,
   children,
 }: {
   titulo?: string
@@ -31,6 +33,9 @@ export function PainelPersonalizar({
   // Rafael Marques - 26/10/2026: opcional, para a tela fechar o painel (ex.: ao ajustar a foto do Kanban).
   aberto?: boolean
   aoMudarAberto?: (aberto: boolean) => void
+  // Rafael Marques - 04/11/2026 (v1.5a): largura do painel e "Voltar ao padrão" desligado quando nada mudou.
+  largura?: string
+  restaurarAtivo?: boolean
   children: React.ReactNode
 }) {
   return (
@@ -38,7 +43,7 @@ export function PainelPersonalizar({
       <PopoverTrigger render={<Button variant="secondary" size={tamanhoBotao === "sm" ? "sm" : "md"} />}>
         <SlidersHorizontalIcon /> <span className="max-sm:hidden">{rotuloBotao}</span>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 gap-0 p-0">
+      <PopoverContent align="end" className={cn("max-w-[calc(100vw-1rem)] gap-0 p-0", largura)}>
         <PopoverHeader className="border-b px-4 py-3">
           <PopoverTitle>{titulo}</PopoverTitle>
           {descricao && <PopoverDescription>{descricao}</PopoverDescription>}
@@ -46,7 +51,7 @@ export function PainelPersonalizar({
         <div className="rolagem-fina max-h-[min(70vh,560px)] space-y-5 overflow-y-auto px-4 py-4">{children}</div>
         {aoRestaurar && (
           <div className="border-t px-2 py-2">
-            <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" onClick={aoRestaurar}>
+            <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" onClick={aoRestaurar} disabled={!restaurarAtivo}>
               <RotateCcwIcon /> Voltar ao padrão
             </Button>
           </div>

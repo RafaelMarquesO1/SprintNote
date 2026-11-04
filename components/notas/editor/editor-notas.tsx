@@ -31,6 +31,7 @@ import { ColarMarkdown } from "@/components/notas/editor/extensoes/colar"
 import { Destaque } from "@/components/notas/editor/extensoes/destaque"
 import { Etiquetas } from "@/components/notas/editor/extensoes/etiquetas"
 import { LinkNota } from "@/components/notas/editor/extensoes/link-nota"
+import { ListasAntes, ListasDepois } from "@/components/notas/editor/extensoes/listas"
 import { SugestaoBarra, SugestaoLinks, SugestaoPrazos, SugestaoTags } from "@/components/notas/editor/extensoes/sugestoes-notas"
 import { ExtensaoGanchos, ganchosDo } from "@/components/notas/editor/ganchos"
 import { documentoParaMarkdown, markdownParaDocumento, type NoDoc } from "@/lib/editor/markdown-documento"
@@ -60,6 +61,8 @@ function criarExtensoes() {
     Etiquetas,
     BlocoAtual,
     Atalhos,
+    ListasAntes,
+    ListasDepois,
     ColarMarkdown,
     CitacaoCartao,
     ExtensaoGanchos,

@@ -2,10 +2,11 @@
 
 import Link from "next/link"
 import { useState } from "react"
-import { CircleUserRoundIcon, InfoIcon, LogOutIcon, MoonIcon, SparklesIcon } from "lucide-react"
+import { CircleUserRoundIcon, InfoIcon, LightbulbIcon, LogOutIcon, MoonIcon, SparklesIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 import { useConta } from "@/components/conta/portao-conta"
+import { abrirDicaDeUso } from "@/components/dicas/dica-ocasional"
 import { abrirHistoricoDeNovidades } from "@/components/novidades/cartao-novidades"
 import { SyncStatus } from "@/components/shell/sync-status"
 import { PersonAvatar } from "@/components/ui/avatar-stack"
@@ -64,6 +65,9 @@ export function MenuAvatar({ recolhido = false }: { recolhido?: boolean }) {
         </DropdownMenuItem>
         <DropdownMenuItem onClick={abrirHistoricoDeNovidades}>
           <SparklesIcon /> O que há de novo
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={abrirDicaDeUso}>
+          <LightbulbIcon /> Dicas de uso
         </DropdownMenuItem>
         <DropdownMenuItem render={<Link href="/creditos" />}>
           <InfoIcon /> Créditos

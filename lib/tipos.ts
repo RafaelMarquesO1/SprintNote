@@ -163,6 +163,9 @@ export type CartaoKanban = {
   criadoEm: number
   etiquetas: string[]
   prazo: string | null
+  // Rafael Marques - 04/11/2026 (v1.5a): data de início opcional (AAAA-MM-DD). Com prazo, o cartão
+  // ocupa todos os dias entre as duas datas no calendário. Só em quadros pessoais por enquanto.
+  inicio?: string | null
   cor: string | null
   checklist: ItemChecklist[]
   prioridade: Prioridade | null

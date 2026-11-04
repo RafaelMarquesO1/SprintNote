@@ -145,7 +145,8 @@ export function PaginaTarefas() {
 
       <div className="space-y-4">
         <Tabs value={filtro} onValueChange={(valor) => setFiltro(valor as Filtro)}>
-          <TabsList>
+          {/* Rafael Marques - 04/11/2026 (v1.5a): no celular as quatro abas dividem a largura (antes "Concluídas" era cortada). */}
+          <TabsList className="max-sm:w-full max-sm:[&>[data-slot=tabs-trigger]]:flex-1 max-sm:[&>[data-slot=tabs-trigger]]:px-1 max-sm:[&>[data-slot=tabs-trigger]]:gap-1 max-sm:[&>[data-slot=tabs-trigger]]:text-small">
             <TabsTrigger value="hoje">
               Hoje <TabsCount>{deHoje.length}</TabsCount>
             </TabsTrigger>
@@ -275,9 +276,16 @@ function Linha({ item, hoje, aoConcluir, aoAbrir }: { item: ItemTarefa; hoje: st
             setTexto(item.titulo)
             setEditando(true)
           }}
-          className={cn("min-w-0 flex-1 truncate text-left text-ui", item.concluida ? "text-ink-soft" : "text-paper", lista && "cursor-text")}
+          className={cn("min-w-0 flex-1 text-left text-ui sm:truncate", item.concluida ? "text-ink-soft" : "text-paper", lista && "cursor-text")}
         >
-          {item.titulo}
+          <span className="line-clamp-2 sm:hidden">{item.titulo}</span>
+          <span className="max-sm:hidden">{item.titulo}</span>
+          {/* No celular o prazo fica embaixo do título (ao lado, apertava o título até sumir). */}
+          {item.prazo ? (
+            <span className="mt-0.5 block sm:hidden">
+              <Prazo prazo={item.prazo} hoje={hoje} concluida={item.concluida} />
+            </span>
+          ) : null}
         </button>
       )}
       <div className="hidden shrink-0 items-center gap-1.5 sm:flex">
@@ -288,7 +296,9 @@ function Linha({ item, hoje, aoConcluir, aoAbrir }: { item: ItemTarefa; hoje: st
           </Link>
         ) : null}
       </div>
-      <Prazo prazo={item.prazo} hoje={hoje} concluida={item.concluida} />
+      <span className="max-sm:hidden">
+        <Prazo prazo={item.prazo} hoje={hoje} concluida={item.concluida} />
+      </span>
       {item.origem === "lista" ? <PriorityIcon priority={item.tarefa.prioridade} label /> : <span className="size-4" />}
       {lista ? (
         <IconButton aria-label={`Detalhes de ${item.titulo}`} size="sm" onClick={aoAbrir} className="opacity-60 group-hover:opacity-100 focus-visible:opacity-100">
@@ -331,7 +341,7 @@ function NovaTarefa({ listas, prazoPadrao, focar }: { listas: string[]; prazoPad
         value={titulo}
         onChange={(evento) => setTitulo(evento.target.value)}
         placeholder="Nova tarefa"
-        className="min-w-48 flex-1 px-2"
+        className="min-w-48 flex-1 px-2 max-sm:basis-full"
       />
       <DateField value={prazo} onChange={setPrazo} />
       <PriorityPicker value={prioridade} onChange={setPrioridade} />

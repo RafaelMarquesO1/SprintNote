@@ -56,7 +56,7 @@ export function CapturaRapida() {
   return (
     <div className="space-y-2">
       <form
-        className="flex items-center gap-3 rounded-lg border border-line bg-panel p-1.5 pr-4 focus-within:border-line-strong"
+        className="flex items-center gap-3 rounded-lg border border-line bg-panel p-1.5 pr-4 focus-within:border-line-strong max-[400px]:flex-wrap max-[400px]:gap-1.5 max-[400px]:pr-1.5"
         onSubmit={(evento) => {
           evento.preventDefault()
           criar()
@@ -79,7 +79,7 @@ export function CapturaRapida() {
           aria-label={tipo === "tarefa" ? "Anotar uma tarefa para hoje" : "Título da nota nova"}
           aria-describedby="captura-dica"
           placeholder={tipo === "tarefa" ? "Anotar uma tarefa para hoje" : "Título da nota nova"}
-          className="h-control-sm"
+          className="h-control-sm max-[400px]:basis-full max-[400px]:px-2"
         />
         <span id="captura-dica" className="hidden shrink-0 items-center gap-1.5 text-micro text-ink-muted sm:flex">
           <Kbd>Enter</Kbd> para salvar

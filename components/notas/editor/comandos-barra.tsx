@@ -31,6 +31,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 
+import { COMANDOS_DE_LISTA, itemDoCursor, sairDaLista } from "@/components/notas/editor/extensoes/listas"
 import { ganchosDo } from "@/components/notas/editor/ganchos"
 import type { ItemSugestao } from "@/components/notas/editor/lista-sugestoes"
 import { semAcento } from "@/lib/links-wiki"
@@ -50,13 +51,37 @@ export type ComandoBarra = {
 }
 
 // Apaga o "/texto" e deixa o cursor num bloco vazio onde o comando possa agir.
-function prepararBloco(editor: Editor, range: Range) {
+// Devolve false quando o comando não precisa mais rodar (ex.: "Lista" dentro de uma lista igual).
+// Rafael Marques - 04/11/2026 (v1.5a): dentro de um item de lista o bloco novo nasce logo abaixo do
+// item (antes ia parar depois da lista inteira), como no Notion.
+function prepararBloco(editor: Editor, range: Range, id: string) {
   editor.chain().focus().deleteRange(range).run()
   const { $from } = editor.state.selection
+  const item = itemDoCursor(editor)
+  if (item) {
+    const vazio = $from.parent.content.size === 0
+    const lista = COMANDOS_DE_LISTA[id]
+    if (lista) {
+      // Item com texto: abre um item novo logo abaixo, na mesma lista.
+      if (!vazio) {
+        const fim = $from.after(item.profundidade)
+        editor.chain().insertContentAt(fim, { type: item.no.type.name, content: [{ type: "paragraph" }] }).focus(fim + 2).run()
+      }
+      return item.lista.type.name !== lista
+    }
+    // Item vazio virando outro bloco: sai da lista. Item com texto: o bloco entra logo abaixo do texto dele.
+    if (vazio) sairDaLista(editor)
+    else {
+      const fim = $from.after($from.depth)
+      editor.chain().insertContentAt(fim, { type: "paragraph" }).focus(fim + 1).run()
+    }
+    return true
+  }
   if ($from.parent.content.size > 0) {
     const fim = $from.after(1)
     editor.chain().insertContentAt(fim, { type: "paragraph" }).focus(fim + 1).run()
   }
+  return true
 }
 
 const destaque = (variante: VarianteDestaque, rotulo: string, descricao: string, icone: LucideIcon, palavras: string[]): ComandoBarra => ({
@@ -118,8 +143,9 @@ export function itensDeComando(consulta: string): ItemSugestao[] {
       atalho: comando.atalho,
       icone: <comando.icone className="size-4" />,
       executar: (editor, range) => {
-        if (comando.bloco) prepararBloco(editor, range)
-        else editor.chain().focus().deleteRange(range).run()
+        if (comando.bloco) {
+          if (!prepararBloco(editor, range, comando.id)) return
+        } else editor.chain().focus().deleteRange(range).run()
         const cadeia = editor.chain().focus()
         const resultado = comando.aplicar(cadeia, editor)
         ;(resultado ?? cadeia).run()

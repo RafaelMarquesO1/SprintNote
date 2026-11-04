@@ -19,7 +19,7 @@ function Tabs({ className, orientation = "horizontal", ...props }: TabsPrimitive
 }
 
 const tabsListVariants = cva(
-  "group/tabs-list relative inline-flex w-fit items-center text-ink-soft group-data-vertical/tabs:h-fit group-data-vertical/tabs:flex-col",
+  "group/tabs-list relative inline-flex w-fit max-w-full items-center overflow-x-auto overflow-y-hidden text-ink-soft [scrollbar-width:none] [&::-webkit-scrollbar]:hidden group-data-vertical/tabs:h-fit group-data-vertical/tabs:flex-col",
   {
     variants: {
       variant: {
@@ -57,7 +57,7 @@ function TabsTrigger({ className, ...props }: TabsPrimitive.Tab.Props) {
     <TabsPrimitive.Tab
       data-slot="tabs-trigger"
       className={cn(
-        "relative z-10 inline-flex h-full items-center justify-center gap-1.5 rounded-sm px-3 text-ui font-medium whitespace-nowrap text-ink-soft transition-colors duration-fast outline-none hover:text-paper disabled:pointer-events-none disabled:opacity-40 data-active:text-paper group-data-[variant=line]/tabs-list:px-0 group-data-vertical/tabs:w-full group-data-vertical/tabs:justify-start [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "relative z-10 inline-flex h-full items-center justify-center gap-1.5 shrink-0 rounded-sm px-3 text-ui font-medium whitespace-nowrap max-sm:px-2 text-ink-soft transition-colors duration-fast outline-none hover:text-paper disabled:pointer-events-none disabled:opacity-40 data-active:text-paper group-data-[variant=line]/tabs-list:px-0 group-data-vertical/tabs:w-full group-data-vertical/tabs:justify-start [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className
       )}
       {...props}

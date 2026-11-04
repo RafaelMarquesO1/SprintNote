@@ -26,6 +26,11 @@ export function somarDias(chave: string, dias: number) {
   return chaveData(data)
 }
 
+// Quantos dias vão de "de" até "ate" (negativo se "ate" vier antes).
+export function diasEntre(de: string, ate: string) {
+  return Math.round((lerChave(ate).getTime() - lerChave(de).getTime()) / 86_400_000)
+}
+
 export function diaDaSemana(chave: string) {
   return lerChave(chave).getDay()
 }
