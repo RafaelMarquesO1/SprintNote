@@ -29,12 +29,32 @@ import {
 const TRANSFORMAVEIS = ["texto", "h1", "h2", "h3", "lista", "numerada", "tarefas", "citacao", "codigo"]
 const TIPOS_DE_TEXTO = ["paragraph", "heading", "bulletList", "orderedList", "taskList", "listItem", "taskItem", "blockquote", "codeBlock"]
 
-type BlocoAtual = { node: NoProseMirror | null; pos: number }
+const NESTED = { edgeDetection: "none" } as const
+
+type BlocoAtual ={ node: NoProseMirror | null; pos: number }
 
 // Põe o cursor dentro do bloco indicado (para os comandos de formatação agirem nele).
 function entrarNoBloco(editor: Editor, pos: number) {
   const { state, view } = editor
   view.dispatch(state.tr.setSelection(TextSelection.near(state.doc.resolve(Math.min(pos + 1, state.doc.content.size)), 1)))
+}
+
+// Rafael Marques - 05/11/2026 (v1.5c): o marcador (•, ◦, 1.) é desenhado fora da caixa do item, então
+// a alça colada no item ficava por cima dele e do começo da linha. Em item de lista com marcador,
+// a alça passa a se alinhar pela borda da lista (antes do marcador). Tarefas têm a caixinha dentro
+// do item e seguem como estão.
+function referenciaDoBloco(editor: Editor, { node, pos }: BlocoAtual) {
+  if (!node || node.type.name !== "listItem" || pos < 0) return null
+  const item = editor.view.nodeDOM(pos)
+  const lista = item instanceof HTMLElement ? item.parentElement : null
+  if (!(item instanceof HTMLElement) || !lista) return null
+  return {
+    getBoundingClientRect: () => {
+      const caixa = item.getBoundingClientRect()
+      const esquerda = Math.min(caixa.left, lista.getBoundingClientRect().left)
+      return new DOMRect(esquerda, caixa.top, caixa.right - esquerda, caixa.height)
+    },
+  }
 }
 
 export function AlcaBloco({ editor }: { editor: Editor }) {
@@ -90,7 +110,11 @@ export function AlcaBloco({ editor }: { editor: Editor }) {
   return (
     <DragHandle
       editor={editor}
-      nested
+      // Rafael Marques - 05/11/2026 (v1.5c): sem a "detecção de borda". Com ela, o mouse na metade de cima
+      // de um item aninhado escolhia o item pai e a alça pulava para a linha de cima. O pai segue
+      // arrastável pela própria linha.
+      nested={NESTED}
+      getReferencedVirtualElement={() => referenciaDoBloco(editor, atual.current)}
       onNodeChange={({ node, pos }) => {
         atual.current = { node, pos }
         setTipo(node?.type.name ?? null)

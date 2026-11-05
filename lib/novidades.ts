@@ -33,6 +33,20 @@ export const ordemTipos: TipoNovidade[] = ["novo", "melhorado", "corrigido"]
 
 // Mais recente primeiro.
 export const NOVIDADES: Novidade[] = [
+  // Rafael Marques - 05/11/2026: versão 1.5c (ajustes de design nas anotações e consultas mais rápidas).
+  {
+    id: "2026-11-05",
+    versao: "1.5c",
+    data: "05/11/2026",
+    titulo: "Correções nas anotações e consultas mais rápidas",
+    resumo: "Arrumei algumas inconsistências de design que estavam ocorrendo nas anotações e fazia com que você não conseguisse selecionar a linha pra modificar em alguns momentos. Realizado também uma otimização nas consultas do banco de dados.",
+    itens: [
+      { tipo: "corrigido", titulo: "Alça das listas", texto: "A alça de arrastar (+ e ⋮⋮) ficava por cima do marcador da lista e às vezes pulava para a linha de cima. Agora fica antes do marcador e na linha certa." },
+      { tipo: "corrigido", titulo: "Título centralizado", texto: "Caderno, Tags e Editada ficam no mesmo eixo do ícone e do título, e as tags se reorganizam conforme você adiciona mais." },
+      { tipo: "corrigido", titulo: "Excluir comentários", texto: "Nos quadros de equipe, só quem escreveu o comentário pode apagá-lo." },
+      { tipo: "melhorado", titulo: "Banco de dados", texto: "Otimização nas consultas do banco de dados." },
+    ],
+  },
   // Rafael Marques - 04/11/2026: versão 1.5b (editar comentários e descrição formatada na frente do cartão).
   {
     id: "2026-11-04-b",

@@ -446,6 +446,11 @@ function TelaNota({ nota, notas }: { nota: Nota; notas: Nota[] }) {
     : undefined
   const editada = new Date(nota.atualizadoEm)
   const hojeTexto = new Date().toDateString() === editada.toDateString()
+  // Rafael Marques - 05/11/2026 (v1.5c): linha de propriedade. Alinhada à esquerda, some na grade de
+  // duas colunas; centralizada, rótulo e valor ficam juntos no meio e quebram de linha se precisar.
+  const linhaPropriedade = visual.tituloCentralizado
+    ? "flex max-w-full flex-wrap items-center justify-center gap-x-4 gap-y-1.5"
+    : "contents"
   const editadaTexto = `${hojeTexto ? "Hoje" : editada.toLocaleDateString("pt-BR", { day: "numeric", month: "short" })}, ${editada.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
 
   // Rafael Marques - 04/11/2026 (v1.5a): a nota ocupa a largura toda do app (antes ficava presa na coluna
@@ -561,24 +566,33 @@ function TelaNota({ nota, notas }: { nota: Nota; notas: Nota[] }) {
             <CampoTitulo key={nota.id} nota={nota} centralizado={visual.tituloCentralizado} fonte={visual.fonte} aoConfirmar={() => setPedidoFocoTexto((valor) => valor + 1)} />
 
             {/* Rafael Marques - 04/11/2026 (v1.5a): com o título centralizado, as propriedades viram um
-                bloco centralizado (rótulos à direita, valores à esquerda) em vez de herdar o texto centralizado. */}
+                bloco centralizado (rótulos à direita, valores à esquerda) em vez de herdar o texto centralizado.
+                Rafael Marques - 05/11/2026 (v1.5c): centralizado, cada linha (rótulo + valor) se centraliza sozinha
+                no eixo do ícone e do título, e as tags ocupam a largura toda, quebrando de linha a partir do centro
+                conforme a pessoa adiciona mais (antes ficavam presas numa coluna estreita e o bloco pendia para a esquerda). */}
             <div className="mt-6 border-b border-line pb-6">
               <dl
                 className={cn(
-                  "grid items-center gap-x-4 gap-y-2.5 text-left font-sans text-ui",
-                  visual.tituloCentralizado ? "mx-auto w-fit max-w-full grid-cols-[auto_minmax(0,22rem)]" : "grid-cols-[7rem_1fr]"
+                  "gap-x-4 gap-y-2.5 text-left font-sans text-ui",
+                  visual.tituloCentralizado ? "flex flex-col items-center" : "grid grid-cols-[7rem_1fr] items-center"
                 )}
               >
-                <dt className={cn("text-ink-soft", visual.tituloCentralizado && "text-right")}>Caderno</dt>
-                <dd className="text-paper">{livro ? <Link href={`/notas?livro=${livro.id}`} className="hover:underline hover:underline-offset-4">{livro.titulo}</Link> : "Sem caderno"}</dd>
-                <dt className={cn("text-ink-soft", visual.tituloCentralizado && "text-right")}>Tags</dt>
-                <dd>
-                  <LinhaTags nota={nota} />
-                </dd>
-                <dt className={cn("text-ink-soft", visual.tituloCentralizado && "text-right")}>Editada</dt>
-                <dd className="text-paper" suppressHydrationWarning>
-                  {editadaTexto}
-                </dd>
+                <div className={linhaPropriedade}>
+                  <dt className="shrink-0 text-ink-soft">Caderno</dt>
+                  <dd className="text-paper">{livro ? <Link href={`/notas?livro=${livro.id}`} className="hover:underline hover:underline-offset-4">{livro.titulo}</Link> : "Sem caderno"}</dd>
+                </div>
+                <div className={linhaPropriedade}>
+                  <dt className="shrink-0 text-ink-soft">Tags</dt>
+                  <dd className="min-w-0">
+                    <LinhaTags nota={nota} centralizado={visual.tituloCentralizado} />
+                  </dd>
+                </div>
+                <div className={linhaPropriedade}>
+                  <dt className="shrink-0 text-ink-soft">Editada</dt>
+                  <dd className="text-paper" suppressHydrationWarning>
+                    {editadaTexto}
+                  </dd>
+                </div>
               </dl>
             </div>
           </div>

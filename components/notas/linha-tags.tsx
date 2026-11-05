@@ -12,7 +12,8 @@ import type { Nota } from "@/lib/tipos"
 // Rafael Marques - 21/10/2026
 // Tags da nota logo abaixo do título. O "+" abre um campo com sugestões das
 // tags já usadas; as #tags escritas no texto também aparecem aqui.
-export function LinhaTags({ nota }: { nota: Nota }) {
+// Rafael Marques - 05/11/2026 (v1.5c): "centralizado" (título centralizado) quebra as tags a partir do centro.
+export function LinhaTags({ nota, centralizado = false }: { nota: Nota; centralizado?: boolean }) {
   const notas = useNotas((estado) => estado.notas)
   const adicionarTag = useNotas((estado) => estado.adicionarTag)
   const removerTag = useNotas((estado) => estado.removerTag)
@@ -40,7 +41,7 @@ export function LinhaTags({ nota }: { nota: Nota }) {
     "group/tag flex h-6 items-center gap-0.5 rounded-md bg-muted px-2 text-xs text-muted-foreground transition-colors hover:text-foreground"
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5" aria-label="Tags da nota">
+    <div className={cn("flex flex-wrap items-center gap-1.5", centralizado && "justify-center")} aria-label="Tags da nota">
       {daPropriedade.map((tag) => (
         <span key={tag} className={classeEtiqueta}>
           <Link href={`/tags?tag=${encodeURIComponent(tag)}`} className="flex items-center gap-0.5">

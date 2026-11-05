@@ -674,10 +674,10 @@ export async function aplicarOperacoes(quadroId: string, usuario: Usuario, bruto
   }
   const comentariosExcluir = lista(comentarios.excluir, 200).map(id)
   if (comentariosExcluir.length > 0) {
-    // Cada pessoa apaga o que escreveu; o dono da equipe apaga qualquer um.
+    // Rafael Marques - 05/11/2026 (v1.5c): só quem escreveu apaga o próprio comentário (nem o dono da equipe).
     consultas.push(sql`
       DELETE FROM comentarios_cartao WHERE quadro_id = ${quadroId} AND id = ANY(${comentariosExcluir}::text[])
-        AND (autor_id = ${usuario.id} OR ${quadro.papel === "dono"})
+        AND autor_id = ${usuario.id}
     `)
   }
   // Rafael Marques - 04/11/2026 (v1.5b): só o autor edita o próprio comentário.

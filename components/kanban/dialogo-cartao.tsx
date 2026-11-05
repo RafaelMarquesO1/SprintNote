@@ -412,7 +412,6 @@ function Comentarios({ cartao }: { cartao: CartaoKanban }) {
   // (as mesmas regras do servidor). Quadro pessoal: todos os comentários são da própria pessoa.
   const quadroId = useKanban((estado) => estado.colunas.find((coluna) => coluna.id === cartao.colunaId)?.quadroId)
   const ehDeEquipe = useKanban((estado) => Boolean(estado.quadros.find((quadro) => quadro.id === quadroId)?.equipeId))
-  const souDono = useEquipes((estado) => (quadroId ? estado.papelDoQuadro[quadroId] === "dono" : false))
 
   function enviar() {
     if (!texto.trim()) return
@@ -455,7 +454,8 @@ function Comentarios({ cartao }: { cartao: CartaoKanban }) {
               cartaoId={cartao.id}
               comentario={comentario}
               meu={comentario.autorId === autor.id}
-              podeExcluir={!ehDeEquipe || souDono || comentario.autorId === autor.id}
+              // Rafael Marques - 05/11/2026 (v1.5c): na equipe, só o autor vê a lixeira do comentário.
+              podeExcluir={!ehDeEquipe || comentario.autorId === autor.id}
               foto={foto}
               agora={agora}
             />
