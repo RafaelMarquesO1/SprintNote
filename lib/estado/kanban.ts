@@ -84,6 +84,8 @@ type EstadoKanban = {
   arquivarCartao: (id: string, arquivar: boolean) => void
   comentarCartao: (id: string, texto: string, autor: { id: string; nome: string }) => void
   excluirComentario: (cartaoId: string, comentarioId: string) => void
+  // Rafael Marques - 04/11/2026 (v1.5b): o autor corrige o texto de um comentário.
+  editarComentario: (cartaoId: string, comentarioId: string, texto: string) => void
   // Marca como concluído (vai para a coluna de concluídos) ou reabre.
   concluirCartao: (id: string, concluir: boolean) => void
   // Move o cartão para a coluna, antes do cartão "antesDeId" (ou no fim).
@@ -373,6 +375,23 @@ export const useKanban = create<EstadoKanban>()(
         set({
           cartoes: get().cartoes.map((cartao) =>
             cartao.id === id ? { ...cartao, comentarios: [...cartao.comentarios, comentario] } : cartao
+          ),
+        })
+      },
+
+      editarComentario: (cartaoId, comentarioId, texto) => {
+        const conteudo = texto.trim()
+        if (!conteudo) return
+        set({
+          cartoes: get().cartoes.map((cartao) =>
+            cartao.id === cartaoId
+              ? {
+                  ...cartao,
+                  comentarios: cartao.comentarios.map((item) =>
+                    item.id === comentarioId && item.texto !== conteudo ? { ...item, texto: conteudo, editadoEm: Date.now() } : item
+                  ),
+                }
+              : cartao
           ),
         })
       },

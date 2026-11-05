@@ -808,6 +808,18 @@ select optgroup {
 .editor-notas :is(th, td), .markdown :is(th, td) { overflow-wrap: break-word; word-break: normal; }
 
 
+/* Rafael Marques - 04/11/2026 (v1.5b): descrição formatada na frente do cartão. Tudo no tamanho do texto,
+   sem espaços grandes, cerca de três linhas e um esmaecido no fim. Imagens e tabelas ficam só no cartão aberto. */
+.descricao-cartao { max-height: calc(1.5em * 3); overflow: hidden; line-height: 1.5; overflow-wrap: anywhere; margin: 0;
+  -webkit-mask-image: linear-gradient(to bottom, #000 60%, transparent); mask-image: linear-gradient(to bottom, #000 60%, transparent); }
+.descricao-cartao :is(p, ul, ol, blockquote, pre, h1, h2, h3, h4, h5, h6) { margin: 0; font-size: inherit; line-height: inherit; }
+.descricao-cartao :is(h1, h2, h3, h4, h5, h6, strong) { font-weight: 600; color: var(--color-ink); }
+.descricao-cartao :is(ul, ol) { padding-left: 1.1rem; }
+.descricao-cartao li { margin: 0; }
+.descricao-cartao :is(img, table, hr, .tabela-rolavel, .diagrama-mermaid) { display: none; }
+.descricao-cartao pre { padding: 0; background: transparent; }
+.descricao-cartao a { color: inherit; }
+
 /* Rafael Marques - 26/10/2026: animações do Kanban (colunas entram em cascata, cartões logo depois,
    o fundo esmaece ao trocar). Quem pede menos movimento no sistema não vê nenhuma. */
 @keyframes kanban-entrar { from { opacity: 0; transform: translateY(12px) scale(0.98); } }

@@ -141,6 +141,8 @@ export type ComentarioCartao = {
   criadoEm: number
   autorId: string
   autorNome: string
+  // Rafael Marques - 04/11/2026 (v1.5b): quando o autor editou o texto (sem o campo = nunca editado).
+  editadoEm?: number
 }
 
 // Histórico automático do cartão ("Movido de A fazer para Concluído").

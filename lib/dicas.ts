@@ -26,6 +26,14 @@ export const INTERVALO_DICAS = 2 * 24 * 60 * 60 * 1000
 export const ESPERA_DICA = 40 * 1000
 
 export const DICAS: Dica[] = [
+  // v1.5b
+  {
+    id: "editar-comentario",
+    versao: "1.5b",
+    titulo: "Errou no comentário?",
+    texto: "Passe o mouse no seu comentário do cartão e use o lápis para corrigir. Ctrl+Enter salva.",
+    rota: "/kanban",
+  },
   // v1.5a
   {
     id: "cartao-data-inicio",

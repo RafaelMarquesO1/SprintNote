@@ -304,6 +304,8 @@ export function QuadroKanban() {
   const responsavelFiltrado = equipeDoQuadro?.membros.find((membro) => membro.id === filtroResp) ?? null
   const filtroEMeu = responsavelFiltrado !== null && responsavelFiltrado.id === meuId
   const meuPapel = quadro.equipeId ? papelDoQuadro[quadro.id] : undefined
+  // Rafael Marques - 04/11/2026 (v1.5b): em quadro de equipe, só o dono troca o fundo.
+  const podeMudarFundo = !quadro.equipeId || meuPapel === "dono"
   const membrosDoQuadro = equipeDoQuadro?.membros ?? []
   // "Por pessoa" só faz sentido em quadro de equipe.
   const raia: RaiaKanban = raiaEscolhida === "responsavel" && !equipeDoQuadro ? "nenhuma" : raiaEscolhida
@@ -585,11 +587,15 @@ export function QuadroKanban() {
               tamanhoBotao="sm"
               aoRestaurar={() => {
                 definirExibicao(quadro.id, exibicaoPadrao)
-                atualizarQuadro(quadro.id, { fundo: null, imagemFundo: null })
+                if (podeMudarFundo) atualizarQuadro(quadro.id, { fundo: null, imagemFundo: null })
               }}
             >
               <SecaoPersonalizar titulo="Fundo do quadro">
-                <SeletorFundo fundo={quadro.fundo} imagem={quadro.imagemFundo} aoMudar={(mudancas) => atualizarQuadro(quadro.id, mudancas)} aoAjustarFoto={(arquivo) => void ajustarFoto(arquivo)} />
+                {podeMudarFundo ? (
+                  <SeletorFundo fundo={quadro.fundo} imagem={quadro.imagemFundo} aoMudar={(mudancas) => atualizarQuadro(quadro.id, mudancas)} aoAjustarFoto={(arquivo) => void ajustarFoto(arquivo)} />
+                ) : (
+                  <p className="text-small text-ink-soft">Só o dono da equipe muda o fundo deste quadro.</p>
+                )}
                 {avisoFoto && !rascunhoFoto && (
                   <p role="alert" className="text-small text-paper">
                     {avisoFoto}

@@ -34,6 +34,7 @@ import { membroPorId, useEquipes } from "@/lib/estado/equipes"
 import { alternarFiltroPorResponsavel, useFiltroAtribuidos } from "@/lib/estado/filtro-atribuidos"
 import { exibicaoPadrao, useKanban, useNumeroDoCartao } from "@/lib/estado/kanban"
 import { useNotas } from "@/lib/estado/notas"
+import { ConteudoMarkdown } from "@/components/notas/visualizacao-markdown"
 import { BarrasComplexidade } from "@/components/kanban/extras-cartao"
 import { complexidadeDe, rotuloComplexidade } from "@/lib/kanban/complexidade"
 import { descreverRecorrencia } from "@/lib/kanban/recorrencia"
@@ -157,7 +158,11 @@ export function ConteudoCartao({
         </div>
 
         {exibicao.descricao && cartao.descricao && !concluido && (
-          <p className="line-clamp-3 text-small whitespace-pre-line text-ink-soft">{cartao.descricao}</p>
+          // Rafael Marques - 04/11/2026 (v1.5b): a descrição aparece formatada (negrito, listas, links...) em vez do
+          // Markdown cru; mostra umas três linhas e esmaece. O clique continua abrindo o cartão.
+          <div className="descricao-cartao markdown pointer-events-none text-small text-ink-soft" aria-hidden="true">
+            <ConteudoMarkdown texto={cartao.descricao} />
+          </div>
         )}
 
         {exibicao.checklist === "itens" && cartao.checklist.length > 0 && (

@@ -114,21 +114,26 @@ export function calcularOperacoes(base: FotoQuadro, atual: FotoQuadro): Operacoe
   const baseDoCartao = new Map(base.cartoes.map((cartao) => [cartao.id, cartao]))
   const comentariosInserir: { id: string; cartaoId: string; texto: string }[] = []
   const comentariosExcluir: string[] = []
+  const comentariosEditar: { id: string; texto: string }[] = []
   const atividadeInserir: { id: string; cartaoId: string; texto: string }[] = []
   for (const cartao of atual.cartoes) {
     const anterior = baseDoCartao.get(cartao.id)
     const comentariosAntes = new Set(anterior?.comentarios.map((comentario) => comentario.id))
     const atividadeAntes = new Set(anterior?.atividade.map((item) => item.id))
     const comentariosAgora = new Set(cartao.comentarios.map((comentario) => comentario.id))
+    const textoAntes = new Map(anterior?.comentarios.map((comentario) => [comentario.id, comentario.texto]))
     for (const comentario of cartao.comentarios) {
       if (!comentariosAntes.has(comentario.id)) comentariosInserir.push({ id: comentario.id, cartaoId: cartao.id, texto: comentario.texto })
+      else if (textoAntes.get(comentario.id) !== comentario.texto) comentariosEditar.push({ id: comentario.id, texto: comentario.texto })
     }
     for (const comentario of anterior?.comentarios ?? []) if (!comentariosAgora.has(comentario.id)) comentariosExcluir.push(comentario.id)
     for (const item of cartao.atividade) {
       if (!atividadeAntes.has(item.id)) atividadeInserir.push({ id: item.id, cartaoId: cartao.id, texto: item.texto })
     }
   }
-  if (comentariosInserir.length > 0 || comentariosExcluir.length > 0) ops.comentarios = { inserir: comentariosInserir, excluir: comentariosExcluir }
+  if (comentariosInserir.length > 0 || comentariosExcluir.length > 0 || comentariosEditar.length > 0) {
+    ops.comentarios = { inserir: comentariosInserir, excluir: comentariosExcluir, ...(comentariosEditar.length > 0 && { editar: comentariosEditar }) }
+  }
   if (atividadeInserir.length > 0) ops.atividade = { inserir: atividadeInserir }
 
   return Object.keys(ops).length > 0 ? ops : null

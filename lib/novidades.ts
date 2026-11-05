@@ -33,6 +33,20 @@ export const ordemTipos: TipoNovidade[] = ["novo", "melhorado", "corrigido"]
 
 // Mais recente primeiro.
 export const NOVIDADES: Novidade[] = [
+  // Rafael Marques - 04/11/2026: versão 1.5b (editar comentários e descrição formatada na frente do cartão).
+  {
+    id: "2026-11-04-b",
+    versao: "1.5b",
+    data: "04/11/2026",
+    titulo: "Comentários que dá para corrigir",
+    resumo: "Errou no comentário? Agora dá para editar. E a descrição do cartão aparece formatada no quadro.",
+    itens: [
+      { tipo: "novo", titulo: "Editar comentários", texto: "O lápis ao lado da lixeira abre o comentário para corrigir. Ctrl+Enter salva, Esc cancela e o comentário ganha a marca \"editado\". Só quem escreveu pode editar." },
+      { tipo: "melhorado", titulo: "Fundo do quadro de equipe", texto: "Só o dono da equipe troca o fundo do quadro. Para os outros membros, as Opções do quadro avisam isso no lugar das escolhas." },
+      { tipo: "corrigido", titulo: "Descrição na frente do cartão", texto: "Aparecia com o Markdown cru (**negrito**, listas com -). Agora aparece formatada, com umas três linhas e um esmaecido no fim." },
+      { tipo: "corrigido", titulo: "Excluir comentários", texto: "Nos quadros de equipe, a lixeira só aparece para quem escreveu o comentário e para o dono da equipe. Antes aparecia para todos, e o comentário sumia da tela sem ter sido apagado." },
+    ],
+  },
   // Rafael Marques - 04/11/2026: versão 1.5a (Aparência da nota, listas, prévia de cartões, data de início e dicas).
   {
     id: "2026-11-04",

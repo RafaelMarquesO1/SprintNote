@@ -82,6 +82,7 @@ export type OperacoesQuadro = {
   colunas?: { gravar: (ColunaKanban & { ordem: number })[]; excluir: string[] }
   etiquetas?: { gravar: (EtiquetaKanban & { ordem: number })[]; excluir: string[] }
   cartoes?: { gravar: (CartaoGravar & { ordem: number })[]; excluir: string[] }
-  comentarios?: { inserir: { id: string; cartaoId: string; texto: string }[]; excluir: string[] }
+  // Rafael Marques - 04/11/2026 (v1.5b): "editar" = comentários que o autor corrigiu.
+  comentarios?: { inserir: { id: string; cartaoId: string; texto: string }[]; excluir: string[]; editar?: { id: string; texto: string }[] }
   atividade?: { inserir: { id: string; cartaoId: string; texto: string }[] }
 }

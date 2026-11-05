@@ -529,11 +529,13 @@ export async function aplicarOperacoes(quadroId: string, usuario: Usuario, bruto
   if (Object.keys(q).length > 0) {
     const titulo = "titulo" in q ? texto(q.titulo, 120).trim() || null : null
     const icone = "icone" in q ? texto(q.icone, 40).trim() || null : null
-    const mudaFundo = "fundo" in q
+    // Rafael Marques - 04/11/2026 (v1.5b): só o dono da equipe muda o fundo; de outros papéis a mudança é ignorada.
+    const donoDaEquipe = quadro.papel === "dono"
+    const mudaFundo = "fundo" in q && donoDaEquipe
     const fundo = mudaFundo && typeof q.fundo === "string" && q.fundo ? q.fundo.slice(0, 600) : null
     const exibicao = "exibicao" in q ? JSON.stringify(limparExibicao(q.exibicao)) : null
     // Rafael Marques - 26/10/2026: foto de fundo (só imagem em data URL, com tamanho limitado).
-    if ("imagemFundo" in q) {
+    if ("imagemFundo" in q && donoDaEquipe) {
       const imagem = q.imagemFundo
       if (imagem !== null && !(typeof imagem === "string" && formatoImagem.test(imagem) && imagem.length <= TAMANHO_MAXIMO_FUNDO)) {
         throw new ErroEquipe(400, "A foto de fundo é inválida ou grande demais.")
@@ -676,6 +678,18 @@ export async function aplicarOperacoes(quadroId: string, usuario: Usuario, bruto
     consultas.push(sql`
       DELETE FROM comentarios_cartao WHERE quadro_id = ${quadroId} AND id = ANY(${comentariosExcluir}::text[])
         AND (autor_id = ${usuario.id} OR ${quadro.papel === "dono"})
+    `)
+  }
+  // Rafael Marques - 04/11/2026 (v1.5b): só o autor edita o próprio comentário.
+  const comentariosEditar = lista(comentarios.editar, 200).map((item) => {
+    const c = objeto(item)
+    return { id: id(c.id), texto: texto(c.texto, 4000, true).trim() }
+  }).filter((item) => item.texto)
+  if (comentariosEditar.length > 0) {
+    consultas.push(sql`
+      UPDATE comentarios_cartao AS k SET texto = c.texto
+      FROM jsonb_to_recordset(${JSON.stringify(comentariosEditar)}::jsonb) AS c(id text, texto text)
+      WHERE k.quadro_id = ${quadroId} AND k.id = c.id AND k.autor_id = ${usuario.id}::uuid
     `)
   }
   const atividade = objeto(ops.atividade)

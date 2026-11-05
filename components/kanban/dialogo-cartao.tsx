@@ -30,6 +30,7 @@ import {
   PlusIcon,
   RepeatIcon,
   TagIcon,
+  PencilIcon,
   Trash2Icon,
   UserIcon,
   XIcon,
@@ -279,17 +280,139 @@ function SalvarModelo({ cartao }: { cartao: CartaoKanban }) {
 
 // Rafael Marques - 29/10/2026: comentários e histórico separados — comentários em cartões com borda
 // (Markdown e código), histórico numa linha do tempo discreta.
+// Rafael Marques - 04/11/2026 (v1.5b): comentário com "Editar" para quem escreveu (lápis ao lado da lixeira).
+// O texto vira o mesmo editor do comentário novo; Ctrl + Enter salva e Esc cancela.
+function ItemComentario({
+  cartaoId,
+  comentario,
+  meu,
+  foto,
+  agora,
+  podeExcluir,
+}: {
+  cartaoId: string
+  comentario: CartaoKanban["comentarios"][number]
+  meu: boolean
+  foto: string | null
+  agora: number
+  podeExcluir: boolean
+}) {
+  const editarComentario = useKanban((estado) => estado.editarComentario)
+  const excluirComentario = useKanban((estado) => estado.excluirComentario)
+  const [editando, setEditando] = useState(false)
+  const [rascunho, setRascunho] = useState(comentario.texto)
+
+  function salvar() {
+    if (!rascunho.trim()) return
+    editarComentario(cartaoId, comentario.id, rascunho)
+    setEditando(false)
+  }
+
+  function cancelar() {
+    setRascunho(comentario.texto)
+    setEditando(false)
+  }
+
+  return (
+    <li className="group flex gap-3">
+      <Avatar size="sm" className="mt-1">
+        {meu && foto && <AvatarImage src={foto} alt="" />}
+        <AvatarFallback>{iniciaisDe(comentario.autorNome || "?")}</AvatarFallback>
+      </Avatar>
+      <div className="min-w-0 flex-1 rounded-lg border bg-card">
+        <div className="flex items-center gap-2 border-b px-3 py-1.5">
+          <strong className="truncate text-sm font-semibold">{comentario.autorNome || "Alguém"}</strong>
+          <span className="text-xs text-muted-foreground" title={new Date(comentario.criadoEm).toLocaleString("pt-BR")}>
+            {tempoRelativo(comentario.criadoEm, agora)}
+          </span>
+          {comentario.editadoEm && (
+            <span className="text-xs text-muted-foreground" title={`Editado em ${new Date(comentario.editadoEm).toLocaleString("pt-BR")}`}>
+              · editado
+            </span>
+          )}
+          <span className="ml-auto flex items-center gap-0.5">
+            {meu && !editando && (
+              <button
+                type="button"
+                onClick={() => {
+                  setRascunho(comentario.texto)
+                  setEditando(true)
+                }}
+                aria-label="Editar comentário"
+                title="Editar comentário"
+                className="rounded p-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-paper focus-visible:opacity-100 max-md:opacity-100"
+              >
+                <PencilIcon className="size-3.5" />
+              </button>
+            )}
+            {podeExcluir && (
+              <button
+                type="button"
+                onClick={() => excluirComentario(cartaoId, comentario.id)}
+                aria-label="Excluir comentário"
+                title="Excluir comentário"
+                className="rounded p-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-paper focus-visible:opacity-100 max-md:opacity-100"
+              >
+                <Trash2Icon className="size-3.5" />
+              </button>
+            )}
+          </span>
+        </div>
+        {editando ? (
+          <div
+            className="p-2"
+            onKeyDown={(evento) => {
+              if (evento.key === "Escape") {
+                evento.stopPropagation()
+                cancelar()
+              }
+            }}
+          >
+            <EditorCartao
+              valor={rascunho}
+              aoMudar={setRascunho}
+              aoEnviar={salvar}
+              autoFocus
+              placeholder="Escreva o comentário…"
+              rotulo="Editar comentário"
+              rodape={
+                <>
+                  <span className="hidden text-xs text-muted-foreground sm:inline">Ctrl + Enter · Esc cancela</span>
+                  <Button type="button" variant="ghost" size="sm" onMouseDown={(evento) => evento.preventDefault()} onClick={cancelar}>
+                    Cancelar
+                  </Button>
+                  <Button type="button" size="sm" disabled={!rascunho.trim() || rascunho.trim() === comentario.texto} onMouseDown={(evento) => evento.preventDefault()} onClick={salvar}>
+                    Salvar
+                  </Button>
+                </>
+              }
+            />
+          </div>
+        ) : (
+          <div className="markdown px-3 py-2 text-sm break-words [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+            <ConteudoMarkdown texto={comentario.texto} />
+          </div>
+        )}
+      </div>
+    </li>
+  )
+}
+
 function Comentarios({ cartao }: { cartao: CartaoKanban }) {
   const conta = useConta()
   const foto = usePreferencias((estado) => estado.fotoPerfil)
   const comentarCartao = useKanban((estado) => estado.comentarCartao)
-  const excluirComentario = useKanban((estado) => estado.excluirComentario)
   const agora = useAgora()
   const [texto, setTexto] = useState("")
   // Muda a cada envio para o editor recomeçar vazio.
   const [versao, setVersao] = useState(0)
   const autor = { id: conta?.usuario.id ?? "local", nome: conta?.usuario.nome || conta?.usuario.email || "Você" }
   const comentarios = [...cartao.comentarios].sort((a, b) => b.criadoEm - a.criadoEm)
+  // Rafael Marques - 04/11/2026 (v1.5b): em quadro de equipe, a lixeira aparece para quem escreveu e para o dono
+  // (as mesmas regras do servidor). Quadro pessoal: todos os comentários são da própria pessoa.
+  const quadroId = useKanban((estado) => estado.colunas.find((coluna) => coluna.id === cartao.colunaId)?.quadroId)
+  const ehDeEquipe = useKanban((estado) => Boolean(estado.quadros.find((quadro) => quadro.id === quadroId)?.equipeId))
+  const souDono = useEquipes((estado) => (quadroId ? estado.papelDoQuadro[quadroId] === "dono" : false))
 
   function enviar() {
     if (!texto.trim()) return
@@ -326,37 +449,17 @@ function Comentarios({ cartao }: { cartao: CartaoKanban }) {
 
       {comentarios.length > 0 && (
         <ul className="space-y-3">
-          {comentarios.map((comentario) => {
-            const meu = comentario.autorId === autor.id
-            return (
-              <li key={comentario.id} className="group flex gap-3">
-                <Avatar size="sm" className="mt-1">
-                  {meu && foto && <AvatarImage src={foto} alt="" />}
-                  <AvatarFallback>{iniciaisDe(comentario.autorNome || "?")}</AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1 rounded-lg border bg-card">
-                  <div className="flex items-center gap-2 border-b px-3 py-1.5">
-                    <strong className="truncate text-sm font-semibold">{comentario.autorNome || "Alguém"}</strong>
-                    <span className="text-xs text-muted-foreground" title={new Date(comentario.criadoEm).toLocaleString("pt-BR")}>
-                      {tempoRelativo(comentario.criadoEm, agora)}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => excluirComentario(cartao.id, comentario.id)}
-                      aria-label="Excluir comentário"
-                      title="Excluir comentário"
-                      className="ml-auto rounded p-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-paper focus-visible:opacity-100 max-md:opacity-100"
-                    >
-                      <Trash2Icon className="size-3.5" />
-                    </button>
-                  </div>
-                  <div className="markdown px-3 py-2 text-sm break-words [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
-                    <ConteudoMarkdown texto={comentario.texto} />
-                  </div>
-                </div>
-              </li>
-            )
-          })}
+          {comentarios.map((comentario) => (
+            <ItemComentario
+              key={comentario.id}
+              cartaoId={cartao.id}
+              comentario={comentario}
+              meu={comentario.autorId === autor.id}
+              podeExcluir={!ehDeEquipe || souDono || comentario.autorId === autor.id}
+              foto={foto}
+              agora={agora}
+            />
+          ))}
         </ul>
       )}
     </Secao>
