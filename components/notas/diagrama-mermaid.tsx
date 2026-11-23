@@ -13,6 +13,7 @@ let contador = 0
 
 // Desenha o código e devolve o SVG (ou o erro em português simples).
 async function desenhar(codigo: string, escuro: boolean) {
+  codigo = codigo.trim()
   const { default: mermaid } = await import("mermaid")
   mermaid.initialize({
     startOnLoad: false,
@@ -49,13 +50,14 @@ export function DiagramaMermaid({ codigo, compacto = false }: { codigo: string; 
   const [svg, setSvg] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [telaCheia, setTelaCheia] = useState(false)
+  const codigoLimpo = codigo.trim()
 
   useEffect(() => {
     let cancelado = false
-    if (!codigo.trim()) return
+    if (!codigoLimpo) return
     // Espera a pessoa parar de digitar antes de redesenhar.
     const espera = setTimeout(() => {
-      desenhar(codigo, escuro)
+      desenhar(codigoLimpo, escuro)
         .then((novo) => {
           if (cancelado) return
           setSvg(novo)
@@ -70,9 +72,9 @@ export function DiagramaMermaid({ codigo, compacto = false }: { codigo: string; 
       cancelado = true
       clearTimeout(espera)
     }
-  }, [codigo, escuro])
+  }, [codigoLimpo, escuro])
 
-  if (!codigo.trim()) {
+  if (!codigoLimpo) {
     return <p className="py-4 text-center text-sm text-muted-foreground">Escreva o diagrama no código abaixo.</p>
   }
 

@@ -172,7 +172,7 @@ const componentes: Components = {
   pre({ node }) {
     const filho = node?.children?.[0]
     const classes = filho && "properties" in filho ? filho.properties?.className : undefined
-    if (Array.isArray(classes) && classes.includes("language-mermaid")) {
+    if (Array.isArray(classes) && classes.map(String).some((classe) => classe.toLowerCase() === "language-mermaid")) {
       const texto = filho && "children" in filho ? filho.children.map((parte) => ("value" in parte ? parte.value : "")).join("") : ""
       return <DiagramaMermaid codigo={String(texto).replace(/\n$/, "")} />
     }

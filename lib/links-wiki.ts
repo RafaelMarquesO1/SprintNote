@@ -96,31 +96,60 @@ export function obterReferencias(biblioteca: Biblioteca, alvo: Destino): Nota[] 
 }
 
 // Converte [[alvo]] em links Markdown que a visualização sabe interpretar.
-// Links dentro de blocos de código são preservados.
-export function linksWikiParaMarkdown(conteudo: string): string {
-  return conteudo
-    .split(/(```[\s\S]*?```|`[^`\n]*`)/g)
-    .map((trecho, indice) => {
-      if (indice % 2 === 1) return trecho
-      // Separa os [[links]] do resto para não criar tags/prazos dentro deles.
-      return trecho
-        .split(/(\[\[[^\[\]]+\]\])/g)
-        .map((parte, posicao) => {
-          if (posicao % 2 === 1) {
-            return parte.replace(REGEX_LINK_WIKI, (_, alvo: string, rotulo?: string) => {
-              const limpo = alvo.trim()
-              const texto = (rotulo ?? limpo.split("/").pop() ?? limpo).trim()
-              return `[${texto.replace(/[\[\]]/g, "")}](${PREFIXO_LINK_WIKI}${encodeURIComponent(limpo)})`
-            })
-          }
-          return parte
-            .replace(/==([^=\n]+)==/g, (_, texto: string) => `[${texto}](${PREFIXO_MARCA})`)
-            .replace(new RegExp(REGEX_TAG.source, "gu"), (_, antes: string, tag: string) => `${antes}[#${tag}](${PREFIXO_TAG}${encodeURIComponent(tag)})`)
-            .replace(new RegExp(REGEX_PRAZO.source, "gi"), (_, antes: string, token: string) => `${antes}[@${token}](${PREFIXO_PRAZO}${encodeURIComponent(token)})`)
+// Links dentro de blocos de código (cercas de crase ou til, de qualquer tamanho) e de
+// código inline são preservados, para não corromper diagramas (Mermaid) e outros códigos.
+function transformarForaDeCodigo(texto: string): string {
+  return texto
+    .split(/(\[\[[^\[\]]+\]\])/g)
+    .map((parte, posicao) => {
+      if (posicao % 2 === 1) {
+        return parte.replace(REGEX_LINK_WIKI, (_, alvo: string, rotulo?: string) => {
+          const limpo = alvo.trim()
+          const textoRotulo = (rotulo ?? limpo.split("/").pop() ?? limpo).trim()
+          return `[${textoRotulo.replace(/[\[\]]/g, "")}](${PREFIXO_LINK_WIKI}${encodeURIComponent(limpo)})`
         })
-        .join("")
+      }
+      return parte
+        .replace(/==([^=\n]+)==/g, (_, t: string) => `[${t}](${PREFIXO_MARCA})`)
+        .replace(new RegExp(REGEX_TAG.source, "gu"), (_, antes: string, tag: string) => `${antes}[#${tag}](${PREFIXO_TAG}${encodeURIComponent(tag)})`)
+        .replace(new RegExp(REGEX_PRAZO.source, "gi"), (_, antes: string, token: string) => `${antes}[@${token}](${PREFIXO_PRAZO}${encodeURIComponent(token)})`)
     })
     .join("")
+}
+
+function transformarLinhaForaDeCodigo(linha: string): string {
+  // Preserva o código inline (`...`) sem transformá-lo.
+  return linha
+    .split(/(`[^`\n]*`)/g)
+    .map((trecho, indice) => (indice % 2 === 1 ? trecho : transformarForaDeCodigo(trecho)))
+    .join("")
+}
+
+export function linksWikiParaMarkdown(conteudo: string): string {
+  const linhas = conteudo.split("\n")
+  const saida: string[] = []
+  let dentro = false
+  let cerca: { char: string; tamanho: number } | null = null
+  for (const linha of linhas) {
+    const aparada = linha.trimStart()
+    const abertura = /^(`{3,}|~{3,})/.exec(aparada)
+    if (!dentro) {
+      if (abertura) {
+        dentro = true
+        cerca = { char: abertura[1][0], tamanho: abertura[1].length }
+        saida.push(linha)
+        continue
+      }
+      saida.push(transformarLinhaForaDeCodigo(linha))
+    } else {
+      saida.push(linha)
+      if (abertura && cerca && abertura[1][0] === cerca.char && abertura[1].length >= cerca.tamanho) {
+        dentro = false
+        cerca = null
+      }
+    }
+  }
+  return saida.join("\n")
 }
 
 // Reescreve os alvos dos [[links]] de um texto. "trocar" devolve o novo alvo

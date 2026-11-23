@@ -33,6 +33,18 @@ export const ordemTipos: TipoNovidade[] = ["novo", "melhorado", "corrigido"]
 
 // Mais recente primeiro.
 export const NOVIDADES: Novidade[] = [
+  // Rafael Marques - 23/11/2026: versão 1.6 (correção do erro de sintaxe do Mermaid).
+  {
+    id: "2026-11-23",
+    versao: "1.6",
+    data: "23/11/2026",
+    titulo: "Correção nos diagramas Mermaid",
+    resumo: "Corrigi um erro de sintaxe que aparecia em alguns diagramas Mermaid e impedia a nota de ser exibida direito.",
+    itens: [
+      { tipo: "corrigido", titulo: "Diagramas Mermaid", texto: "Diagramas com caracteres especiais, cercas de código mais longas ou importados do Obsidian não quebram mais a leitura da nota." },
+      { tipo: "melhorado", titulo: "Código nas notas", texto: "Blocos de código protegidos ao converter links, tags e prazos, evitando que o conteúdo do código seja alterado." },
+    ],
+  },
   // Rafael Marques - 05/11/2026: versão 1.5c (ajustes de design nas anotações e consultas mais rápidas).
   {
     id: "2026-11-05",
